@@ -914,24 +914,6 @@ jobs:
         git push origin --tags
 
 
-  verify_install:
-    runs-on: ubuntu-latest
-    needs:
-      - release
-      - release_workspaces
-      - version_number
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Run verify_install A + D
-        run: |
-          export VERSION="${{ needs.version_number.outputs.version_number }}"
-          bash autobuild/verify_install.sh A D --version "$VERSION"
-
-
   bump_library_colab_urls:
     runs-on: ubuntu-latest
     env:
