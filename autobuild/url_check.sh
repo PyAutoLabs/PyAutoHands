@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# url_check.sh - fail if forbidden Binder/Colab URL patterns appear in docs.
+# url_check.sh — fast offline regex guard against known-bad URL patterns.
 #
 # Usage: url_check.sh [directory]
 # Exits 0 if clean, 1 if any forbidden patterns are found, 2 on usage error.
 #
-# Forbidden patterns:
-#   1. Any mybinder.org URL — Binder is no longer supported, use Colab.
-#   2. Colab URL with Jammy2211 owner — workspaces now live under PyAutoLabs.
-#   3. Colab URL pinned to /blob/release/ — the release branch is gone, pin to a tag.
+# Runs on every PR via .github/workflows/url_check.yml in each PyAuto repo.
+# For live HTTP checking with an allowlist (weekly cron), see
+# url_check_live.sh and url_check_live.py.
 
 set -u
 
@@ -18,22 +17,41 @@ if [ ! -d "$DIR" ]; then
   exit 2
 fi
 
-PATTERNS=(
-  'mybinder\.org'
-  'colab\.research\.google\.com/github/Jammy2211/'
-  'colab\.research\.google\.com/github/[^/]+/[^/]+/blob/release/'
-)
+# Each entry is "pattern|||label". `|||` keeps it grep-safe.
+ENTRIES=(
+  # --- original three (Binder / wrong-owner / dead-branch) ---
+  'mybinder\.org|||mybinder.org URL (Binder is no longer supported — use Colab)'
+  'colab\.research\.google\.com/github/Jammy2211/|||Colab URL with Jammy2211 owner (use PyAutoLabs)'
+  'colab\.research\.google\.com/github/[^/]+/[^/]+/blob/release/|||Colab URL pinned to /blob/release/ (use a tagged version or /blob/main/)'
 
-LABELS=(
-  'mybinder.org URL (Binder is no longer supported — use Colab)'
-  'Colab URL with Jammy2211 owner (use PyAutoLabs)'
-  'Colab URL pinned to /blob/release/ (use a tagged version)'
+  # --- typo ---
+  'hhttps://|||hhttps:// typo (should be https://)'
+
+  # --- workspaces moved Jammy2211 → PyAutoLabs ---
+  'github\.com/Jammy2211/(autolens_workspace|autogalaxy_workspace|autofit_workspace)|||Jammy2211/<workspace> (use PyAutoLabs/<workspace>)'
+  'githubusercontent\.com/Jammy2211/(autolens_workspace|autogalaxy_workspace|autofit_workspace)|||Jammy2211/<workspace> in raw URL (use PyAutoLabs/<workspace>)'
+
+  # --- libraries moved Jammy2211|rhayes777 → PyAutoLabs ---
+  'github\.com/Jammy2211/(PyAutoArray|PyAutoLens|PyAutoGalaxy)|||Jammy2211/<library> (use PyAutoLabs/<library>)'
+  'githubusercontent\.com/Jammy2211/(PyAutoArray|PyAutoLens|PyAutoGalaxy)|||Jammy2211/<library> in raw URL (use PyAutoLabs/<library>)'
+  'github\.com/Jammy2211/(PyAutoFit|PyAutoConf)|||Jammy2211/(PyAutoFit|PyAutoConf) (use PyAutoLabs/...)'
+  'github\.com/rhayes777/(PyAutoFit|PyAutoConf|PyAutoGalaxy|PyAutoBuild)|||rhayes777/<lib> (use PyAutoLabs/<lib>)'
+
+  # --- workspace /tree/release/ — same fate as /blob/release/ ---
+  'github\.com/PyAutoLabs/(autolens_workspace|autogalaxy_workspace|autofit_workspace)/tree/release/|||workspace /tree/release/ branch removed (use /tree/main/ or a tag)'
+
+  # --- third-party renames surfaced by the audit ---
+  'github\.com/joshspeagle/[Nn]autilus|||joshspeagle/nautilus moved (use github.com/johannesulf/nautilus)'
+  'www\.sphinx-doc\.org/en/main|||sphinx-doc /en/main is 404 (use /en/master)'
+  'github\.com/bokeh/bokeh/blob/main/CODE_OF_CONDUCT\.md|||bokeh CoC moved (use /blob/main/docs/CODE_OF_CONDUCT.md)'
+  'github\.com/numfocus/numfocus/blob/main/manual/numfocus-coc\.md|||numfocus CoC moved (use numfocus.org/code-of-conduct)'
+  'Fiterence_anti-harassment|||"Fiterence_anti-harassment" typo (Conference_anti-harassment)'
 )
 
 found=0
-for i in "${!PATTERNS[@]}"; do
-  pattern="${PATTERNS[$i]}"
-  label="${LABELS[$i]}"
+for entry in "${ENTRIES[@]}"; do
+  pattern="${entry%%|||*}"
+  label="${entry##*|||}"
   matches=$(grep -REn \
     --include='*.rst' --include='*.md' --include='*.ipynb' --include='*.py' \
     "$pattern" "$DIR" 2>/dev/null || true)
