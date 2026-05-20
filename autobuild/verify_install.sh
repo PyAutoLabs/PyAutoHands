@@ -19,6 +19,7 @@
 #   verify_install A                     # run a single check
 #   verify_install A C E                 # run a subset
 #   verify_install --version 2026.4.5.2  # pin a specific PyPI version (A/C/D)
+#   verify_install --testpypi            # install from test.pypi.org (pre-release rehearsal)
 #   verify_install --keep                # don't clean up at the end
 #   verify_install -h | --help
 
@@ -40,7 +41,7 @@ usage() {
 verify_install — release-readiness gate for PyAutoLens.
 
 Usage:
-  verify_install [CHECKS...] [--version VERSION] [--keep] [-h]
+  verify_install [CHECKS...] [--version VERSION] [--testpypi] [--keep] [-h]
 
 Checks:
   A   pip install autolens (default python3) + start_here.py + welcome.py
@@ -53,6 +54,9 @@ Default: run all checks.
 
 Options:
   --version VERSION   Pin a specific PyPI version (applies to A, C, D).
+  --testpypi          Install from test.pypi.org with PyPI as a fallback for
+                      non-PyAuto deps (applies to A, C, D, E). Use this for a
+                      pre-release rehearsal against a TestPyPI dry-run upload.
   --keep              Don't clean up venvs / conda envs / clones at the end.
   -h, --help          Show this help.
 USAGE
@@ -62,6 +66,7 @@ USAGE
 
 TARGET_VERSION=""
 KEEP=0
+USE_TESTPYPI=0
 REQUESTED_CHECKS=()
 
 while [ $# -gt 0 ]; do
@@ -78,6 +83,10 @@ while [ $# -gt 0 ]; do
             TARGET_VERSION="$2"
             shift 2
             ;;
+        --testpypi)
+            USE_TESTPYPI=1
+            shift
+            ;;
         --keep)
             KEEP=1
             shift
@@ -93,6 +102,18 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+
+# When --testpypi is set, route every PyAuto-package pip install through
+# TestPyPI as the primary index and fall back to PyPI for transitive deps not
+# mirrored there (matplotlib, scipy, nufftax, jax, etc.). Cleared otherwise —
+# keeps PyPI as the sole source for the default release-gate path.
+#
+# Stored as an array so the two flags are passed cleanly without word-split
+# surprises at every `pip install` site.
+PIP_INDEX_ARGS=()
+if [ "$USE_TESTPYPI" -eq 1 ]; then
+    PIP_INDEX_ARGS=(--index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/)
+fi
 
 if [ ${#REQUESTED_CHECKS[@]} -eq 0 ]; then
     REQUESTED_CHECKS=(all)
@@ -169,7 +190,7 @@ check_a() {
     pip install --upgrade pip
 
     step "pip install $PIP_INSTALL_TARGET"
-    if ! pip install "$PIP_INSTALL_TARGET" |& tee /tmp/A_pip.log; then
+    if ! pip install "${PIP_INDEX_ARGS[@]}" "$PIP_INSTALL_TARGET" |& tee /tmp/A_pip.log; then
         RESULTS+=("A|FAIL|pip install $PIP_INSTALL_TARGET failed")
         tail_log "Check A pip output" "$(cat /tmp/A_pip.log 2>/dev/null)"
         deactivate
@@ -177,7 +198,7 @@ check_a() {
     fi
 
     step "pip install numba"
-    pip install numba |& tee /tmp/A_numba.log
+    pip install "${PIP_INDEX_ARGS[@]}" numba |& tee /tmp/A_numba.log
 
     step "showing installed versions"
     python -c "
@@ -252,7 +273,7 @@ check_b_one() {
 
     step "$pybin: pip install $PIP_INSTALL_TARGET"
     local pip_out pip_rc=0
-    pip_out=$(pip install "$PIP_INSTALL_TARGET" 2>&1) || pip_rc=$?
+    pip_out=$(pip install "${PIP_INDEX_ARGS[@]}" "$PIP_INSTALL_TARGET" 2>&1) || pip_rc=$?
 
     if [ "$pip_rc" -ne 0 ]; then
         RESULTS+=("B|FAIL|$pybin pip install failed (rc=$pip_rc)")
@@ -330,15 +351,16 @@ check_c() {
     conda run -n "$env_name" pip install --upgrade pip
 
     step "conda pip install $PIP_INSTALL_TARGET --no-cache-dir"
-    if ! conda run -n "$env_name" pip install "$PIP_INSTALL_TARGET" --no-cache-dir \
-            |& tee /tmp/C_pip.log; then
+    if ! conda run -n "$env_name" pip install "${PIP_INDEX_ARGS[@]}" \
+            "$PIP_INSTALL_TARGET" --no-cache-dir |& tee /tmp/C_pip.log; then
         RESULTS+=("C|FAIL|conda pip install $PIP_INSTALL_TARGET failed")
         tail_log "Check C pip output" "$(cat /tmp/C_pip.log 2>/dev/null)"
         return
     fi
 
     step "conda pip install numba --no-cache-dir"
-    conda run -n "$env_name" pip install numba --no-cache-dir |& tee /tmp/C_numba.log
+    conda run -n "$env_name" pip install "${PIP_INDEX_ARGS[@]}" \
+        numba --no-cache-dir |& tee /tmp/C_numba.log
 
     step "cloning autolens_workspace"
     if ! git clone --depth 1 \
@@ -387,7 +409,7 @@ check_d() {
     pip install --upgrade pip > /dev/null 2>&1
 
     step "pip install $PIP_INSTALL_OPTIONAL"
-    pip install "$PIP_INSTALL_OPTIONAL" |& tee /tmp/D_pip.log
+    pip install "${PIP_INDEX_ARGS[@]}" "$PIP_INSTALL_OPTIONAL" |& tee /tmp/D_pip.log
     local pip_rc=${PIPESTATUS[0]}
 
     step "import autolens"
@@ -428,7 +450,7 @@ check_e() {
     # symbol in autogalaxy 2026.5.1.4). Same multi-pin pattern that release.yml
     # uses (lines 130-138).
     step "pip install autoconf/autoarray/autofit/autogalaxy/autolens==2026.2.26.4"
-    pip install \
+    pip install "${PIP_INDEX_ARGS[@]}" \
       autoconf==2026.2.26.4 \
       autoarray==2026.2.26.4 \
       autofit==2026.2.26.4 \
