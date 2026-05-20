@@ -42,6 +42,8 @@ SUBCOMMAND_ORDER=(
   generate_release_notes
   create_analysis_issue
   tag_and_merge
+  "# Triage support"
+  repro_command
   "# Meta"
   help
 )
@@ -62,6 +64,7 @@ declare -A SHORT_DESC=(
   [generate_release_notes]="Generate release notes from merged PRs and create GitHub Releases"
   [create_analysis_issue]="Open a GitHub issue with the release report and assign Copilot"
   [tag_and_merge]="Commit and tag every library repo for a release"
+  [repro_command]="Emit the shell command autobuild uses to run one script (for triage handoffs)"
   [help]="List subcommands or show details for one"
 )
 
@@ -375,6 +378,35 @@ EOF
 }
 cmd_tag_and_merge() {
   bash "$AUTOBUILD_DIR/tag_and_merge.sh" "$@"
+}
+
+# ----- Triage support -----
+
+help_repro_command() {
+  cat <<'EOF'
+autobuild repro_command <script_path>
+
+Print the exact shell command `autobuild run_python` would have used to
+execute one workspace script — including all environment variables from
+the workspace's config/build/env_vars.yaml (defaults + matching
+per-pattern overrides).
+
+Intended for triage handoffs: when pasting a failing script into a chat
+or issue, run this first so the reader gets a self-contained command
+that reproduces the autobuild failure exactly (not just `python3 <file>`,
+which omits PYAUTO_TEST_MODE / PYAUTO_SMALL_DATASETS / etc.).
+
+Arguments:
+  script_path   Path to a workspace script (absolute or relative to cwd)
+
+Output (single line, to stdout):
+  (cd <workspace_name> && env KEY=val ... python3 <script_relpath>)
+
+Run the printed command from the PyAutoLabs base directory.
+EOF
+}
+cmd_repro_command() {
+  _python_in_autobuild repro_command.py "$@"
 }
 
 # ----- Meta -----
