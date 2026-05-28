@@ -205,8 +205,10 @@ def execute_notebooks_in_folder(
             execute_notebook(file, report=report, env=env)
 
 
-def execute_script(f, report=None, env=None):
+def execute_script(f, report=None, env=None, extra_args=None):
     args = [BUILD_PYTHON_INTERPRETER, f]
+    if extra_args:
+        args.extend(extra_args)
     script_name = Path(f).relative_to(Path.cwd()) if Path(f).is_relative_to(Path.cwd()) else Path(f).name
     print(f"  {script_name} ...", end=" ", flush=True)
 
@@ -335,6 +337,7 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
                     skip_reason=reason,
                 ))
         else:
-            from env_config import build_env_for_script
+            from env_config import build_env_for_script, args_for_script
             env = build_env_for_script(file, env_config)
-            execute_script(str(file), report=report, env=env)
+            extra_args = args_for_script(file, env_config)
+            execute_script(str(file), report=report, env=env, extra_args=extra_args)

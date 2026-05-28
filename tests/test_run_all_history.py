@@ -17,8 +17,8 @@ sys.path.insert(0, str(AUTOBUILD_DIR))
 import run_all  # noqa: E402
 
 
-def test_workspaces_dict_has_nine_entries():
-    """All 9 active workspaces (6 main + 3 HowTo lectures) must be enumerable."""
+def test_workspaces_dict_has_ten_entries():
+    """All 10 active workspaces (6 main + 3 HowTo + euclid pipeline) must be enumerable."""
     expected = {
         "autofit",
         "autogalaxy",
@@ -29,12 +29,15 @@ def test_workspaces_dict_has_nine_entries():
         "howtofit",
         "howtogalaxy",
         "howtolens",
+        "euclid",
     }
     assert set(run_all.WORKSPACES.keys()) == expected
     assert run_all.WORKSPACES["autogalaxy_test"][0] == "autogalaxy_workspace_test"
     assert run_all.WORKSPACES["autogalaxy_test"][1] == "autogalaxy_test"
     assert run_all.WORKSPACES["howtolens"][0] == "HowToLens"
     assert run_all.WORKSPACES["howtolens"][1] == "howtolens"
+    assert run_all.WORKSPACES["euclid"][0] == "euclid_strong_lens_modeling_pipeline"
+    assert run_all.WORKSPACES["euclid"][1] == "euclid"
 
 
 def test_default_timeout_is_300():

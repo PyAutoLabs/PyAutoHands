@@ -3,10 +3,11 @@
 Run workspace scripts across one or more workspaces and produce summary reports.
 
 Usage:
-    python run_all.py                          # all 9 workspaces
+    python run_all.py                          # all 10 workspaces
     python run_all.py autolens                 # just autolens_workspace
     python run_all.py autolens_test autofit    # specific workspaces
     python run_all.py howtolens                # just HowToLens
+    python run_all.py euclid                   # just the Euclid pipeline
 
 Reports default to <autobuild>/../test_results/runs/<UTC-timestamp>/ with a
 sibling `latest` symlink pointing at the most recent successful run, so every
@@ -41,6 +42,7 @@ WORKSPACES = {
     "howtofit": ("HowToFit", "howtofit"),
     "howtogalaxy": ("HowToGalaxy", "howtogalaxy"),
     "howtolens": ("HowToLens", "howtolens"),
+    "euclid": ("euclid_strong_lens_modeling_pipeline", "euclid"),
 }
 
 DEFAULT_TIMEOUT_SECS = 300
@@ -81,6 +83,9 @@ def run_workspace(name, workspace_dir, project, results_dir, python, timeout_sec
         p.name for p in scripts_dir.iterdir()
         if p.is_dir() and p.name != "__pycache__"
     )
+    # Flat scripts/ (e.g. euclid_strong_lens_modeling_pipeline) → run the
+    # directory itself as a single unit rather than iterating subdirs.
+    iter_dirs = directories or [""]
 
     # Ensure child processes (run_python.py -> build_util.py) use the same
     # interpreter and timeout for running scripts.
@@ -89,8 +94,8 @@ def run_workspace(name, workspace_dir, project, results_dir, python, timeout_sec
     env["BUILD_SCRIPT_TIMEOUT"] = str(timeout_secs)
     env["PYTHONUNBUFFERED"] = "1"
 
-    for directory in directories:
-        rel_dir = f"scripts/{directory}"
+    for directory in iter_dirs:
+        rel_dir = "scripts" if directory == "" else f"scripts/{directory}"
         print(f"\n  Running {name} / {rel_dir} ...")
         cmd = [
             python,
