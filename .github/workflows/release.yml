@@ -837,6 +837,12 @@ jobs:
             package: PyAutoLens
             generate_notebooks: false
             bump_colab_urls: false
+          - repository: PyAutoLabs/autolens_assistant
+            name: autolens
+            package: PyAutoLens
+            generate_notebooks: false
+            bump_colab_urls: false
+            write_api_baseline: true
     steps:
     - uses: actions/checkout@v2
       if: "${{ github.event.inputs.skip_release != 'true' }}"
@@ -905,6 +911,39 @@ jobs:
         PY
         git add version.txt config/general.yaml 2>/dev/null || git add version.txt
         git commit -m "Release $VERSION: pin workspace version" || true
+    - name: Regenerate API audit baseline
+      if: "${{ github.event.inputs.skip_release != 'true' && matrix.workspace.write_api_baseline == true }}"
+      env:
+        NUMBA_CACHE_DIR: /tmp/numba_cache
+        MPLCONFIGDIR: /tmp/matplotlib
+        PYAUTO_SKIP_WORKSPACE_VERSION_CHECK: "1"
+      run: |
+        VERSION="${{ needs.version_number.outputs.version_number }}"
+        # Install the just-released wheels so the baseline hashes the published
+        # API surface, then let the assistant regenerate its own baseline (it
+        # owns the hash format — no reimplementation here).
+        install_cnt=0
+        until python3 -m pip install \
+              --index-url https://test.pypi.org/simple/ \
+              --extra-index-url https://pypi.org/simple \
+              "autoconf[optional]==$VERSION" \
+              "autoarray[optional]==$VERSION" \
+              "autofit[optional]==$VERSION" \
+              "autogalaxy[optional]==$VERSION" \
+              "autolens[optional]==$VERSION"; do
+          ((install_cnt=install_cnt+1))
+          if [[ $install_cnt -ge 30 ]]; then
+            echo "ERROR: Install failed after 30 attempts"
+            exit 1
+          fi
+          sleep 10
+        done
+        pip install matplotlib==3.6.0 pynufft==2025.1.1 numba
+        pushd workspace
+        python3 work/audit_skill_apis.py --write-baseline
+        git add wiki/core/api_audit_baseline.json
+        git commit -m "Release $VERSION: regenerate API audit baseline" || true
+        popd
     - name: Bump Colab URL tag refs
       if: "${{ github.event.inputs.skip_release != 'true' && matrix.workspace.bump_colab_urls == true }}"
       run: |

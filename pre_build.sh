@@ -99,6 +99,10 @@ run_workspace "HowToLens"                            "howtolens"    true   false
 run_workspace "HowToFit"                             "howtofit"     true   false  PyAutoFit
 run_workspace "autofit_workspace_developer"          ""             false  false  ""
 run_workspace "autolens_workspace_developer"         ""             false  false  ""
+# The AI assistant repo. No notebook generation or README pin; release.yml's
+# release_workspaces job stamps its workspace version and regenerates
+# wiki/core/api_audit_baseline.json against the released wheels.
+run_workspace "autolens_assistant"                   "autolens"     false  false  ""
 
 # Commit and push PyAutoBuild itself
 echo ""

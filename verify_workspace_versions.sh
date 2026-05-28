@@ -16,9 +16,9 @@
 # If both exist and disagree, the script fails — they must be kept in sync
 # by the release pipeline.
 #
-# Compares each of the 7 workspaces (3 main + 3 HowTo + euclid_pipeline)
-# against its installed library version, parsed as a YYYY.M.D.B 4-tuple of
-# ints. Exits 1 if any workspace.version > library.version.
+# Compares each of the 8 workspaces (3 main + 3 HowTo + euclid_pipeline +
+# autolens_assistant) against its installed library version, parsed as a
+# YYYY.M.D.B 4-tuple of ints. Exits 1 if any workspace.version > library.version.
 #
 # Workspace → library mapping mirrors the release_workspaces matrix in
 # .github/workflows/release.yml.
@@ -37,6 +37,7 @@ WORKSPACES=(
     "HowToGalaxy|autogalaxy"
     "HowToLens|autolens"
     "euclid_strong_lens_modeling_pipeline|autolens"
+    "autolens_assistant|autolens"
 )
 
 # Compare two YYYY.M.D.B versions. Echoes AHEAD / BEHIND / MATCH / BAD.
