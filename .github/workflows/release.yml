@@ -156,6 +156,12 @@ jobs:
               echo "  Install attempt $install_cnt failed, retrying in 10s..."
               sleep 10
             done
+            # Belt-and-braces: the [optional] → [jax] extras chain should
+            # pull JAX, but installs from test.pypi.org with mixed indexes
+            # have historically silently dropped the dep. Force the install
+            # so jax_likelihood_functions / jax_grad / jax_substructure
+            # scripts can't fail in 0.1s with ModuleNotFoundError.
+            pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
         - name: Tests
           run: |
             pushd "${{ matrix.project.path }}"
@@ -226,6 +232,9 @@ jobs:
             sleep 10
           done
           pip install matplotlib==3.6.0 pynufft==2025.1.1 numba
+          # Belt-and-braces JAX install — the [optional] → [jax] chain
+          # occasionally silently drops jax from test.pypi resolution.
+          pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
       - name: Run smoke tests
         run: |
           cd ${{ matrix.workspace.path }}
@@ -478,6 +487,12 @@ jobs:
           pip install matplotlib==3.6.0
           pip install pynufft==2025.1.1
           pip install numba
+          # JAX is required by every jax_likelihood_functions / jax_grad /
+          # jax_substructure script. The bare `autoconf + project` install
+          # below does NOT pull [optional] extras, so JAX would otherwise
+          # be missing and every such script would fail in 0.1s with
+          # ModuleNotFoundError.
+          pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
     - name: Install project
       if: "${{ github.event.inputs.skip_scripts != 'true' }}"
       run: |
@@ -588,6 +603,9 @@ jobs:
         pip install matplotlib==3.6.0
         pip install pynufft==2025.1.1
         pip install numba
+        # JAX is required by every jax_likelihood_functions / jax_grad /
+        # jax_substructure notebook. Same reason as run_scripts above.
+        pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
     - name: Install project
       if: "${{ github.event.inputs.skip_notebooks != 'true' && !endsWith(matrix.project.name, '_test') }}"
       run: |
@@ -939,6 +957,8 @@ jobs:
           sleep 10
         done
         pip install matplotlib==3.6.0 pynufft==2025.1.1 numba
+        # Belt-and-braces JAX install (same reason as the install steps above).
+        pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
         pushd workspace
         python3 work/audit_skill_apis.py --write-baseline
         git add wiki/core/api_audit_baseline.json
