@@ -446,12 +446,16 @@ _pulse_resolve() {
     return 0
   fi
   cat >&2 <<EOF
-autobuild: pyauto-pulse is not installed and the sibling checkout was
-not found at $HOME/Code/PyAutoLabs/PyAutoPulse/.
+autobuild: pyauto-pulse was not found on PATH or at the sibling checkout
+$HOME/Code/PyAutoLabs/PyAutoPulse/.
 
-Clone + install with:
+PyAutoPulse is not pip-installed — like the other PyAuto repos it runs from
+its checkout via PYTHONPATH + PATH in ~/.bashrc. Set it up with:
   git clone https://github.com/PyAutoLabs/PyAutoPulse.git \$HOME/Code/PyAutoLabs/PyAutoPulse
-  pip install -e \$HOME/Code/PyAutoLabs/PyAutoPulse
+  # add to ~/.bashrc:
+  #   export PATH="\$HOME/Code/PyAutoLabs/PyAutoPulse/bin:\$PATH"
+  #   export PYTHONPATH="\$PYTHONPATH:\$HOME/Code/PyAutoLabs/PyAutoPulse"
+  source ~/.bashrc
 EOF
   return 127
 }
