@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Does
 
-PyAutoBuild is a CI/CD build server for the PyAuto software family (PyAutoConf, PyAutoFit, PyAutoArray, PyAutoGalaxy, PyAutoLens). It automates:
+PyAutoBuild is the **executor** of the PyAuto release ecosystem (PyAutoConf, PyAutoFit, PyAutoArray, PyAutoGalaxy, PyAutoLens) — it runs **no** release-readiness checks of its own (that is PyAutoPulse's job; see [`AGENTS.md`](AGENTS.md) for the canonical Build/Pulse/Agent boundary and the `Agent → Pulse → Build` call chain). It automates:
 1. Building and releasing packages to TestPyPI, then PyPI
 2. Running workspace Python scripts (integration tests)
 3. Converting Python scripts to Jupyter notebooks and executing them
 4. Committing generated notebooks to workspace `main` branches and tagging each workspace with a version matching the released library
 
-The pipeline is triggered via GitHub Actions (`release.yml`) and is manually dispatched with configurable options.
+The pipeline is triggered via GitHub Actions (`release.yml`) and is manually dispatched with configurable options. Release-readiness gating happens upstream: the PyAutoAgent release agent calls `pyauto-pulse readiness` and only dispatches `release.yml` on a green verdict.
 
 ## Bash CLI
 

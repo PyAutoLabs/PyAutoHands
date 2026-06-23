@@ -1,5 +1,7 @@
 # PyAutoBuild: PyAuto Build Server
 
+PyAutoBuild is the **executor** of the PyAuto release ecosystem — it builds, tests and deploys, but runs no release-readiness checks (those belong to [PyAutoPulse](https://github.com/PyAutoLabs/PyAutoPulse); the [PyAutoAgent](https://github.com/PyAutoLabs/PyAutoAgent) release agent gates on `pyauto-pulse readiness` before dispatching a release). See `AGENTS.md` for the boundary.
+
 This project performs automatic building, testing and deployment of projects in the PyAuto software family:
 
 - [PyAutoConf](https://github.com/PyAutoLabs/PyAutoConf)
