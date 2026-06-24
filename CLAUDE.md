@@ -151,7 +151,7 @@ The workflow (`release.yml`) is manually dispatched with inputs:
 - `skip_scripts` / `skip_notebooks` / `skip_release` — flags to skip pipeline stages
 - `update_notebook_visualisations` — runs notebooks with `--visualise` and pushes the rendered output to `main`
 
-The `find_scripts` job uses `script_matrix.py` to dynamically generate the matrix for parallel `run_scripts` and `run_notebooks` jobs.
+`release.yml` is a **pure executor**: it builds, tests-the-install, publishes to PyPI, and commits generated notebooks + version pins to the workspaces. Workspace-integration validation (the old `find_scripts` / `generate_notebooks` / `run_scripts` / `run_notebooks` / `analyze_results` jobs) moved to **PyAutoPulse**'s `workspace-validation.yml`; release readiness is gated upstream by the PyAutoAgent release agent via `pyauto-pulse readiness` before this workflow is dispatched. The `script_matrix.py` / `run_python.py` / `run.py` / `aggregate_results.py` primitives remain here and are checked out + reused by the Pulse workflow.
 ## Never rewrite history
 
 NEVER perform these operations on any repo with a remote:
