@@ -390,6 +390,10 @@ jobs:
     needs:
       # Validation moved to PyAutoPulse; this job generates notebooks inline and
       # commits them — it no longer gates on the (removed) run_scripts/run_notebooks.
+      # Gate on `release`: workspace version pins must only be written after the
+      # libraries actually publish to PyPI, else a workspace could pin a version
+      # that never shipped (pre-existing race, hardened here).
+      - release
       - release_test_pypi
       - version_number
     strategy:
