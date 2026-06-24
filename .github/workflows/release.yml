@@ -302,13 +302,15 @@ jobs:
       with:
           path: PyAutoBuild
     - name: Checkout
+      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
+        PAT="${{ secrets[matrix.project.pat] }}"
         git clone -b "${{ matrix.project.ref }}" "https://$PAT@github.com/${{ matrix.project.repository }}.git" "${{ matrix.project.path }}"
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.12
       uses: actions/setup-python@v2
       if: "${{ github.event.inputs.skip_release != 'true' }}"
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.12"
     - name: Configure Git
       if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
@@ -608,7 +610,9 @@ jobs:
       TWINE_PASSWORD: ${{ secrets.PYPI }}
     needs:
       # Validation moved to PyAutoPulse; this job generates + runs notebooks
-      # inline (its own matrix) — no longer gates on removed run_scripts/find_scripts.
+      # inline (its own matrix). Gate on `release` (same reason as
+      # release_workspaces) so it only runs after PyPI publish succeeds.
+      - release
       - release_test_pypi
       - version_number
     strategy:
