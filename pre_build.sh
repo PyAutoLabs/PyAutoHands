@@ -6,17 +6,11 @@
 # Usage: bash pre_build.sh [minor_version] [skip_release]
 #   minor_version  Minor version suffix (default: 1)
 #   skip_release   Whether to skip the release stage, true or false (default: false)
-#
-# Optional env vars (forwarded as workflow_dispatch inputs when set):
-#   SKIP_SCRIPTS    true|false — skip run_scripts matrix in release.yml
-#   SKIP_NOTEBOOKS  true|false — skip run_notebooks matrix in release.yml
 
 set -e
 
 MINOR_VERSION="${1:-1}"
 SKIP_RELEASE="${2:-false}"
-SKIP_SCRIPTS="${SKIP_SCRIPTS:-}"
-SKIP_NOTEBOOKS="${SKIP_NOTEBOOKS:-}"
 
 # Resolve PYAUTOBASE from this script's location (same idiom as bin/autobuild)
 # so pre_build.sh works from any checkout — Linux, WSL, anywhere.
@@ -117,26 +111,18 @@ else
 fi
 
 # Release readiness (version skew, including the version.txt-ahead crash that
-# used to be checked here) is now Pulse's job, not Build's: PyAutoBuild is a
-# pure executor. The PyAutoAgent release agent gates on `pyauto-pulse readiness`
-# before invoking this script; a human running pre_build directly is trusted to
-# have checked `pyauto-pulse readiness` themselves.
+# used to be checked here) is now Heart's job, not Build's: PyAutoBuild is a
+# pure executor. The release agent gates on `pyauto-heart readiness` before
+# invoking this script; a human running pre_build directly is trusted to have
+# checked `pyauto-heart readiness` themselves.
 
 # Trigger the GitHub Actions release workflow
 echo ""
 echo "=== Triggering release workflow (minor_version=$MINOR_VERSION) ==="
-EXTRA_FIELDS=()
-if [ -n "$SKIP_SCRIPTS" ]; then
-    EXTRA_FIELDS+=(--field "skip_scripts=$SKIP_SCRIPTS")
-fi
-if [ -n "$SKIP_NOTEBOOKS" ]; then
-    EXTRA_FIELDS+=(--field "skip_notebooks=$SKIP_NOTEBOOKS")
-fi
 gh workflow run release.yml \
     --repo PyAutoLabs/PyAutoBuild \
     --field minor_version="$MINOR_VERSION" \
-    --field skip_release="$SKIP_RELEASE" \
-    "${EXTRA_FIELDS[@]}"
+    --field skip_release="$SKIP_RELEASE"
 
 echo ""
 echo "Pre-build complete. Workflow dispatched."

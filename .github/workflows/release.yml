@@ -9,20 +9,19 @@ on:
         description: 'Minor version to release'
         required: true
         default: '1'
-      skip_scripts:
-        description: 'Skip scripts'
-        required: false
-        default: 'false'
-      skip_notebooks:
-        description: 'Skip notebooks'
-        required: false
-        default: 'false'
+      # Two orthogonal dispatch axes:
+      #  - rehearsal (mode): false = real release; true = build + publish to
+      #    TestPyPI only, then STOP. The Heart/Brain release-validation gate
+      #    dispatches rehearsal=true (Stage 2); it emits the resolved version and
+      #    cannot mutate anything (no PyPI, no tag, no notebook commits).
+      #  - skip_release (dry-run, only meaningful when rehearsal=false): build to
+      #    TestPyPI but skip every mutation of a real release (PyPI upload, git
+      #    tags, notebook/version commits, Colab bumps).
+      # (The old force-through knobs skip_scripts / skip_notebooks and the
+      # update_notebook_visualisations path were removed with the Heart/Build
+      # split — Build is a pure executor and no longer needs ad-hoc skip levers.)
       skip_release:
-        description: 'Skip release'
-        required: false
-        default: 'false'
-      update_notebook_visualisations:
-        description: 'Update notebook visualisations'
+        description: 'Dry run: build + publish to TestPyPI but skip the real release (no PyPI upload, no git tags, no workspace commits).'
         required: false
         default: 'false'
       rehearsal:
@@ -324,19 +323,19 @@ jobs:
     runs-on: ubuntu-latest
     # Rehearsal mode STOPS before PyPI: skipping this job (the git tag/push +
     # PyPI upload) cascade-skips every job that needs it — publish_release_notes,
-    # release_workspaces, bump_library_colab_urls, run_notebooks_and_release_workspaces,
-    # and (via release_workspaces) wiki_currency_check / wiki_drift_issue. The
-    # full-release path is unchanged when rehearsal is not 'true'.
+    # release_workspaces, bump_library_colab_urls, and (via release_workspaces)
+    # wiki_currency_check / wiki_drift_issue. The full-release path is unchanged
+    # when rehearsal is not 'true'.
     if: "${{ github.event.inputs.rehearsal != 'true' }}"
     env:
       TWINE_REPOSITORY: pypi
       TWINE_USERNAME: __token__
       TWINE_PASSWORD: ${{ secrets.PYPI }}
     needs:
-      # Workspace-integration validation moved to PyAutoPulse
+      # Workspace-integration validation moved to PyAutoHeart
       # (workspace-validation.yml). Build is a pure executor: it gates only on
       # the TestPyPI build + version. Release readiness is enforced upstream by
-      # the PyAutoAgent release agent via `pyauto-pulse readiness`.
+      # the release agent via `pyauto-heart readiness`.
       - release_test_pypi
       - version_number
     strategy:
@@ -456,7 +455,7 @@ jobs:
       TWINE_PASSWORD: ${{ secrets.PYPI }}
       PAT: ${{ secrets.PAT_PYAUTOLABS }}
     needs:
-      # Validation moved to PyAutoPulse; this job generates notebooks inline and
+      # Validation moved to PyAutoHeart; this job generates notebooks inline and
       # commits them — it no longer gates on the (removed) run_scripts/run_notebooks.
       # Gate on `release`: workspace version pins must only be written after the
       # libraries actually publish to PyPI, else a workspace could pin a version
@@ -667,122 +666,6 @@ jobs:
           git commit -m "Release $VERSION: bump Colab URL tag refs"
           git push origin main
         fi
-
-  run_notebooks_and_release_workspaces:
-    runs-on: ubuntu-latest
-    env:
-      TWINE_REPOSITORY: pypi
-      TWINE_USERNAME: __token__
-      TWINE_PASSWORD: ${{ secrets.PYPI }}
-    needs:
-      # Validation moved to PyAutoPulse; this job generates + runs notebooks
-      # inline (its own matrix). Gate on `release` (same reason as
-      # release_workspaces) so it only runs after PyPI publish succeeds.
-      - release
-      - release_test_pypi
-      - version_number
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ 3.12 ]
-        project:
-          - name: autofit
-            repository: PyAutoLabs/PyAutoFit
-            workspace_repository: PyAutoLabs/autofit_workspace
-            pat: PAT_PYAUTOLABS
-          - name: autogalaxy
-            repository: PyAutoLabs/PyAutoGalaxy
-            workspace_repository: PyAutoLabs/autogalaxy_workspace
-            pat: PAT_PYAUTOLABS
-          - name: autolens
-            repository: PyAutoLabs/PyAutoLens
-            workspace_repository: PyAutoLabs/autolens_workspace
-            pat: PAT_PYAUTOLABS
-    steps:
-      - name: Configure
-        id: configure
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          echo "::set-output name=repository::${{ matrix.project.repository }}"
-          echo "::set-output name=workspace_repository::${{ matrix.project.workspace_repository }}"
-          echo "::set-output name=project::${{ matrix.project.name }}"
-          echo "::set-output name=pat::${{ matrix.project.pat }}"
-      - uses: actions/checkout@v2
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        with:
-          path: PyAutoBuild
-      - name: Checkout project
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        uses: actions/checkout@v2
-        with:
-          repository: "${{ steps.configure.outputs.repository }}"
-          path: project
-      - name: Checkout workspace
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          PAT="${{ secrets[steps.configure.outputs.pat] }}"
-          git clone -b main "https://$PAT@github.com/${{ steps.configure.outputs.workspace_repository }}.git" workspace
-      - name: Set up Python ${{ matrix.python-version }}
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install optional requirements
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          echo "Installing optional requirements"
-          pip install matplotlib==3.6.0
-          pip install pynufft==2025.1.1
-          pip install numba
-      - name: Install project
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          python3 -m pip install \
-            --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple \
-            "${{ steps.configure.outputs.project }}==${{ needs.version_number.outputs.version_number }}"
-      - name: Install Jupyter dependency
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          python3 -m pip install jupyter ipynb-py-convert
-      - name: Generate Jupyter notebooks
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/PyAutoBuild
-          AUTOBUILD_PATH="$(pwd)/PyAutoBuild/autobuild"
-          pushd "workspace"
-          python3 "$AUTOBUILD_PATH/generate.py" ${{ matrix.project.name }}
-      - name: Run Jupyter notebooks
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          if [[ ${{ matrix.project.name }} == *_test ]]
-          then
-            export PYAUTO_TEST_MODE=0
-          else
-            export PYAUTO_TEST_MODE=1
-            export PYAUTO_SMALL_DATASETS=1
-            export PYAUTO_FAST_PLOTS=1
-          fi
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/PyAutoBuild
-          AUTOBUILD_PATH="$(pwd)/PyAutoBuild/autobuild"
-          pushd workspace
-          python3 "$AUTOBUILD_PATH/run.py" ${{ matrix.project.name }} "notebooks/${{ matrix.project.directory }}" --visualise
-      - name: Configure Git
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          git config --global user.email "richard@rghsoftware.co.uk"
-          git config --global user.name "GitHub Actions bot"
-      - name: Commit visualizations
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          cd workspace
-          git add .
-          git commit -m "Updated notebooks with visualizations" || true
-      - name: Push to main
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          cd workspace
-          git push origin main
 
   # ---------------------------------------------------------------------------
   # Wiki-currency check (autolens_assistant).
