@@ -25,6 +25,10 @@ on:
         description: 'Update notebook visualisations'
         required: false
         default: 'false'
+      rehearsal:
+        description: 'Rehearsal mode: build + publish to TestPyPI only, then STOP (no PyPI, no git tag, no notebook commits, no Colab bumps). Used by the Heart/Brain release-validation gate.'
+        required: false
+        default: 'false'
 
 jobs:
   version_number:
@@ -41,6 +45,18 @@ jobs:
           if [ "$RUN_ATTEMPT" -gt "1" ]
           then
               VERSION="$VERSION.$RUN_ATTEMPT"
+          fi
+          # Rehearsal mode (TestPyPI-only; dispatched repeatedly by Heart/Brain).
+          # Append a unique PEP 440 dev segment so every rehearsal run publishes a
+          # FRESH, distinct version. This both dodges TestPyPI's duplicate-filename
+          # rejection AND guarantees the wheels Heart installs reflect the exact
+          # source of *this* run — a bare `--skip-existing` would silently leave
+          # stale wheels from a prior rehearsal of the same date/minor in place.
+          # run_number*100+run_attempt is unique per dispatch and per re-run attempt.
+          if [ "${{ github.event.inputs.rehearsal }}" = "true" ]
+          then
+              DEV_SEGMENT=$(( ${{ github.run_number }} * 100 + RUN_ATTEMPT ))
+              VERSION="${DATE_FORMATTED}.${MINOR_VERSION:-${{ github.run_number }}}.dev${DEV_SEGMENT}"
           fi
           export VERSION
           echo "::set-output name=version_number::${VERSION}"
@@ -94,11 +110,53 @@ jobs:
             python3 -m pip install --upgrade build
             python3 -m build
             popd
+        - name: Check built distributions for direct-reference URLs
+          run: |
+            # Surface the [nss] git+ direct-URL footgun early and loudly. PyPI and
+            # TestPyPI reject any uploaded wheel/sdist whose metadata carries a
+            # PEP 508 direct-reference dependency (e.g. `pkg @ git+https://...`);
+            # twine would otherwise fail the upload with a raw HTTP 400. We fail
+            # here first, naming the offending package and line — this is the exact
+            # packaging-layer bug the rehearsal exists to catch before any release.
+            pushd "${{ matrix.project.path }}"
+            python3 - <<'PY'
+            import glob, re, sys, zipfile, tarfile
+            direct = re.compile(r'^Requires-Dist:.*?@\s+(?:git\+|https?:|file:)', re.IGNORECASE)
+            offending = []
+            def scan(text, origin):
+                for line in text.splitlines():
+                    if direct.match(line):
+                        offending.append((origin, line.strip()))
+            for whl in glob.glob('dist/*.whl'):
+                with zipfile.ZipFile(whl) as z:
+                    for n in z.namelist():
+                        if n.endswith('METADATA'):
+                            scan(z.read(n).decode('utf-8', 'replace'), whl)
+            for sd in glob.glob('dist/*.tar.gz'):
+                with tarfile.open(sd) as t:
+                    for m in t.getmembers():
+                        if m.name.endswith('PKG-INFO'):
+                            f = t.extractfile(m)
+                            if f:
+                                scan(f.read().decode('utf-8', 'replace'), sd)
+            if offending:
+                print('ERROR: direct-reference (git+/url) dependencies in built metadata:')
+                for origin, line in offending:
+                    print(f'  {origin}: {line}')
+                print('TestPyPI/PyPI will reject these (the historical [nss] failure).')
+                sys.exit(1)
+            print('OK: no direct-reference URLs in built distribution metadata.')
+            PY
+            popd
         - name: Upload to test PyPI
           run: |
             python3 -m pip install twine==6.0.1
             pushd "${{ matrix.project.path }}"
-            python3 -m twine upload --repository-url https://test.pypi.org/legacy/ --verbose dist/*
+            # --skip-existing: the rehearsal is dispatched repeatedly, and a re-run
+            # attempt may re-upload a sibling lib that already landed; tolerate the
+            # duplicate-filename case instead of hard-failing. (Freshness of the
+            # rehearsed code is guaranteed separately by the per-run dev version.)
+            python3 -m twine upload --repository-url https://test.pypi.org/legacy/ --skip-existing --verbose dist/*
             popd
         - name: Wait for packages and install
           run: |
@@ -186,7 +244,9 @@ jobs:
     needs:
       - release_test_pypi
       - version_number
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    # Skipped in rehearsal mode: rehearsal halts after the TestPyPI publish; the
+    # workspace integration surface is validated downstream by Heart, not here.
+    if: "${{ github.event.inputs.skip_release != 'true' && github.event.inputs.rehearsal != 'true' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -262,6 +322,12 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    # Rehearsal mode STOPS before PyPI: skipping this job (the git tag/push +
+    # PyPI upload) cascade-skips every job that needs it — publish_release_notes,
+    # release_workspaces, bump_library_colab_urls, run_notebooks_and_release_workspaces,
+    # and (via release_workspaces) wiki_currency_check / wiki_drift_issue. The
+    # full-release path is unchanged when rehearsal is not 'true'.
+    if: "${{ github.event.inputs.rehearsal != 'true' }}"
     env:
       TWINE_REPOSITORY: pypi
       TWINE_USERNAME: __token__
@@ -353,7 +419,7 @@ jobs:
     needs:
       - release
       - version_number
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    if: "${{ github.event.inputs.skip_release != 'true' && github.event.inputs.rehearsal != 'true' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -572,7 +638,7 @@ jobs:
     needs:
       - release
       - version_number
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    if: "${{ github.event.inputs.skip_release != 'true' && github.event.inputs.rehearsal != 'true' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -733,7 +799,7 @@ jobs:
     needs:
       - version_number
       - release_workspaces
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    if: "${{ github.event.inputs.skip_release != 'true' && github.event.inputs.rehearsal != 'true' }}"
     uses: PyAutoLabs/autolens_assistant/.github/workflows/wiki-currency.yml@main
     with:
       stack_version: ${{ needs.version_number.outputs.version_number }}
@@ -768,3 +834,62 @@ jobs:
             --title "wiki drift detected at release $VERSION" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
+
+  # ---------------------------------------------------------------------------
+  # Rehearsal version emitter (rehearsal mode only).
+  #
+  # M1 of the Brain->Health->Heart release-validation redesign. In rehearsal mode
+  # the workflow builds + publishes every package to TestPyPI and STOPS; this job
+  # is the terminal step that records the resolved TestPyPI version so the caller
+  # (the Brain Release Agent / Heart) can `pip install` exactly those wheels.
+  #
+  # Gating on `release_test_pypi` means the artifact exists IFF all five wheels
+  # built, uploaded, and became installable on TestPyPI at this version — so the
+  # artifact's presence is itself the "rehearsal succeeded" signal.
+  # ---------------------------------------------------------------------------
+  rehearsal_version:
+    runs-on: ubuntu-latest
+    needs:
+      - version_number
+      - release_test_pypi
+    if: "${{ github.event.inputs.rehearsal == 'true' }}"
+    steps:
+      - name: Record resolved TestPyPI version
+        run: |
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          echo "Rehearsal published to TestPyPI at version: $VERSION"
+          mkdir -p rehearsal
+          printf '%s\n' "$VERSION" > rehearsal/testpypi_version.txt
+          cat > rehearsal/rehearsal.json <<JSON
+          {
+            "mode": "rehearsal",
+            "index": "testpypi",
+            "version": "$VERSION",
+            "packages": ["autoconf", "autoarray", "autofit", "autogalaxy", "autolens"],
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}",
+            "build_sha": "${{ github.sha }}"
+          }
+          JSON
+          cat rehearsal/rehearsal.json
+      - name: Write rehearsal summary
+        run: |
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          {
+            echo "## TestPyPI rehearsal complete"
+            echo ""
+            echo "Published \`autoconf / autoarray / autofit / autogalaxy / autolens == $VERSION\` to TestPyPI."
+            echo "Halted before PyPI upload, git tags, and workspace notebook commits."
+            echo ""
+            echo "Install exactly these wheels with:"
+            echo '```bash'
+            echo "pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple \\"
+            echo "  autoconf[optional]==$VERSION autoarray[optional]==$VERSION autofit[optional]==$VERSION \\"
+            echo "  autogalaxy[optional]==$VERSION autolens[optional]==$VERSION"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload rehearsal version artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: testpypi-rehearsal-version
+          path: rehearsal/
