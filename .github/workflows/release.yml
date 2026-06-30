@@ -9,20 +9,16 @@ on:
         description: 'Minor version to release'
         required: true
         default: '1'
-      skip_scripts:
-        description: 'Skip scripts'
-        required: false
-        default: 'false'
-      skip_notebooks:
-        description: 'Skip notebooks'
-        required: false
-        default: 'false'
-      skip_release:
-        description: 'Skip release'
-        required: false
-        default: 'false'
-      update_notebook_visualisations:
-        description: 'Update notebook visualisations'
+      # rehearsal is the one mode switch: false (default) = a full real release;
+      # true = build + publish to TestPyPI only, then STOP. The Heart/Brain
+      # release-validation gate dispatches rehearsal=true (Stage 2); it emits the
+      # resolved version and cannot mutate anything (no PyPI, no tag, no commits).
+      # (The old force-through knobs skip_scripts / skip_notebooks / skip_release
+      # and the update_notebook_visualisations path were removed with the
+      # Heart/Build split — Build is a pure executor with no ad-hoc skip levers;
+      # "build without releasing" is now exactly what rehearsal mode is for.)
+      rehearsal:
+        description: 'Rehearsal mode: build + publish to TestPyPI only, then STOP (no PyPI, no git tag, no notebook commits, no Colab bumps). Used by the Heart/Brain release-validation gate.'
         required: false
         default: 'false'
 
@@ -41,6 +37,18 @@ jobs:
           if [ "$RUN_ATTEMPT" -gt "1" ]
           then
               VERSION="$VERSION.$RUN_ATTEMPT"
+          fi
+          # Rehearsal mode (TestPyPI-only; dispatched repeatedly by Heart/Brain).
+          # Append a unique PEP 440 dev segment so every rehearsal run publishes a
+          # FRESH, distinct version. This both dodges TestPyPI's duplicate-filename
+          # rejection AND guarantees the wheels Heart installs reflect the exact
+          # source of *this* run — a bare `--skip-existing` would silently leave
+          # stale wheels from a prior rehearsal of the same date/minor in place.
+          # run_number*100+run_attempt is unique per dispatch and per re-run attempt.
+          if [ "${{ github.event.inputs.rehearsal }}" = "true" ]
+          then
+              DEV_SEGMENT=$(( ${{ github.run_number }} * 100 + RUN_ATTEMPT ))
+              VERSION="${DATE_FORMATTED}.${MINOR_VERSION:-${{ github.run_number }}}.dev${DEV_SEGMENT}"
           fi
           export VERSION
           echo "::set-output name=version_number::${VERSION}"
@@ -94,11 +102,53 @@ jobs:
             python3 -m pip install --upgrade build
             python3 -m build
             popd
+        - name: Check built distributions for direct-reference URLs
+          run: |
+            # Surface the [nss] git+ direct-URL footgun early and loudly. PyPI and
+            # TestPyPI reject any uploaded wheel/sdist whose metadata carries a
+            # PEP 508 direct-reference dependency (e.g. `pkg @ git+https://...`);
+            # twine would otherwise fail the upload with a raw HTTP 400. We fail
+            # here first, naming the offending package and line — this is the exact
+            # packaging-layer bug the rehearsal exists to catch before any release.
+            pushd "${{ matrix.project.path }}"
+            python3 - <<'PY'
+            import glob, re, sys, zipfile, tarfile
+            direct = re.compile(r'^Requires-Dist:.*?@\s+(?:git\+|https?:|file:)', re.IGNORECASE)
+            offending = []
+            def scan(text, origin):
+                for line in text.splitlines():
+                    if direct.match(line):
+                        offending.append((origin, line.strip()))
+            for whl in glob.glob('dist/*.whl'):
+                with zipfile.ZipFile(whl) as z:
+                    for n in z.namelist():
+                        if n.endswith('METADATA'):
+                            scan(z.read(n).decode('utf-8', 'replace'), whl)
+            for sd in glob.glob('dist/*.tar.gz'):
+                with tarfile.open(sd) as t:
+                    for m in t.getmembers():
+                        if m.name.endswith('PKG-INFO'):
+                            f = t.extractfile(m)
+                            if f:
+                                scan(f.read().decode('utf-8', 'replace'), sd)
+            if offending:
+                print('ERROR: direct-reference (git+/url) dependencies in built metadata:')
+                for origin, line in offending:
+                    print(f'  {origin}: {line}')
+                print('TestPyPI/PyPI will reject these (the historical [nss] failure).')
+                sys.exit(1)
+            print('OK: no direct-reference URLs in built distribution metadata.')
+            PY
+            popd
         - name: Upload to test PyPI
           run: |
             python3 -m pip install twine==6.0.1
             pushd "${{ matrix.project.path }}"
-            python3 -m twine upload --repository-url https://test.pypi.org/legacy/ --verbose dist/*
+            # --skip-existing: the rehearsal is dispatched repeatedly, and a re-run
+            # attempt may re-upload a sibling lib that already landed; tolerate the
+            # duplicate-filename case instead of hard-failing. (Freshness of the
+            # rehearsed code is guaranteed separately by the per-run dev version.)
+            python3 -m twine upload --repository-url https://test.pypi.org/legacy/ --skip-existing --verbose dist/*
             popd
         - name: Wait for packages and install
           run: |
@@ -186,7 +236,9 @@ jobs:
     needs:
       - release_test_pypi
       - version_number
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    # Skipped in rehearsal mode: rehearsal halts after the TestPyPI publish; the
+    # workspace integration surface is validated downstream by Heart, not here.
+    if: "${{ github.event.inputs.rehearsal != 'true' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -262,15 +314,21 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    # Rehearsal mode STOPS before PyPI: skipping this job (the git tag/push +
+    # PyPI upload) cascade-skips every job that needs it — publish_release_notes,
+    # release_workspaces, bump_library_colab_urls, and (via release_workspaces)
+    # wiki_currency_check / wiki_drift_issue. The full-release path is unchanged
+    # when rehearsal is not 'true'.
+    if: "${{ github.event.inputs.rehearsal != 'true' }}"
     env:
       TWINE_REPOSITORY: pypi
       TWINE_USERNAME: __token__
       TWINE_PASSWORD: ${{ secrets.PYPI }}
     needs:
-      # Workspace-integration validation moved to PyAutoPulse
+      # Workspace-integration validation moved to PyAutoHeart
       # (workspace-validation.yml). Build is a pure executor: it gates only on
       # the TestPyPI build + version. Release readiness is enforced upstream by
-      # the PyAutoAgent release agent via `pyauto-pulse readiness`.
+      # the release agent via `pyauto-heart readiness`.
       - release_test_pypi
       - version_number
     strategy:
@@ -298,33 +356,27 @@ jobs:
           pat: PAT_PYAUTOLABS
     steps:
     - uses: actions/checkout@v2
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       with:
           path: PyAutoBuild
     - name: Checkout
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         PAT="${{ secrets[matrix.project.pat] }}"
         git clone -b "${{ matrix.project.ref }}" "https://$PAT@github.com/${{ matrix.project.repository }}.git" "${{ matrix.project.path }}"
     - name: Set up Python 3.12
       uses: actions/setup-python@v2
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       with:
         python-version: "3.12"
     - name: Configure Git
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         git config --global user.email "richard@rghsoftware.co.uk"
         git config --global user.name "GitHub Actions bot"
     - name: Update version
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         pushd "${{ matrix.project.path }}"
         VERSION="${{ needs.version_number.outputs.version_number }}"
         sed -i "s/__version__ = [\.\"\'0-9]*/__version__ = \"$VERSION\"/g" */__init__.py
         git commit "-am 'Updated version in __init__ to $VERSION"
     - name: Tag
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         pushd "${{ matrix.project.path }}"
         VERSION="${{ needs.version_number.outputs.version_number }}"
@@ -334,7 +386,6 @@ jobs:
         git push
         git push --tags
     - name: Build
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         pushd "${{ matrix.project.path }}"
         export VERSION="${{ needs.version_number.outputs.version_number }}"
@@ -342,7 +393,6 @@ jobs:
         python3 -m pip install --upgrade build
         python3 -m build
     - name: Upload to PyPI
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         python3 -m pip install twine==6.0.1
         pushd "${{ matrix.project.path }}"
@@ -353,7 +403,7 @@ jobs:
     needs:
       - release
       - version_number
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    if: "${{ github.event.inputs.rehearsal != 'true' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -390,7 +440,7 @@ jobs:
       TWINE_PASSWORD: ${{ secrets.PYPI }}
       PAT: ${{ secrets.PAT_PYAUTOLABS }}
     needs:
-      # Validation moved to PyAutoPulse; this job generates notebooks inline and
+      # Validation moved to PyAutoHeart; this job generates notebooks inline and
       # commits them — it no longer gates on the (removed) run_scripts/run_notebooks.
       # Gate on `release`: workspace version pins must only be written after the
       # libraries actually publish to PyPI, else a workspace could pin a version
@@ -446,29 +496,23 @@ jobs:
             write_api_baseline: true
     steps:
     - uses: actions/checkout@v2
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       with:
           path: PyAutoBuild
     - name: Checkout
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         git clone -b main "https://$PAT@github.com/${{ matrix.workspace.repository }}.git" workspace
     - name: Configure Git
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         git config --global user.email "richard@rghsoftware.co.uk"
         git config --global user.name "GitHub Actions bot"
     - name: Set up Python ${{ matrix.python-version }}
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Jupyter dependency
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         pip install jupyter ipynb-py-convert PyYAML
     - name: Update version in README
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         VERSION="${{ needs.version_number.outputs.version_number }}"
         PACKAGE="${{ matrix.workspace.package }}"
@@ -476,7 +520,7 @@ jobs:
         sed -i "s/$PACKAGE v[0-9]\{4\}\.[0-9]*\.[0-9]*\.[0-9]*/$PACKAGE v$VERSION/g" README.rst README.md 2>/dev/null || true
         git add README.rst README.md 2>/dev/null || true
     - name: Update jupyter notebooks
-      if: "${{ github.event.inputs.skip_release != 'true' && matrix.workspace.generate_notebooks == true }}"
+      if: "${{ matrix.workspace.generate_notebooks == true }}"
       run: |
         export PYTHONPATH=$PYTHONPATH:$(pwd)/PyAutoBuild
         AUTOBUILD_PATH="$(pwd)/PyAutoBuild/autobuild"
@@ -485,7 +529,6 @@ jobs:
         git add *.ipynb
         git commit -m "Release ${{ needs.version_number.outputs.version_number }}: update notebooks and version" || true
     - name: Write workspace version
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         VERSION="${{ needs.version_number.outputs.version_number }}"
         pushd workspace
@@ -513,7 +556,7 @@ jobs:
         git add version.txt config/general.yaml 2>/dev/null || git add version.txt
         git commit -m "Release $VERSION: pin workspace version" || true
     - name: Regenerate API audit baseline
-      if: "${{ github.event.inputs.skip_release != 'true' && matrix.workspace.write_api_baseline == true }}"
+      if: "${{ matrix.workspace.write_api_baseline == true }}"
       env:
         NUMBA_CACHE_DIR: /tmp/numba_cache
         MPLCONFIGDIR: /tmp/matplotlib
@@ -548,7 +591,7 @@ jobs:
         git commit -m "Release $VERSION: regenerate API audit baseline" || true
         popd
     - name: Bump Colab URL tag refs
-      if: "${{ github.event.inputs.skip_release != 'true' && matrix.workspace.bump_colab_urls == true }}"
+      if: "${{ matrix.workspace.bump_colab_urls == true }}"
       run: |
         VERSION="${{ needs.version_number.outputs.version_number }}"
         pushd workspace
@@ -556,7 +599,6 @@ jobs:
         git add -A
         git commit -m "Release $VERSION: bump Colab URL tag refs" || true
     - name: Tag and push to main
-      if: "${{ github.event.inputs.skip_release != 'true' }}"
       run: |
         cd workspace
         VERSION="${{ needs.version_number.outputs.version_number }}"
@@ -572,7 +614,7 @@ jobs:
     needs:
       - release
       - version_number
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    if: "${{ github.event.inputs.rehearsal != 'true' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -602,122 +644,6 @@ jobs:
           git push origin main
         fi
 
-  run_notebooks_and_release_workspaces:
-    runs-on: ubuntu-latest
-    env:
-      TWINE_REPOSITORY: pypi
-      TWINE_USERNAME: __token__
-      TWINE_PASSWORD: ${{ secrets.PYPI }}
-    needs:
-      # Validation moved to PyAutoPulse; this job generates + runs notebooks
-      # inline (its own matrix). Gate on `release` (same reason as
-      # release_workspaces) so it only runs after PyPI publish succeeds.
-      - release
-      - release_test_pypi
-      - version_number
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ 3.12 ]
-        project:
-          - name: autofit
-            repository: PyAutoLabs/PyAutoFit
-            workspace_repository: PyAutoLabs/autofit_workspace
-            pat: PAT_PYAUTOLABS
-          - name: autogalaxy
-            repository: PyAutoLabs/PyAutoGalaxy
-            workspace_repository: PyAutoLabs/autogalaxy_workspace
-            pat: PAT_PYAUTOLABS
-          - name: autolens
-            repository: PyAutoLabs/PyAutoLens
-            workspace_repository: PyAutoLabs/autolens_workspace
-            pat: PAT_PYAUTOLABS
-    steps:
-      - name: Configure
-        id: configure
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          echo "::set-output name=repository::${{ matrix.project.repository }}"
-          echo "::set-output name=workspace_repository::${{ matrix.project.workspace_repository }}"
-          echo "::set-output name=project::${{ matrix.project.name }}"
-          echo "::set-output name=pat::${{ matrix.project.pat }}"
-      - uses: actions/checkout@v2
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        with:
-          path: PyAutoBuild
-      - name: Checkout project
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        uses: actions/checkout@v2
-        with:
-          repository: "${{ steps.configure.outputs.repository }}"
-          path: project
-      - name: Checkout workspace
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          PAT="${{ secrets[steps.configure.outputs.pat] }}"
-          git clone -b main "https://$PAT@github.com/${{ steps.configure.outputs.workspace_repository }}.git" workspace
-      - name: Set up Python ${{ matrix.python-version }}
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install optional requirements
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          echo "Installing optional requirements"
-          pip install matplotlib==3.6.0
-          pip install pynufft==2025.1.1
-          pip install numba
-      - name: Install project
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          python3 -m pip install \
-            --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple \
-            "${{ steps.configure.outputs.project }}==${{ needs.version_number.outputs.version_number }}"
-      - name: Install Jupyter dependency
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          python3 -m pip install jupyter ipynb-py-convert
-      - name: Generate Jupyter notebooks
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/PyAutoBuild
-          AUTOBUILD_PATH="$(pwd)/PyAutoBuild/autobuild"
-          pushd "workspace"
-          python3 "$AUTOBUILD_PATH/generate.py" ${{ matrix.project.name }}
-      - name: Run Jupyter notebooks
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          if [[ ${{ matrix.project.name }} == *_test ]]
-          then
-            export PYAUTO_TEST_MODE=0
-          else
-            export PYAUTO_TEST_MODE=1
-            export PYAUTO_SMALL_DATASETS=1
-            export PYAUTO_FAST_PLOTS=1
-          fi
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/PyAutoBuild
-          AUTOBUILD_PATH="$(pwd)/PyAutoBuild/autobuild"
-          pushd workspace
-          python3 "$AUTOBUILD_PATH/run.py" ${{ matrix.project.name }} "notebooks/${{ matrix.project.directory }}" --visualise
-      - name: Configure Git
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          git config --global user.email "richard@rghsoftware.co.uk"
-          git config --global user.name "GitHub Actions bot"
-      - name: Commit visualizations
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          cd workspace
-          git add .
-          git commit -m "Updated notebooks with visualizations" || true
-      - name: Push to main
-        if: "${{ github.event.inputs.update_notebook_visualisations == 'true' }}"
-        run: |
-          cd workspace
-          git push origin main
-
   # ---------------------------------------------------------------------------
   # Wiki-currency check (autolens_assistant).
   #
@@ -733,7 +659,7 @@ jobs:
     needs:
       - version_number
       - release_workspaces
-    if: "${{ github.event.inputs.skip_release != 'true' }}"
+    if: "${{ github.event.inputs.rehearsal != 'true' }}"
     uses: PyAutoLabs/autolens_assistant/.github/workflows/wiki-currency.yml@main
     with:
       stack_version: ${{ needs.version_number.outputs.version_number }}
@@ -768,3 +694,62 @@ jobs:
             --title "wiki drift detected at release $VERSION" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
+
+  # ---------------------------------------------------------------------------
+  # Rehearsal version emitter (rehearsal mode only).
+  #
+  # M1 of the Brain->Health->Heart release-validation redesign. In rehearsal mode
+  # the workflow builds + publishes every package to TestPyPI and STOPS; this job
+  # is the terminal step that records the resolved TestPyPI version so the caller
+  # (the Brain Release Agent / Heart) can `pip install` exactly those wheels.
+  #
+  # Gating on `release_test_pypi` means the artifact exists IFF all five wheels
+  # built, uploaded, and became installable on TestPyPI at this version — so the
+  # artifact's presence is itself the "rehearsal succeeded" signal.
+  # ---------------------------------------------------------------------------
+  rehearsal_version:
+    runs-on: ubuntu-latest
+    needs:
+      - version_number
+      - release_test_pypi
+    if: "${{ github.event.inputs.rehearsal == 'true' }}"
+    steps:
+      - name: Record resolved TestPyPI version
+        run: |
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          echo "Rehearsal published to TestPyPI at version: $VERSION"
+          mkdir -p rehearsal
+          printf '%s\n' "$VERSION" > rehearsal/testpypi_version.txt
+          cat > rehearsal/rehearsal.json <<JSON
+          {
+            "mode": "rehearsal",
+            "index": "testpypi",
+            "version": "$VERSION",
+            "packages": ["autoconf", "autoarray", "autofit", "autogalaxy", "autolens"],
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}",
+            "build_sha": "${{ github.sha }}"
+          }
+          JSON
+          cat rehearsal/rehearsal.json
+      - name: Write rehearsal summary
+        run: |
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          {
+            echo "## TestPyPI rehearsal complete"
+            echo ""
+            echo "Published \`autoconf / autoarray / autofit / autogalaxy / autolens == $VERSION\` to TestPyPI."
+            echo "Halted before PyPI upload, git tags, and workspace notebook commits."
+            echo ""
+            echo "Install exactly these wheels with:"
+            echo '```bash'
+            echo "pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple \\"
+            echo "  autoconf[optional]==$VERSION autoarray[optional]==$VERSION autofit[optional]==$VERSION \\"
+            echo "  autogalaxy[optional]==$VERSION autolens[optional]==$VERSION"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload rehearsal version artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: testpypi-rehearsal-version
+          path: rehearsal/
