@@ -209,8 +209,20 @@ def aggregate(results_dir: Path) -> dict:
 
 
 def _clean_result(r: dict) -> dict:
-    """Remove internal keys from a result dict."""
-    return {k: v for k, v in r.items() if not k.startswith("_")}
+    """Strip internal keys from a result dict, surfacing project/directory as public fields.
+
+    ``_project`` / ``_directory`` are stamped onto every result in ``aggregate()``
+    for cross-run grouping; keeping them (renamed, without the underscore) means
+    consumers of ``failures`` / ``skipped`` (e.g. PyAutoHeart's stage-report
+    reshaping) don't lose which workspace a failure came from, matching what
+    ``slowest`` already re-attaches by hand below.
+    """
+    out = {k: v for k, v in r.items() if not k.startswith("_")}
+    if "_project" in r:
+        out["project"] = r["_project"]
+    if "_directory" in r:
+        out["directory"] = r["_directory"]
+    return out
 
 
 def generate_markdown(report: dict) -> str:
