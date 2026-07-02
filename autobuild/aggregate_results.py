@@ -215,7 +215,7 @@ def _clean_result(r: dict) -> dict:
     for cross-run grouping; keeping them (renamed, without the underscore) means
     consumers of ``failures`` / ``skipped`` (e.g. PyAutoHeart's stage-report
     reshaping) don't lose which workspace a failure came from, matching what
-    ``slowest`` already re-attaches by hand below.
+    ``slowest`` (defined above in this file) already re-attaches by hand.
     """
     out = {k: v for k, v in r.items() if not k.startswith("_")}
     if "_project" in r:
