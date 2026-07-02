@@ -108,3 +108,33 @@ def test_per_project_duration_aggregated(tmp_path, monkeypatch):
 
     report = aggregate_results.aggregate(tmp_path)
     assert report["per_project_duration_seconds"] == {"autofit": 3.5}
+
+
+def test_failures_and_skipped_carry_project_and_directory(tmp_path, monkeypatch):
+    """_clean_result() must surface project/directory as public fields on
+    failures/skipped entries (not just internally for grouping) — downstream
+    consumers like PyAutoHeart's stage-report reshaping key off them.
+    Copilot review finding on PyAutoBuild#112: this behaviour shipped
+    untested."""
+    monkeypatch.setattr(aggregate_results, "fetch_merged_prs", lambda: [])
+    _write_run_json(
+        tmp_path,
+        "autolens",
+        [
+            {"file": "scripts/imaging/a.py", "status": "failed", "duration_seconds": 1.0,
+             "error_message": "boom"},
+            {"file": "scripts/imaging/b.py", "status": "skipped", "duration_seconds": 0.0,
+             "skip_reason": "no data"},
+        ],
+    )
+
+    report = aggregate_results.aggregate(tmp_path)
+
+    assert len(report["failures"]) == 1
+    assert report["failures"][0]["project"] == "autolens"
+    assert report["failures"][0]["directory"] == "scripts/imaging"
+    assert report["failures"][0]["file"] == "scripts/imaging/a.py"
+
+    assert len(report["skipped"]) == 1
+    assert report["skipped"][0]["project"] == "autolens"
+    assert report["skipped"][0]["directory"] == "scripts/imaging"
