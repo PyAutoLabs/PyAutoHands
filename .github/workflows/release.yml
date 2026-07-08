@@ -61,7 +61,12 @@ jobs:
         run: |
           export DATE_FORMATTED=`date +"%Y.%-m.%-d"`
           MINOR_VERSION="${{ github.event.inputs.minor_version }}"
-          VERSION="${DATE_FORMATTED}.${MINOR_VERSION:-${{ github.run_number }}}"
+          # Scheduled runs have no inputs, so the minor defaults. NEVER default
+          # to github.run_number: the 2026.6.25.641→2026.7.6.649 accidental
+          # series was scheduled runs publishing run-number versions. The date
+          # already makes a scheduled version unique; a same-day manual dispatch
+          # must choose its own minor_version (twine loudly rejects duplicates).
+          VERSION="${DATE_FORMATTED}.${MINOR_VERSION:-1}"
           RUN_ATTEMPT="${{ github.run_attempt }}"
           if [ "$RUN_ATTEMPT" -gt "1" ]
           then
@@ -77,7 +82,7 @@ jobs:
           if [ "${{ needs.resolve_mode.outputs.rehearsal }}" = "true" ]
           then
               DEV_SEGMENT=$(( ${{ github.run_number }} * 100 + RUN_ATTEMPT ))
-              VERSION="${DATE_FORMATTED}.${MINOR_VERSION:-${{ github.run_number }}}.dev${DEV_SEGMENT}"
+              VERSION="${DATE_FORMATTED}.${MINOR_VERSION:-1}.dev${DEV_SEGMENT}"
           fi
           export VERSION
           echo "::set-output name=version_number::${VERSION}"
@@ -401,12 +406,16 @@ jobs:
       run: |
         git config --global user.email "richard@rghsoftware.co.uk"
         git config --global user.name "GitHub Actions bot"
-    - name: Update version
+    - name: Stamp version in build tree
+      # Stamps the wheels only — the stamp is NOT committed back to the library
+      # repo. Daily "Update version to X" commits to every library main were the
+      # stale-CI/noise engine behind the June/July 2026 accidental-release
+      # cascade (PyAutoBuild#118 / #120); pip users get __version__ from the
+      # stamped wheel, source checkouts use PYAUTO_SKIP_WORKSPACE_VERSION_CHECK.
       run: |
         pushd "${{ matrix.project.path }}"
         VERSION="${{ needs.version_number.outputs.version_number }}"
         sed -i "s/__version__ = [\.\"\'0-9]*/__version__ = \"$VERSION\"/g" */__init__.py
-        git commit "-am 'Updated version in __init__ to $VERSION"
     - name: Tag
       run: |
         pushd "${{ matrix.project.path }}"
@@ -414,7 +423,6 @@ jobs:
         git tag -m "Release $VERSION" -a "$VERSION"
         PAT="${{ secrets[matrix.project.pat] }}"
         git remote set-url --push origin "https://$PAT@github.com/${{ matrix.project.repository }}.git"
-        git push
         git push --tags
     - name: Build
       run: |
@@ -544,13 +552,6 @@ jobs:
     - name: Install Jupyter dependency
       run: |
         pip install jupyter ipynb-py-convert PyYAML
-    - name: Update version in README
-      run: |
-        VERSION="${{ needs.version_number.outputs.version_number }}"
-        PACKAGE="${{ matrix.workspace.package }}"
-        pushd workspace
-        sed -i "s/$PACKAGE v[0-9]\{4\}\.[0-9]*\.[0-9]*\.[0-9]*/$PACKAGE v$VERSION/g" README.rst README.md 2>/dev/null || true
-        git add README.rst README.md 2>/dev/null || true
     - name: Update jupyter notebooks
       if: "${{ matrix.workspace.generate_notebooks == true }}"
       run: |
@@ -560,33 +561,10 @@ jobs:
         python3 "$AUTOBUILD_PATH/generate.py" ${{ matrix.workspace.name }}
         git add *.ipynb
         git commit -m "Release ${{ needs.version_number.outputs.version_number }}: update notebooks and version" || true
-    - name: Write workspace version
-      run: |
-        VERSION="${{ needs.version_number.outputs.version_number }}"
-        pushd workspace
-        echo "$VERSION" > version.txt
-        python3 - "$VERSION" <<'PY'
-        import re, sys, pathlib
-        version = sys.argv[1]
-        path = pathlib.Path("config/general.yaml")
-        if not path.exists():
-            sys.exit(0)
-        text = path.read_text()
-        line_re = re.compile(r"^(?P<indent>\s*)workspace_version:\s*.*$", re.MULTILINE)
-        if line_re.search(text):
-            text = line_re.sub(lambda m: f"{m.group('indent')}workspace_version: {version}", text)
-        else:
-            block_re = re.compile(r"^version:\s*\n", re.MULTILINE)
-            if block_re.search(text):
-                text = block_re.sub(f"version:\n  workspace_version: {version}\n", text, count=1)
-            else:
-                if not text.endswith("\n"):
-                    text += "\n"
-                text += f"version:\n  workspace_version: {version}\n"
-        path.write_text(text)
-        PY
-        git add version.txt config/general.yaml 2>/dev/null || git add version.txt
-        git commit -m "Release $VERSION: pin workspace version" || true
+    # The former "Update version in README" and "Write workspace version" steps
+    # are gone: workspace version pins are obsolete under the compatibility-floor
+    # check (PyAutoConf#118) — the workspace's `version.minimum_library_version`
+    # is bumped deliberately when scripts need new API, never by the release cron.
     - name: Regenerate API audit baseline
       if: "${{ matrix.workspace.write_api_baseline == true }}"
       env:
