@@ -30,6 +30,95 @@ def py_to_notebook(filename: Path):
     return new_filename
 
 
+# Projects whose generated notebooks receive the Colab setup cell. Must stay in
+# sync with the `_PROJECTS` registry in PyAutoConf's `autoconf/setup_colab.py` —
+# the injected cell calls `setup_colab.setup("<project>")` with this key.
+COLAB_PROJECTS = {
+    "autofit",
+    "autogalaxy",
+    "autolens",
+    "howtofit",
+    "howtogalaxy",
+    "howtolens",
+}
+
+COLAB_SETUP_MARKDOWN = """__Google Colab Setup__
+
+This cell sets up the environment when the notebook is run on Google Colab: it installs the
+required PyAuto packages, clones the workspace (configuration files and example datasets) and
+points the configuration at it. If you are running the notebook elsewhere (e.g. locally via
+your own installation) it does nothing, and you can run it safely.
+
+Colab tip: model-fits run much faster on a GPU — enable one via "Runtime" -> "Change runtime
+type" -> "Hardware accelerator" before running the notebook."""
+
+COLAB_SETUP_CODE = '''try:
+    import google.colab
+    import subprocess
+    import sys
+
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "autoconf", "--no-deps"]
+    )
+except ImportError:
+    pass
+
+from autoconf import setup_colab
+
+setup_colab.setup("{project}")'''
+
+
+def inject_colab_setup(notebook_path, project: str):
+    """
+    Prepend the standard Google Colab setup cell pair (markdown explainer +
+    code cell) to a generated notebook, so every published notebook can
+    bootstrap itself on Colab.
+
+    The cells are inserted after the notebook's leading markdown cell (the
+    script's intro docstring) so the title stays on top. Notebooks whose
+    source already calls ``setup_colab`` (hand-written setup sections) are
+    left untouched. Returns True if cells were injected.
+    """
+    import json
+
+    if project not in COLAB_PROJECTS:
+        raise ValueError(
+            f"inject_colab_setup: unknown project '{project}' — add it to "
+            f"COLAB_PROJECTS here and to the _PROJECTS registry in "
+            f"PyAutoConf's autoconf/setup_colab.py. Known: {sorted(COLAB_PROJECTS)}"
+        )
+
+    with open(notebook_path, "r") as f:
+        notebook = json.load(f)
+
+    cells = notebook["cells"]
+
+    for cell in cells:
+        if "setup_colab" in "".join(cell.get("source", [])):
+            return False
+
+    markdown_cell = {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": COLAB_SETUP_MARKDOWN.splitlines(keepends=True),
+    }
+    code_cell = {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": COLAB_SETUP_CODE.format(project=project).splitlines(keepends=True),
+    }
+
+    insert_at = 1 if cells and cells[0]["cell_type"] == "markdown" else 0
+    cells[insert_at:insert_at] = [markdown_cell, code_cell]
+
+    with open(notebook_path, "w") as f:
+        json.dump(notebook, f, indent=1)
+
+    return True
+
+
 def uncomment_jupyter_magic(f):
     with open(f, "r") as sources:
         lines = sources.readlines()
