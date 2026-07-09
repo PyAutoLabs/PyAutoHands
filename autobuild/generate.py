@@ -103,6 +103,7 @@ if __name__ == "__main__":
         start = time.time()
         try:
             notebook = build_util.py_to_notebook(start_here_file)
+            build_util.inject_colab_setup(notebook, project)
             os.system(f"git add -f {notebook}")
             if report is not None:
                 from result_collector import ScriptResult, Status
@@ -154,6 +155,7 @@ if __name__ == "__main__":
         else:
             try:
                 source_path = build_util.py_to_notebook(script_path)
+                build_util.inject_colab_setup(source_path, project)
                 copy_to_notebooks(source_path)
                 os.remove(source_path)
                 if report is not None:

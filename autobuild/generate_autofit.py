@@ -25,4 +25,5 @@ def generate_project_folders():
                 continue
 
             new_filename = build_util.py_to_notebook(python_file)
+            build_util.inject_colab_setup(new_filename, "autofit")
             os.system(f"git add -f {new_filename}")

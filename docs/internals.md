@@ -111,7 +111,7 @@ All scripts in `autobuild/` are run from within a checked-out workspace director
 - **`script_matrix.py <project1> [project2 ...]`** — Outputs a JSON matrix of `{name, directory}` pairs for GitHub Actions matrix strategy
 - **`tag_and_merge.sh --version <version>`** — Commits pending changes and tags library repos (PyAutoConf, PyAutoFit, PyAutoArray, PyAutoGalaxy, PyAutoLens) for release
 - **`url_check`** — URL hygiene moved to PyAutoHeart (Heart owns all health checking). `autobuild url_check` is now a thin shim to `pyauto-heart url_check`; the ecosystem-wide sweep runs from PyAutoHeart's central `url-check.yml` workflow (replacing the old per-repo `url_check.yml` workflows). The runnable scripts live at `PyAutoHeart/heart/checks/url_check*.{sh,py}`.
-- **`bump_colab_urls.sh <new-tag>`** — Rewrites every `colab.research.google.com/github/PyAutoLabs/<repo>/blob/<old-tag>/...` URL in cwd to use `<new-tag>`, where `<repo>` is one of `autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace`, `HowToGalaxy`, `HowToLens`. Called by the `release_workspaces` and `bump_library_colab_urls` jobs in `release.yml` so README/docs Colab links always pin to the just-released tag. Idempotent; skips URLs not in canonical PyAutoLabs/date-tagged form.
+- **`bump_colab_urls.sh <new-tag>`** — Rewrites every `colab.research.google.com/github/PyAutoLabs/<repo>/blob/<old-tag>/...` URL in cwd to use `<new-tag>`, where `<repo>` is one of `autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace`, `HowToFit`, `HowToGalaxy`, `HowToLens`. Called by the `release_workspaces` and `bump_library_colab_urls` jobs in `release.yml` so README/docs Colab links always pin to the just-released tag. Idempotent; skips URLs not in canonical PyAutoLabs/date-tagged form.
 
 ## Architecture
 
@@ -121,7 +121,42 @@ All scripts in `autobuild/` are run from within a checked-out workspace director
 1. `add_notebook_quotes.py` transforms triple-quoted docstrings into `# %%` cell markers in a temp `.py` file
 2. `ipynb-py-convert` converts the temp file to `.ipynb`
 3. `build_util.uncomment_jupyter_magic()` restores commented-out Jupyter magic commands (e.g. `# %matplotlib` → `%matplotlib`)
-4. Generated notebooks are `git add -f`ed directly
+4. `build_util.inject_colab_setup()` prepends the standard Google Colab setup cell pair (see "Google Colab architecture" below)
+5. Generated notebooks are `git add -f`ed directly
+
+### Google Colab architecture
+
+Every published notebook must be runnable on Google Colab with zero local
+installation. Four pieces, spread over three organs plus PyAutoConf:
+
+1. **Runtime bootstrap** — `PyAutoConf/autoconf/setup_colab.py`. A `_PROJECTS`
+   registry (`autofit`, `autogalaxy`, `autolens`, `howtofit`, `howtogalaxy`,
+   `howtolens`) maps each notebook repo to its package stack, workspace repo
+   and Colab directory. `setup_colab.setup("<project>")` is a no-op outside
+   Colab; on Colab it pip-installs the stack (`--no-deps` — Colab ships the
+   scientific base), shallow-clones the workspace at the tag matching the
+   installed release (default branch as fallback) and points autoconf's
+   config/output paths at it.
+2. **Generation-time injection** — `build_util.inject_colab_setup(notebook,
+   project)`, called by `generate.py` / `generate_autofit.py` after every
+   py→ipynb conversion. It prepends a markdown explainer + code cell calling
+   `setup_colab.setup("<project>")`, immediately after the notebook's title
+   cell. Notebooks whose script already hand-writes a `setup_colab` call are
+   left untouched. `build_util.COLAB_PROJECTS` must stay in sync with the
+   PyAutoConf registry; an unknown project fails generation loudly. Coverage
+   is therefore guaranteed by construction — every generated notebook is
+   Colab-ready, with no per-script maintenance.
+3. **Release maintenance** — `bump_colab_urls.sh` (above) re-pins every
+   canonical Colab URL in READMEs/docs/notebooks to the just-released tag,
+   from the `release_workspaces` and `bump_library_colab_urls` jobs. Only
+   date-tagged `PyAutoLabs/<repo>` URLs are bumped — unpinned or wrong-owner
+   URLs are invisible to it, which is why Heart forbids them (next item).
+4. **Monitoring** — PyAutoHeart's central `url-check.yml` (weekly): the
+   offline guard (`heart/checks/url_check.sh`) forbids Colab URL forms that
+   rot (Binder, `Jammy2211` owner, `/blob/release/`, unpinned `/blob/main/`,
+   chapter paths pointing at workspace repos instead of the HowTo repos); the
+   live audit (`url_check_live.py`) converts Colab URLs to raw-GitHub form and
+   404-checks that each linked notebook actually exists at its pinned tag.
 
 ### Script Execution Order
 
