@@ -14,7 +14,37 @@ import re
 import subprocess
 import sys
 from argparse import ArgumentParser
+from datetime import date
 from pathlib import Path
+
+
+# Time-boxed announcement banner prepended to generated release notes.
+# The banner is included only while today <= EXPIRY, then drops off
+# automatically — no follow-up edit needed. Set EXPIRY to None (or move the
+# date into the past) to disable. `repos` limits which repos show it; None
+# means all repos.
+ANNOUNCEMENT = {
+    "expiry": date(2026, 7, 24),
+    "repos": {"PyAutoLabs/PyAutoLens"},
+    "markdown": (
+        "> 📣 **Major Milestones Announcement** — PyAutoLens now ships an AI assistant "
+        "(conversational + agentic), full JAX GPU support, and agentic-AI development via "
+        "PyAutoScientist. "
+        "[Read the announcement →](https://github.com/PyAutoLabs/PyAutoLens/discussions/603)"
+    ),
+}
+
+
+def announcement_banner(repo, today=None):
+    """Return the announcement markdown for `repo`, or "" if none applies today."""
+    today = today or date.today()
+    expiry = ANNOUNCEMENT.get("expiry")
+    if not expiry or today > expiry:
+        return ""
+    repos = ANNOUNCEMENT.get("repos")
+    if repos and repo not in repos:
+        return ""
+    return ANNOUNCEMENT.get("markdown", "")
 
 
 # Dependency chain: downstream repos include upstream changes
@@ -166,6 +196,12 @@ def generate_notes(repo, version, prs, upstream_prs_by_repo):
     """Generate markdown release notes."""
     name = REPO_NAMES.get(repo, repo.split("/")[-1])
     lines = [f"# {name} v{version}", ""]
+
+    # Time-boxed announcement banner (self-expiring; see ANNOUNCEMENT above).
+    banner = announcement_banner(repo)
+    if banner:
+        lines.append(banner)
+        lines.append("")
 
     # Classify own PRs
     categories = {"breaking": [], "feature": [], "fix": [], "internal": []}
