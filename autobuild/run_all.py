@@ -32,18 +32,19 @@ AUTOBUILD_DIR = Path(__file__).parent
 PYAUTOBASE = AUTOBUILD_DIR.parent.parent  # PyAutoLabs/
 RESULTS_BASE = AUTOBUILD_DIR.parent / "test_results"
 
-WORKSPACES = {
-    "autofit": ("autofit_workspace", "autofit"),
-    "autogalaxy": ("autogalaxy_workspace", "autogalaxy"),
-    "autolens": ("autolens_workspace", "autolens"),
-    "autofit_test": ("autofit_workspace_test", "autofit_test"),
-    "autogalaxy_test": ("autogalaxy_workspace_test", "autogalaxy_test"),
-    "autolens_test": ("autolens_workspace_test", "autolens_test"),
-    "howtofit": ("HowToFit", "howtofit"),
-    "howtogalaxy": ("HowToGalaxy", "howtogalaxy"),
-    "howtolens": ("HowToLens", "howtolens"),
-    "euclid": ("euclid_strong_lens_modeling_pipeline", "euclid"),
-}
+def _load_workspaces() -> dict:
+    """The run matrix, from autobuild/config/workspaces.yaml (Build policy).
+    Strict: the file is in-repo and load-bearing — fail loudly if absent."""
+    import yaml
+
+    cfg = yaml.safe_load((AUTOBUILD_DIR / "config" / "workspaces.yaml").read_text())
+    return {
+        key: (spec["repo"], spec["report"])
+        for key, spec in cfg["run_all"].items()
+    }
+
+
+WORKSPACES = _load_workspaces()
 
 DEFAULT_TIMEOUT_SECS = 300
 

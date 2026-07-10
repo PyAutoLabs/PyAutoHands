@@ -243,15 +243,12 @@ def format_report_section(
 if __name__ == "__main__":
     import sys
     pyautobase = Path(__file__).resolve().parent.parent.parent
-    default_workspaces = [
-        pyautobase / name for name in (
-            "autofit_workspace",
-            "autogalaxy_workspace",
-            "autolens_workspace",
-            "autofit_workspace_test",
-            "autolens_workspace_test",
-        )
-    ]
+    import yaml
+
+    cfg = yaml.safe_load(
+        (Path(__file__).resolve().parent / "config" / "workspaces.yaml").read_text()
+    )
+    default_workspaces = [pyautobase / name for name in cfg["slow_skip_default"]]
     targets = [Path(p) for p in sys.argv[1:]] or default_workspaces
     slow = find_slow_skips(targets)
     needs_fix = find_needs_fix_skips(targets)
