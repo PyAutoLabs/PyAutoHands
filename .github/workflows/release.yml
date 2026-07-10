@@ -345,7 +345,8 @@ jobs:
     # Rehearsal mode STOPS before PyPI: skipping this job (the git tag/push +
     # PyPI upload) cascade-skips every job that needs it — publish_release_notes,
     # release_workspaces, bump_library_colab_urls, and (via release_workspaces)
-    # wiki_currency_check / wiki_drift_issue. The full-release path is unchanged
+    # both wiki_currency_check / wiki_drift_issue pairs (autolens + autofit). The
+    # full-release path is unchanged
     # when rehearsal is not 'true'.
     if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
     env:
@@ -567,6 +568,12 @@ jobs:
             generate_notebooks: false
             bump_colab_urls: false
             write_api_baseline: true
+          - repository: PyAutoLabs/autofit_assistant
+            name: autofit
+            package: PyAutoFit
+            generate_notebooks: false
+            bump_colab_urls: false
+            write_api_baseline: true
     steps:
     - uses: actions/checkout@v2
       with:
@@ -736,6 +743,51 @@ jobs:
           fi
           gh issue create \
             --repo PyAutoLabs/autolens_assistant \
+            --title "wiki drift detected at release $VERSION" \
+            --body-file "$BODY" \
+          || echo "::warning::could not open wiki-drift issue (non-fatal)"
+
+  # ---------------------------------------------------------------------------
+  # Wiki-currency check (autofit_assistant) — same contract as the autolens pair
+  # above: PyAutoBuild orchestrates and reports; the assistant's reusable workflow
+  # is the single home of the rules. Its drift artifact is named
+  # wiki-drift-report-autofit because upload-artifact@v4 names are unique per run
+  # and the autolens check in this same run already claims wiki-drift-report.
+  # ---------------------------------------------------------------------------
+  wiki_currency_check_autofit:
+    needs:
+      - resolve_mode
+      - version_number
+      - release_workspaces
+    if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
+    uses: PyAutoLabs/autofit_assistant/.github/workflows/wiki-currency.yml@main
+    with:
+      stack_version: ${{ needs.version_number.outputs.version_number }}
+      assistant_ref: main
+
+  wiki_drift_issue_autofit:
+    needs:
+      - version_number
+      - wiki_currency_check_autofit
+    if: "${{ always() && needs.wiki_currency_check_autofit.result == 'failure' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download drift report
+        uses: actions/download-artifact@v4
+        with:
+          name: wiki-drift-report-autofit
+          path: drift
+      - name: Open wiki-drift issue against autofit_assistant
+        env:
+          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+        run: |
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          BODY=drift/drift-report.md
+          if [ ! -f "$BODY" ]; then
+            printf '# Wiki-currency drift at release %s\n\nThe check failed but no drift-report artifact was found; see the run logs.\n' "$VERSION" > "$BODY"
+          fi
+          gh issue create \
+            --repo PyAutoLabs/autofit_assistant \
             --title "wiki drift detected at release $VERSION" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
