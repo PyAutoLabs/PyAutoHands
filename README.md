@@ -5,8 +5,8 @@ notebooks, and releases the PyAuto libraries (PyAutoConf, PyAutoFit,
 PyAutoArray, PyAutoGalaxy, PyAutoLens) and their workspaces to PyPI. It
 runs no readiness checks and makes no gate decisions — those belong to
 [PyAutoHeart](https://github.com/PyAutoLabs/PyAutoHeart), whose verdict the
-[PyAutoBrain](https://github.com/PyAutoLabs/PyAutoBrain) release agent
-reads before dispatching a release here.
+[PyAutoBrain](https://github.com/PyAutoLabs/PyAutoBrain) release agent, under
+the human lead's direction, reads before dispatching a release here.
 
 Every operation is reachable through one dispatcher:
 
