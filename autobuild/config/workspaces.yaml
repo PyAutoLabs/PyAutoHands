@@ -1,0 +1,26 @@
+# The workspace run matrix — Build POLICY (which repos the validation
+# pipeline runs, under which short key, and which are slow-skip audited).
+# Repo IDENTITY must match PyAutoMind/repos.yaml (the body map);
+# repos_sync.py --check flags drift. An adopter replaces this file.
+#
+# run_all: short key -> {repo, report}: `autobuild run_all <key>` runs
+# <repo>'s scripts and writes reports under <report>.
+run_all:
+  autofit: {repo: autofit_workspace, report: autofit}
+  autogalaxy: {repo: autogalaxy_workspace, report: autogalaxy}
+  autolens: {repo: autolens_workspace, report: autolens}
+  autofit_test: {repo: autofit_workspace_test, report: autofit_test}
+  autogalaxy_test: {repo: autogalaxy_workspace_test, report: autogalaxy_test}
+  autolens_test: {repo: autolens_workspace_test, report: autolens_test}
+  howtofit: {repo: HowToFit, report: howtofit}
+  howtogalaxy: {repo: HowToGalaxy, report: howtogalaxy}
+  howtolens: {repo: HowToLens, report: howtolens}
+  euclid: {repo: euclid_strong_lens_modeling_pipeline, report: euclid}
+
+# slow_skip_check: the default audit targets when none are given on the CLI.
+slow_skip_default:
+  - autofit_workspace
+  - autogalaxy_workspace
+  - autolens_workspace
+  - autofit_workspace_test
+  - autolens_workspace_test
