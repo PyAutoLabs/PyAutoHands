@@ -2,3 +2,5 @@ __pycache__/
 .env
 .secrets
 test_results/
+to_do_list
+to_do_list/
