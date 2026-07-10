@@ -23,4 +23,5 @@ releases to PyPI and tags the workspaces — nightly, when there is new
 activity to ship.
 
 Boundary and agent guidance: [AGENTS.md](AGENTS.md). The organism:
-[PyAutoBrain/ORGANISM.md](https://github.com/PyAutoLabs/PyAutoBrain/blob/main/ORGANISM.md).
+[PyAutoBrain/ORGANISM.md](https://github.com/PyAutoLabs/PyAutoBrain/blob/main/ORGANISM.md),
+documented in full at <https://pyautoscientist.readthedocs.io>.
