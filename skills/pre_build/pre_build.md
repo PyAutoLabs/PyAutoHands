@@ -27,6 +27,7 @@ Check that all required repositories exist under the workspace root:
 - `autofit_workspace_developer`
 - `autolens_workspace_developer`
 - `autolens_assistant`
+- `admin_jammy`
 - `PyAutoBuild`
 
 For each, verify:
@@ -35,7 +36,11 @@ git -C <repo> branch --show-current
 git -C <repo> status --short
 ```
 
-All workspaces must be on `main`. If any are on a feature branch or have uncommitted changes, **stop and warn the user** — the pre-build expects clean `main` branches.
+Every repository that pre-build mutates must be on clean `main`. `admin_jammy`
+is a read-only dependency for `software/ensure_workspace_labels.sh`; verify that
+script exists, but do not require the support repo to be clean. If a mutated
+repo is on a feature branch or has uncommitted changes, **stop and warn the
+user**.
 
 Then ask the user for the minor version number (default: 1).
 
