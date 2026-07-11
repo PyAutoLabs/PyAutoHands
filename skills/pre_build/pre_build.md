@@ -74,8 +74,8 @@ Pre-Build Complete
 Minor version: <N>
 Workflow dispatched: <URL>
 
-The release workflow is now running. Use /review_release tomorrow
-to assess the results.
+The release workflow is now running. Use the `review-release` skill
+(`/review_release` in Claude) tomorrow to assess the results.
 ```
 
 ## Notes
