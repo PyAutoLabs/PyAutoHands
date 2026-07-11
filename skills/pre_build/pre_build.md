@@ -24,6 +24,9 @@ Check that all required repositories exist under the workspace root:
 - `HowToGalaxy`
 - `HowToLens`
 - `HowToFit`
+- `autofit_workspace_developer`
+- `autolens_workspace_developer`
+- `autolens_assistant`
 - `PyAutoBuild`
 
 For each, verify:
