@@ -30,7 +30,7 @@ VERSION="$(date +%Y.%-m.%-d).$MINOR_VERSION"
 if command -v gh >/dev/null 2>&1; then
     echo ""
     echo "=== Ensuring pending-release labels ==="
-    bash "$PYAUTOBASE/admin_jammy/software/ensure_workspace_labels.sh"
+    bash "$PYAUTOBASE/PyAutoBrain/bin/ensure_workspace_labels.sh"
 fi
 
 run_workspace() {

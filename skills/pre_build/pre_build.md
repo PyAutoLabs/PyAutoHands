@@ -36,8 +36,8 @@ git -C <repo> branch --show-current
 git -C <repo> status --short
 ```
 
-Every repository that pre-build mutates must be on clean `main`. `admin_jammy`
-is a read-only dependency for `software/ensure_workspace_labels.sh`; verify that
+Every repository that pre-build mutates must be on clean `main`. `PyAutoBrain`
+is a read-only dependency for `bin/ensure_workspace_labels.sh`; verify that
 script exists, but do not require the support repo to be clean. If a mutated
 repo is on a feature branch or has uncommitted changes, **stop and warn the
 user**.
