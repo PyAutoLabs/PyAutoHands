@@ -60,8 +60,19 @@ run_workspace() {
         PYTHONPATH="$PYTHONPATH_EXTRA" python "$AUTOBUILD/generate.py" "$project"
     fi
 
+    echo "  Checking dataset allowlist (PyAutoBuild#126 leg 4)..."
+    python3 "$AUTOBUILD/check_dataset_allowlist.py" || {
+        echo "  ABORT: tracked dataset/ contains non-allowlisted simulated data." >&2
+        exit 1
+    }
+
     echo "  Staging safe directories..."
-    [ -d dataset ] && git add -f dataset/
+    # Honor .gitignore for dataset/ — each workspace ignores dataset/** except a
+    # small allowlist of REAL observational data (un-ignored via ! lines). A prior
+    # `git add -f` here force-committed simulated datasets that are meant to be
+    # generated at runtime via al.util.dataset.should_simulate(); only allowlisted
+    # real data may be staged. See PyAutoBuild#126.
+    [ -d dataset ] && git add dataset/
     for d in config notebooks scripts; do
         [ -d "$d" ] && git add "$d/"
     done
