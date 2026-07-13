@@ -61,7 +61,12 @@ run_workspace() {
     fi
 
     echo "  Staging safe directories..."
-    [ -d dataset ] && git add -f dataset/
+    # Honor .gitignore for dataset/ — each workspace ignores dataset/** except a
+    # small allowlist of REAL observational data (un-ignored via ! lines). A prior
+    # `git add -f` here force-committed simulated datasets that are meant to be
+    # generated at runtime via al.util.dataset.should_simulate(); only allowlisted
+    # real data may be staged. See PyAutoBuild#126.
+    [ -d dataset ] && git add dataset/
     for d in config notebooks scripts; do
         [ -d "$d" ] && git add "$d/"
     done
