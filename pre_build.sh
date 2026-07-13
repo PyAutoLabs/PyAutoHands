@@ -60,6 +60,12 @@ run_workspace() {
         PYTHONPATH="$PYTHONPATH_EXTRA" python "$AUTOBUILD/generate.py" "$project"
     fi
 
+    echo "  Checking dataset allowlist (PyAutoBuild#126 leg 4)..."
+    python3 "$AUTOBUILD/check_dataset_allowlist.py" || {
+        echo "  ABORT: tracked dataset/ contains non-allowlisted simulated data." >&2
+        exit 1
+    }
+
     echo "  Staging safe directories..."
     # Honor .gitignore for dataset/ — each workspace ignores dataset/** except a
     # small allowlist of REAL observational data (un-ignored via ! lines). A prior
