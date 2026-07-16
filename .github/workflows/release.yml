@@ -602,8 +602,15 @@ jobs:
         AUTOBUILD_PATH="$(pwd)/PyAutoBuild/autobuild"
         pushd workspace
         python3 "$AUTOBUILD_PATH/generate.py" ${{ matrix.workspace.name }}
-        git add *.ipynb
-        git commit -m "Release ${{ needs.version_number.outputs.version_number }}: update notebooks and version" || true
+        # Stage exactly what generate.py produces: the notebooks tree, the
+        # workspace catalogue written alongside them, and the root start_here
+        # notebook where one exists. The former bare `git add *.ipynb` changed
+        # meaning with bash glob matching, and the catalogue files were swept
+        # into the later Colab commit by `git add -A` under a misleading
+        # message (#156 step 2).
+        git add -- notebooks/ llms-full.txt workspace_index.json
+        if compgen -G "*.ipynb" > /dev/null; then git add -- *.ipynb; fi
+        git commit -m "Release ${{ needs.version_number.outputs.version_number }}: update notebooks and workspace catalogue" || true
     # The former "Update version in README" and "Write workspace version" steps
     # are gone: workspace version pins are obsolete under the compatibility-floor
     # check (PyAutoConf#118) — the workspace's `version.minimum_library_version`
@@ -649,7 +656,11 @@ jobs:
         VERSION="${{ needs.version_number.outputs.version_number }}"
         pushd workspace
         bash "$GITHUB_WORKSPACE/PyAutoBuild/autobuild/bump_colab_urls.sh" "$VERSION"
-        git add -A
+        # Stage tracked-file modifications only — exactly what the URL bumper
+        # can produce (it rewrites existing *.rst/*.md/*.ipynb/*.py in place).
+        # The former `git add -A` also swept unrelated leftovers into this
+        # commit under a misleading message (#156 step 2).
+        git add -u
         git commit -m "Release $VERSION: bump Colab URL tag refs" || true
     - name: Tag and push to main
       run: |
@@ -693,7 +704,9 @@ jobs:
         pushd library
         bash "$GITHUB_WORKSPACE/PyAutoBuild/autobuild/bump_colab_urls.sh" "$VERSION"
         if ! git diff --quiet; then
-          git add -A
+          # Tracked modifications only — the bumper rewrites existing files in
+          # place; `git add -A` would sweep any unrelated leftovers (#156 step 2).
+          git add -u
           git commit -m "Release $VERSION: bump Colab URL tag refs"
           git push origin main
         fi
