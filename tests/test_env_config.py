@@ -47,3 +47,39 @@ def test_args_for_script_quoted_arg_with_space():
         FAKE_FILE,
         {"args_default": '--name="a b" --flag'},
     ) == ["--name=a b", "--flag"]
+
+
+# --- scrubbed baseline (docs/env_profile_redesign.md §5, #161 step 3) ---------
+import os  # noqa: E402
+from env_config import build_env_for_script  # noqa: E402
+
+
+def test_ambient_pyauto_var_the_profile_is_silent_on_is_scrubbed(monkeypatch):
+    # The audit's real leak: an ambient PYAUTO_ var the profile never mentions
+    # must NOT reach the script (e.g. a developer's shell rc).
+    monkeypatch.setenv("PYAUTO_SKIP_API_GATE", "1")
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_TEST_MODE": "2"}})
+    assert "PYAUTO_SKIP_API_GATE" not in env
+    assert env["PYAUTO_TEST_MODE"] == "2"
+
+
+def test_profile_value_wins_over_ambient_for_a_managed_pyauto_key(monkeypatch):
+    monkeypatch.setenv("PYAUTO_DISABLE_JAX", "1")
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_DISABLE_JAX": "0"}})
+    assert env["PYAUTO_DISABLE_JAX"] == "0"
+
+
+def test_non_pyauto_infra_vars_pass_through(monkeypatch):
+    # Only PYAUTO_* is scrubbed — infra/reproducibility vars are untouched.
+    monkeypatch.setenv("NUMBA_CACHE_DIR", "/tmp/numba")
+    monkeypatch.setenv("PYTHONPATH", "/libs")
+    monkeypatch.setenv("JAX_ENABLE_X64", "True")
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_TEST_MODE": "2"}})
+    assert env["NUMBA_CACHE_DIR"] == "/tmp/numba"
+    assert env["PYTHONPATH"] == "/libs"
+    assert env["JAX_ENABLE_X64"] == "True"
+
+
+def test_none_config_inherits_unchanged(monkeypatch):
+    monkeypatch.setenv("PYAUTO_SKIP_API_GATE", "1")
+    assert build_env_for_script(Path("scripts/x.py"), None) is None
