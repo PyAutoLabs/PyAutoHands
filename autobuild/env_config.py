@@ -12,6 +12,22 @@ from typing import Dict, List, Optional
 import yaml
 
 
+# The workspace-behavioural env family (PYAUTO_*) is owned by the profiles,
+# never by the runner's shell: a PYAUTO_ var's value for a script run must be a
+# function of (profile, script), and absence must mean "the library default",
+# not "whatever leaked from a developer's rc or an unrelated CI step". So the
+# whole prefix is scrubbed from the base env before the profile is layered on
+# (docs/env_profile_redesign.md §5, #161 step 3).
+#
+# Only PYAUTO_* is scrubbed — NOT infrastructure/reproducibility vars (PATH,
+# PYTHONPATH, JAX_ENABLE_X64, NUMBA_CACHE_DIR, MPLCONFIGDIR, …). Those are set
+# identically by the profiles and the CI step env, so ambient-vs-profile never
+# causes a reproducibility bug for them, and a deny-by-default allowlist over
+# them would risk breaking the least-exercised, highest-consequence release
+# path on a single missed key. The audit's actual leak is the PYAUTO_ family.
+MANAGED_ENV_PREFIXES = ("PYAUTO_",)
+
+
 def load_env_config(config_path: Path) -> dict:
     """Load and return the parsed env_vars.yaml."""
     with open(config_path) as f:
@@ -35,11 +51,19 @@ def build_env_for_script(
     -------
     A dict suitable for subprocess.run(env=...), or None when env_config
     is None (inherit parent environment unchanged).
+
+    The ambient environment is inherited EXCEPT for the managed PYAUTO_* family
+    (see ``MANAGED_ENV_PREFIXES``), which is stripped before defaults/overrides
+    are applied — so an ambient ``PYAUTO_DISABLE_JAX`` / ``PYAUTO_SKIP_*`` the
+    profile is silent on cannot leak into the script run.
     """
     if env_config is None:
         return None
 
     env = os.environ.copy()
+    for key in list(env):
+        if key.startswith(MANAGED_ENV_PREFIXES):
+            del env[key]
 
     for key, value in env_config.get("defaults", {}).items():
         env[key] = str(value)
