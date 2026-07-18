@@ -1,14 +1,14 @@
-# PyAutoBuild — internals
+# PyAutoHands — internals
 
 Operational detail for working **inside** this repo: the `autobuild` CLI, the
 pre-build steps, workspace folder structure, config files, and `release.yml`.
-What PyAutoBuild *is* and the Brain/Heart/Build boundary live in
+What PyAutoHands *is* and the Brain/Heart/Build boundary live in
 [`AGENTS.md`](../AGENTS.md) — read that first; read this only when changing the
 build pipeline itself.
 
 ## What the pipeline automates
 
-PyAutoBuild runs **no** release-readiness checks of its own (that is
+PyAutoHands runs **no** release-readiness checks of its own (that is
 PyAutoHeart's job). It automates:
 1. Building and releasing packages to TestPyPI, then PyPI
 2. Running workspace Python scripts (integration tests)
@@ -56,7 +56,7 @@ This script does the following for each repo:
 
 Before the per-repo loop, `pre_build.sh` invokes `PyAutoBrain/bin/ensure_workspace_labels.sh` to assert the canonical `pending-release` label across every release-window repo (idempotent — a no-op when nothing has drifted).
 
-Release-readiness checking is **not** Build's job — PyAutoBuild is a pure executor. The version-skew check that used to live here (`verify_workspace_versions.sh`, a fail-fast guard against a workspace pinned ahead of its installed library, or a `config/general.yaml` ↔ `version.txt` disagreement) now lives in **PyAutoHeart** as the `version_skew` check feeding `pyauto-heart readiness`. The PyAutoBrain release agent gates on `pyauto-heart readiness` before invoking `pre_build`; a human running `pre_build` directly is trusted to have checked readiness first. See PyAutoHeart for the resolution precedence (`config/general.yaml:version.workspace_version`, then `version.txt`) — mirroring `autoconf.workspace.check_version`. Since PyAutoBuild#120, releases no longer write workspace version pins or commit `__init__.py` stamps back to library mains (wheels are stamped at build time; tags are the release anchor): the runtime check enforces a compatibility **floor** (`version.minimum_library_version`, bumped deliberately — PyAutoConf#118), and Heart's `version_skew` check needs a follow-up rework to compare floors against release tags rather than stamp-vs-pin.
+Release-readiness checking is **not** Build's job — PyAutoHands is a pure executor. The version-skew check that used to live here (`verify_workspace_versions.sh`, a fail-fast guard against a workspace pinned ahead of its installed library, or a `config/general.yaml` ↔ `version.txt` disagreement) now lives in **PyAutoHeart** as the `version_skew` check feeding `pyauto-heart readiness`. The PyAutoBrain release agent gates on `pyauto-heart readiness` before invoking `pre_build`; a human running `pre_build` directly is trusted to have checked readiness first. See PyAutoHeart for the resolution precedence (`config/general.yaml:version.workspace_version`, then `version.txt`) — mirroring `autoconf.workspace.check_version`. Since PyAutoBuild#120, releases no longer write workspace version pins or commit `__init__.py` stamps back to library mains (wheels are stamped at build time; tags are the release anchor): the runtime check enforces a compatibility **floor** (`version.minimum_library_version`, bumped deliberately — PyAutoConf#118), and Heart's `version_skew` check needs a follow-up rework to compare floors against release tags rather than stamp-vs-pin.
 
 `generate.py` is run from the workspace root with `PYTHONPATH` pointing at `PyAutoBuild/autobuild/`. Only specific safe directories are committed — never `output/`, `output_model/`, or run-generated artefacts. After all workspaces are done, PyAutoBuild itself is committed and pushed, then `gh workflow run release.yml` dispatches the GitHub Actions release.
 

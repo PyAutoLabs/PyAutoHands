@@ -2,9 +2,9 @@
 
 Prepare all workspace repositories for a release build, then dispatch the GitHub Actions release workflow. This skill is a thin wrapper around `PyAutoBuild/bin/autobuild pre_build`, mirroring the pattern used by `/verify_install`.
 
-A **PyAutoBuild (Hands)** skill — Build is the release/packaging executor, and
+A **PyAutoHands** skill — Build is the release/packaging executor, and
 this is a **release-execution** entry point (format → generate → push →
-dispatch). It is the one skill class PyAutoBuild's `skills/` root hosts; Build
+dispatch). It is the one skill class PyAutoHands's `skills/` root hosts; Build
 owns **no** dev-workflow skills (`ship_*` live in PyAutoBrain and only *call*
 this release step). Readiness is gated upstream by Heart before a release is
 dispatched.
