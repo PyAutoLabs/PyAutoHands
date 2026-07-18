@@ -24,7 +24,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 WORKSPACE_PATH = Path.cwd()
-CONFIG_PATH = WORKSPACE_PATH.parent / "PyAutoBuild/autobuild/config"
+CONFIG_PATH = WORKSPACE_PATH.parent / "PyAutoHands/autobuild/config"
 WORKSPACE_BUILD_CONFIG = WORKSPACE_PATH / "config" / "build"
 
 project = args.project
