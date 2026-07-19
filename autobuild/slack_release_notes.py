@@ -23,7 +23,7 @@ import subprocess
 from argparse import ArgumentParser
 
 
-PACKAGES = "autoconf / autofit / autoarray / autogalaxy / autolens"
+PACKAGES = "autonerves / autofit / autoarray / autogalaxy / autolens"
 
 # Repos that get a GitHub Release — mirrors the publish_release_notes matrix in
 # release.yml. Order sets the "Releases:" link order (upstream → downstream).

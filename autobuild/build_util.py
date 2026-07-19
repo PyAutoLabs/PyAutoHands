@@ -31,7 +31,7 @@ def py_to_notebook(filename: Path):
 
 
 # Projects whose generated notebooks receive the Colab setup cell. Must stay in
-# sync with the `_PROJECTS` registry in PyAutoNerves's `autoconf/setup_colab.py` —
+# sync with the `_PROJECTS` registry in PyAutoNerves's `autonerves/setup_colab.py` —
 # the injected cell calls `setup_colab.setup("<project>")` with this key.
 COLAB_PROJECTS = {
     "autofit",
@@ -58,12 +58,12 @@ COLAB_SETUP_CODE = '''try:
     import sys
 
     subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "autoconf", "--no-deps"]
+        [sys.executable, "-m", "pip", "install", "autonerves", "--no-deps"]
     )
 except ImportError:
     pass
 
-from autoconf import setup_colab
+from autonerves import setup_colab
 
 setup_colab.setup("{project}")'''
 
@@ -85,7 +85,7 @@ def inject_colab_setup(notebook_path, project: str):
         raise ValueError(
             f"inject_colab_setup: unknown project '{project}' — add it to "
             f"COLAB_PROJECTS here and to the _PROJECTS registry in "
-            f"PyAutoNerves's autoconf/setup_colab.py. Known: {sorted(COLAB_PROJECTS)}"
+            f"PyAutoNerves's autonerves/setup_colab.py. Known: {sorted(COLAB_PROJECTS)}"
         )
 
     with open(notebook_path, "r") as f:
@@ -125,8 +125,8 @@ def uncomment_jupyter_magic(f):
     with open(f, "w") as sources:
         for line in lines:
             line = re.sub(
-                r"# from autoconf import setup_notebook; setup_notebook\(\)",
-                "from autoconf import setup_notebook; setup_notebook()",
+                r"# from autonerves import setup_notebook; setup_notebook\(\)",
+                "from autonerves import setup_notebook; setup_notebook()",
                 line,
             )
             sources.write(line)
