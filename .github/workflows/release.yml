@@ -179,7 +179,7 @@ jobs:
             popd
         - name: Wait for packages and install
           run: |
-            export PACKAGES=("autoconf" "autoarray" "autofit" "autogalaxy" "autolens")
+            export PACKAGES=("autonerves" "autoarray" "autofit" "autogalaxy" "autolens")
             export VERSION="${{ needs.version_number.outputs.version_number }}"
 
             # Wait for each package to become available on test PyPI.
@@ -208,7 +208,7 @@ jobs:
             echo "All packages available. Installing with pinned versions..."
             # Install all 5 PyAuto packages in a single command with all versions
             # pinned. This prevents pip from substituting unrelated packages with
-            # the same names from production PyPI (e.g. autoconf 0.7.7, autofit 0.73.1)
+            # the same names from production PyPI (e.g. autonerves 0.7.7, autofit 0.73.1)
             # during dependency resolution.
             #
             # Retry the install command — TestPyPI's simple index has CDN
@@ -220,7 +220,7 @@ jobs:
             until python3 -m pip install \
                   --index-url https://test.pypi.org/simple/ \
                   --extra-index-url https://pypi.org/simple \
-                  "autoconf[optional]==$VERSION" \
+                  "autonerves[optional]==$VERSION" \
                   "autoarray[optional]==$VERSION" \
                   "autofit[optional]==$VERSION" \
                   "autogalaxy[optional]==$VERSION" \
@@ -290,7 +290,7 @@ jobs:
           until python3 -m pip install \
                 --index-url https://test.pypi.org/simple/ \
                 --extra-index-url https://pypi.org/simple \
-                "autoconf[optional]==$VERSION" \
+                "autonerves[optional]==$VERSION" \
                 "autoarray[optional]==$VERSION" \
                 "autofit[optional]==$VERSION" \
                 "autogalaxy[optional]==$VERSION" \
@@ -630,7 +630,7 @@ jobs:
         until python3 -m pip install \
               --index-url https://test.pypi.org/simple/ \
               --extra-index-url https://pypi.org/simple \
-              "autoconf[optional]==$VERSION" \
+              "autonerves[optional]==$VERSION" \
               "autoarray[optional]==$VERSION" \
               "autofit[optional]==$VERSION" \
               "autogalaxy[optional]==$VERSION" \
@@ -839,7 +839,7 @@ jobs:
             "mode": "rehearsal",
             "index": "testpypi",
             "version": "$VERSION",
-            "packages": ["autoconf", "autoarray", "autofit", "autogalaxy", "autolens"],
+            "packages": ["autonerves", "autoarray", "autofit", "autogalaxy", "autolens"],
             "run_id": "${{ github.run_id }}",
             "run_attempt": "${{ github.run_attempt }}",
             "build_sha": "${{ github.sha }}"
@@ -852,13 +852,13 @@ jobs:
           {
             echo "## TestPyPI rehearsal complete"
             echo ""
-            echo "Published \`autoconf / autoarray / autofit / autogalaxy / autolens == $VERSION\` to TestPyPI."
+            echo "Published \`autonerves / autoarray / autofit / autogalaxy / autolens == $VERSION\` to TestPyPI."
             echo "Halted before PyPI upload, git tags, and workspace notebook commits."
             echo ""
             echo "Install exactly these wheels with:"
             echo '```bash'
             echo "pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple \\"
-            echo "  autoconf[optional]==$VERSION autoarray[optional]==$VERSION autofit[optional]==$VERSION \\"
+            echo "  autonerves[optional]==$VERSION autoarray[optional]==$VERSION autofit[optional]==$VERSION \\"
             echo "  autogalaxy[optional]==$VERSION autolens[optional]==$VERSION"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

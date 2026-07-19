@@ -67,7 +67,7 @@ def test_injects_at_top_when_no_leading_markdown(tmp_path):
 def test_skips_notebook_with_hand_written_setup(tmp_path):
     original = [
         markdown_cell("Title"),
-        code_cell("from autoconf import setup_colab\nsetup_colab.for_autolens()"),
+        code_cell("from autonerves import setup_colab\nsetup_colab.for_autolens()"),
     ]
     nb_path = make_notebook(tmp_path / "start_here.ipynb", original)
 

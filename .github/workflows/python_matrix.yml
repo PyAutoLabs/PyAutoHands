@@ -7,7 +7,7 @@ on:
 
 # Force local editable builds to outrank PyPI versions so pip's resolver
 # doesn't replace `pip install -e ./PyAutoNerves` (1.0.dev0) with PyPI's
-# autoconf-2026.x during a downstream lib install. Without this, the
+# autonerves-2026.x during a downstream lib install. Without this, the
 # stale daily-release PyPI artifacts shadow the merged main code.
 env:
   SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AUTOCONF: "9999.0.0"
@@ -24,7 +24,7 @@ jobs:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         project:
-          - { name: PyAutoNerves,   tests: test_autoconf }
+          - { name: PyAutoNerves,   tests: test_autonerves }
           - { name: PyAutoArray,  tests: test_autoarray }
           - { name: PyAutoFit,    tests: test_autofit }
           - { name: PyAutoGalaxy, tests: test_autogalaxy }
@@ -61,7 +61,7 @@ jobs:
             -e "./PyAutoLens[optional]"
           pip install pytest pytest-cov
           # Show final installed versions for diagnosis
-          pip list | grep -iE "^(autoconf|autoarray|autofit|autogalaxy|autolens|jax|numpy|scipy|nautilus)"
+          pip list | grep -iE "^(autonerves|autoarray|autofit|autogalaxy|autolens|jax|numpy|scipy|nautilus)"
       - name: Run tests
         env:
           NUMBA_CACHE_DIR: /tmp/numba_cache
@@ -114,7 +114,7 @@ jobs:
             -e ./PyAutoGalaxy \
             -e "./PyAutoLens[optional]"
           pip install numba
-          pip list | grep -iE "^(autoconf|autoarray|autofit|autogalaxy|autolens|jax|numpy|scipy|nautilus)"
+          pip list | grep -iE "^(autonerves|autoarray|autofit|autogalaxy|autolens|jax|numpy|scipy|nautilus)"
       - name: Enable JAX_ENABLE_X64 on 3.11+
         run: |
           if python -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)"; then

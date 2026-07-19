@@ -36,7 +36,7 @@ def classify_failure(result: dict) -> str:
         return "environment"
 
     lib_patterns = ["PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens", "PyAutoNerves",
-                    "autofit/", "autoarray/", "autogalaxy/", "autolens/", "autoconf/"]
+                    "autofit/", "autoarray/", "autogalaxy/", "autolens/", "autonerves/"]
     if any(p in tb for p in lib_patterns):
         return "source_code_bug"
 
