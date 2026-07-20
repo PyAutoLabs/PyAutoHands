@@ -76,7 +76,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        # 3.11+ only: the smoke set includes JAX/optax demos (e.g. autofit
+        # searches/mle.py MultiStartAdam), and autonerves[jax] is gated to
+        # Python >= 3.11. Unit tests below still cover 3.9/3.10 (numpy-only).
+        python-version: ['3.11', '3.12', '3.13']
         workspace:
           - { repo: PyAutoLabs/autofit_workspace,    path: autofit_workspace }
           - { repo: PyAutoLabs/autogalaxy_workspace, path: autogalaxy_workspace }
@@ -110,7 +113,7 @@ jobs:
           pip install \
             -e ./PyAutoNerves \
             -e "./PyAutoArray[optional]" \
-            -e ./PyAutoFit \
+            -e "./PyAutoFit[optional]" \
             -e ./PyAutoGalaxy \
             -e "./PyAutoLens[optional]"
           pip install numba
