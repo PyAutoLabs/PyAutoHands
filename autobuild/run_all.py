@@ -171,7 +171,7 @@ def main():
     slow_skips = find_slow_skips(ws_dirs_for_scan)
     needs_fix_skips = find_needs_fix_skips(ws_dirs_for_scan)
     if slow_skips:
-        print(format_warning_banner(slow_skips, category="slow"))
+        print(format_warning_banner(slow_skips, category="slow", timeout_secs=timeout_secs))
     if needs_fix_skips:
         print(format_warning_banner(needs_fix_skips, category="needs_fix"))
 
@@ -234,7 +234,7 @@ def main():
         print(f"\nAll tests passed! Full report: {md_path}")
 
     if slow_skips:
-        print(format_warning_banner(slow_skips, category="slow"))
+        print(format_warning_banner(slow_skips, category="slow", timeout_secs=timeout_secs))
     if needs_fix_skips:
         print(format_warning_banner(needs_fix_skips, category="needs_fix"))
 
