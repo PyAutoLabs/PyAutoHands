@@ -15,10 +15,13 @@ The date is optional in both cases (entries with just `# SLOW - reason` or
 Anything else in no_run.yaml is treated as a permanent skip and ignored by
 this scanner.
 
-SLOW entries indicate scripts that exceed the 60s per-script timeout cap
-and need a performance fix. NEEDS_FIX entries indicate scripts that are
-broken and parked for later investigation — a to-do list surfaced on every
-mega-run so fixes don't get forgotten.
+SLOW entries indicate scripts that exceed the per-script timeout cap and need
+a performance fix. The cap is `build_util.TIMEOUT_SECS` — 300s by default,
+raised to 1800s for `mode=release` runs via BUILD_SCRIPT_TIMEOUT — and is
+never hardcoded here, so the reported figure cannot drift away from the
+enforced one. NEEDS_FIX entries indicate scripts that are broken and parked
+for later investigation — a to-do list surfaced on every mega-run so fixes
+don't get forgotten.
 """
 
 import dataclasses
@@ -26,6 +29,8 @@ import datetime
 import re
 from pathlib import Path
 from typing import List, Optional
+
+import build_util
 
 SLOW_RE = re.compile(
     r"^\s*SLOW(?:\s+(\d{4}-\d{2}-\d{2}))?\s*-\s*(.*)$"
@@ -137,7 +142,7 @@ _BANNER_CONFIG = {
     "slow": {
         "header": "WARNING: {n} SLOW-SKIPPED SCRIPT(S) - needs performance fix",
         "footer": [
-            "  These scripts are skipped because they exceed the 60s per-script",
+            "  These scripts are skipped because they exceed the {t}s per-script",
             "  cap. Fix the performance issue and remove the SLOW marker from",
             "  the workspace's config/build/no_run.yaml.",
         ],
@@ -156,7 +161,7 @@ _REPORT_CONFIG = {
     "slow": {
         "title": "## Slow-Skipped Scripts (needs performance fix)",
         "intro": (
-            "**{n} script(s)** are being skipped because they exceed the 60s "
+            "**{n} script(s)** are being skipped because they exceed the {t}s "
             "per-script timeout cap. These are NOT permanent skips — they need "
             "the underlying performance issue fixed and the `SLOW` marker "
             "removed from the workspace's `config/build/no_run.yaml`."
@@ -175,12 +180,22 @@ _REPORT_CONFIG = {
 
 
 def format_warning_banner(
-    skips: List[TaggedSkip], *, category: str = "slow"
+    skips: List[TaggedSkip],
+    *,
+    category: str = "slow",
+    timeout_secs: Optional[int] = None,
 ) -> str:
-    """Return a loud, hard-to-miss plain-text banner listing every tagged skip."""
+    """Return a loud, hard-to-miss plain-text banner listing every tagged skip.
+
+    `timeout_secs` is the per-script cap quoted in the SLOW footer; it defaults
+    to the enforced `build_util.TIMEOUT_SECS` so the banner cannot quote a
+    figure the runner does not actually apply.
+    """
     if not skips:
         return ""
 
+    if timeout_secs is None:
+        timeout_secs = build_util.TIMEOUT_SECS
     config = _BANNER_CONFIG[category]
     width = 72
     bar = "=" * width
@@ -209,23 +224,32 @@ def format_warning_banner(
         lines.append("")
 
     lines.append(bar)
-    lines.extend(config["footer"])
+    lines.extend(line.format(t=timeout_secs) for line in config["footer"])
     lines.append(bar)
     lines.append("")
     return "\n".join(lines)
 
 
 def format_report_section(
-    skips: List[TaggedSkip], *, category: str = "slow"
+    skips: List[TaggedSkip],
+    *,
+    category: str = "slow",
+    timeout_secs: Optional[int] = None,
 ) -> str:
-    """Return a markdown section for inclusion in the aggregated report.md."""
+    """Return a markdown section for inclusion in the aggregated report.md.
+
+    `timeout_secs` defaults to the enforced `build_util.TIMEOUT_SECS` — see
+    `format_warning_banner`.
+    """
     if not skips:
         return ""
+    if timeout_secs is None:
+        timeout_secs = build_util.TIMEOUT_SECS
     config = _REPORT_CONFIG[category]
     lines = [
         config["title"],
         "",
-        config["intro"].format(n=len(skips)),
+        config["intro"].format(n=len(skips), t=timeout_secs),
         "",
         "| Workspace | Script | Marked | Age | Reason |",
         "|-----------|--------|--------|-----|--------|",
