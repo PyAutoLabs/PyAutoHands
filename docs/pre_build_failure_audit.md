@@ -15,7 +15,7 @@ What actually modifies files during a `pre_build.sh` run, and who commits what:
 | notebooks (`*.ipynb`) | `generate.py` | `git add notebooks/` | regenerated + committed explicitly (`release_workspaces` → `git add *.ipynb`) | runner (local copy redundant) |
 | `llms-full.txt`, `workspace_index.json` | `generate.py` (root) | **never** — `:88` is dead (§2) | swept by `git add -A` inside the *"bump Colab URL tag refs"* commit | **unowned — rides along, mislabeled** |
 | README Colab URLs | not touched locally | — | `bump_colab_urls.sh` + the same `git add -A` | runner |
-| README version pin (`<pkg> vX`) | `:55` sed (edits where a pin exists) | **never** — `:88` is dead | **nothing** — the runner-side step was deliberately removed (#120/#121; see the comment in `release.yml`) | **orphaned** |
+| README version pin (`<pkg> vX`) | ~~`:55` sed~~ (deleted #158) | **never** — `:88` is dead | **nothing** — the runner-side step was deliberately removed (#120/#121; see the comment in `release.yml`) | ~~orphaned~~ → **RESOLVED**: pins removed, §1.1 |
 | `dataset/`, `config/` | nothing in the run | `git add dataset|config/` | never | vestigial (stages only pre-existing human dirt) |
 | black collateral outside staged dirs | `black .` | never (no rule covers them) | never | perpetual churn (§4) |
 
@@ -26,6 +26,21 @@ pin `v2026.5.14.1` (~2 months stale). The other 7 repos passed a `readme_pkg`
 but have **no pin pattern in README.md at all** — for them the banner + sed are
 semantically empty on every run. The `"Bumping README version → …"` banner has
 printed a false claim, 13/13 repos, on every release for months.
+
+### 1.1 Resolution (2026-07-22, build-chain campaign Phase 4 task 4)
+
+The pins are **gone**, not re-owned. The three surviving `<pkg> vX` lines
+(`autofit_workspace`, `autofit_workspace_test`, `autolens_workspace_test`) were
+replaced with "install the latest release"; the user-facing workspaces point at
+`version.minimum_library_version` in `config/general.yaml`, which is the signal
+Heart's `version_skew` check actually verifies (floor vs newest release tag) —
+so the compatibility statement is now *checked* rather than hand-maintained.
+
+Considered and rejected: giving the runner ownership again (an explicit sed +
+commit in `release.yml release_workspaces`, next to the Colab bump). That
+re-adds a commit-to-`main` step of the kind #120/#121 removed, to maintain a
+string no gate reads. The pre_build `VERSION` variable that fed the deleted sed
+was itself dead by then and was removed in the same change.
 
 ## 2. Complete enumeration of the failure class
 
@@ -92,12 +107,9 @@ artifact; if the runner is the real producer, the local script stops pretending.
 1. **Delete the dead lines** (no behaviour change, measured): the `:88` root
    glob (a 13/13 no-op — deleting it changes nothing on main) and the `:55`
    README bump (its artifact is orphaned; deleting the *false signal* beats
-   keeping a banner that lies). Decide the README pin's fate in Phase 4 of the
-   campaign (`release_version_sync_back_to_main.md`): either the runner owns it
-   again (one sed in `release_workspaces`, next to the Colab bump, committed
-   explicitly) or the pins come out of the READMEs in favour of "install the
-   latest release" + floors. **Either way the owner is the runner or nobody —
-   not a local sed whose output nothing stages.**
+   keeping a banner that lies). **DONE** (#158). The README pin's fate was then
+   decided in Phase 4 task 4 — the pins came out in favour of "install the
+   latest release" + floors; see §1.1.
 2. **Give the swept artifacts an owner:** in `release_workspaces`, replace the
    Colab step's `git add -A` with explicit paths (`llms-full.txt`,
    `workspace_index.json`, README, notebooks dir) and an honest commit message.
