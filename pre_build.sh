@@ -21,9 +21,11 @@ PYAUTOBASE="$(cd "$(dirname "$SELF")/.." && pwd)"
 AUTOBUILD="$PYAUTOBASE/PyAutoHands/autobuild"
 PYTHONPATH_EXTRA="$AUTOBUILD"
 
-# YYYY.M.D.<minor> — used to bump README version pins. %-m / %-d strip
-# leading zeroes so the tag matches the canonical pattern (e.g. 2026.4.5.1).
-VERSION="$(date +%Y.%-m.%-d).$MINOR_VERSION"
+# (A `VERSION="$(date …).$MINOR_VERSION"` string used to be computed here for the
+# README version-pin sed. That sed was deleted with the pin bump, and the pins
+# themselves are gone — see the note above `run_workspace`'s call list. Nothing
+# read VERSION afterwards, so it was removed too; `MINOR_VERSION` is still what
+# the release dispatch below takes.)
 
 # Ensure the canonical `pending-release` label exists with the right config
 # across every release-window repo. Idempotent — no-ops when nothing drifted.
@@ -95,9 +97,13 @@ run_workspace() {
 # The repo names are checked against PyAutoMind/repos.yaml (the body map) by
 # `repos_sync.py --check`; the flags are Build policy and live only here.
 # (The former readme_pkg arg / README version bump was deleted per the audit in
-# docs/pre_build_failure_audit.md: its sed edit was never staged, the runner
-# side was removed under #120, and the pins it targeted are owned by Phase 4 of
-# the build-chain campaign — PyAutoBuild#155/#156.)
+# docs/pre_build_failure_audit.md: its sed edit was never staged and the runner
+# side was removed under #120. Phase 4 task 4 of the build-chain campaign
+# (#155) then resolved the pins themselves: the three surviving `<pkg> vX` lines
+# were REMOVED from the READMEs in favour of "install the latest release" plus
+# the `version.minimum_library_version` floor, which Heart's version_skew check
+# actually verifies. Do not re-add a README version bump here or on the runner —
+# an unowned pin is what went 2 months stale.)
 run_workspace "autofit_workspace"                    "autofit"      true   false
 run_workspace "autogalaxy_workspace"                 "autogalaxy"   true   false
 run_workspace "autolens_workspace"                   "autolens"     true   true
