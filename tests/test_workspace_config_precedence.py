@@ -88,7 +88,7 @@ def test_visualise_missing_workspace_file_selects_nothing(tmp_path, monkeypatch)
     Regression: the autohands-level visualise_notebooks.yaml was a comment-only
     husk, so ``yaml.safe_load`` returned ``None`` and the old fallback did
     ``None.get(project)`` -> AttributeError. That crashed ``--visualise`` for
-    every target without its own file (HowToFit/HowToGalaxy/HowToLens/euclid).
+    every target without its own file (the tutorial and pipeline targets).
     """
     ws = _make_fake_workspace(tmp_path, "fake_ws")
     monkeypatch.chdir(ws)
