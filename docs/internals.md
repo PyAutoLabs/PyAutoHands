@@ -170,12 +170,20 @@ installation. Four pieces, spread over three organs plus PyAutoNerves:
 
 Each workspace owns its own build config under `<workspace>/config/build/`:
 
-- **`no_run.yaml`** — flat list of script/notebook patterns to skip during execution
+- **`no_run.yaml`** — flat list of script/notebook patterns to skip during execution. **Required**: every build target must own one (an empty file is valid and skips nothing). `run.py` raises `FileNotFoundError` if it is missing.
 - **`env_vars.yaml`** — defaults + per-pattern overrides for environment variables
-- **`copy_files.yaml`** — flat list of script paths to copy as-is to `notebooks/` instead of converting
-- **`visualise_notebooks.yaml`** — flat list of notebook stems to run when `--visualise` flag is used
+- **`visualise_notebooks.yaml`** — flat list of notebook stems to run when the `--visualise` flag is used. Optional: a workspace without one simply has nothing marked for visualisation.
 
-`autobuild/config/` retains keyed-dict copies of `no_run.yaml`, `copy_files.yaml`, and `visualise_notebooks.yaml` as fallbacks for legacy workspaces (HowTo*, BSc_Galaxies_Project) that have not been migrated yet. The 6 main workspaces (autofit/autogalaxy/autolens and their `_test` variants) own their own configs and do not consult these fallbacks.
+`config/build/` is the **single source of truth** — `autobuild/config/` holds no
+per-project config fallbacks. The keyed-dict fallbacks (`no_run.yaml`,
+`copy_files.yaml`, `visualise_notebooks.yaml`) were removed once every build
+target owned its own files; the only file left in `autobuild/config/` is
+`workspaces.yaml`, which is build *policy* (the run matrix), not workspace
+config.
+
+The `copy_files.yaml` mechanism — which copied listed scripts verbatim into
+`notebooks/` instead of converting them — was removed entirely. It resolved to
+an empty list in every workspace and had produced no output in any build.
 
 ### Environment Variables
 
