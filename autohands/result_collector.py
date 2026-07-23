@@ -44,9 +44,11 @@ class RunReport:
     project: str
     directory: str
     run_type: str  # "script", "notebook", or "generate"
-    # Which env profile the scripts actually ran under ("env_vars.yaml",
-    # "env_vars_release.yaml", "none"). Recorded so a report states the surface
-    # it measured — two runs are otherwise incomparable (PyAutoHeart#83 §5.3).
+    # Which env profile the scripts actually ran under ("profile_smoke.yaml",
+    # "profile_release.yaml", "none"; the legacy env_vars*.yaml names are also
+    # accepted during the #161 step-6 migration window). Recorded so a report
+    # states the surface it measured — two runs are otherwise incomparable
+    # (PyAutoHeart#83 §5.3).
     env_profile: str = "unknown"
     results: List[ScriptResult] = dataclasses.field(default_factory=list)
     started_at: str = dataclasses.field(

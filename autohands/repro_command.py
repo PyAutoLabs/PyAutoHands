@@ -4,7 +4,9 @@ Given a path to a workspace script (e.g.
 `autogalaxy_workspace_test/scripts/imaging/visualization.py`), print the
 exact shell command `autohands run_python` would have used to execute
 it — including all environment variables from the workspace's
-`config/build/env_vars.yaml` (defaults + matching per-pattern overrides).
+`config/build/profile_smoke.yaml` (defaults + matching per-pattern
+overrides; the legacy `env_vars.yaml` name is accepted during the #161
+step-6 migration window).
 
 Output format (single line):
 
@@ -27,13 +29,15 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional
 
-from env_config import apply_profile, load_env_config
+from env_config import apply_profile, find_profile, load_env_config
 
 
 def _find_workspace_root(script: Path) -> Optional[Path]:
-    """Walk up from `script` to find a dir containing config/build/env_vars.yaml."""
+    """Walk up from `script` to find a dir containing a smoke profile
+    (canonical `config/build/profile_smoke.yaml`, or the legacy
+    `env_vars.yaml` name during the #161 step-6 migration window)."""
     for candidate in (script.parent, *script.parents):
-        if (candidate / "config" / "build" / "env_vars.yaml").is_file():
+        if find_profile(candidate / "config" / "build", "smoke") is not None:
             return candidate
     return None
 
@@ -57,7 +61,7 @@ def repro_command(script_path: str) -> str:
     """Compute the one-line shell repro command for `script_path`.
 
     Raises FileNotFoundError if the script doesn't exist or no workspace
-    root with env_vars.yaml is found walking up.
+    root with a smoke profile is found walking up.
     """
     script = Path(script_path).resolve()
     if not script.is_file():
@@ -66,11 +70,11 @@ def repro_command(script_path: str) -> str:
     workspace_root = _find_workspace_root(script)
     if workspace_root is None:
         raise FileNotFoundError(
-            f"no workspace root with config/build/env_vars.yaml found "
+            f"no workspace root with config/build/profile_smoke.yaml found "
             f"walking up from {script_path}"
         )
 
-    env_config_path = workspace_root / "config" / "build" / "env_vars.yaml"
+    env_config_path = find_profile(workspace_root / "config" / "build", "smoke")
     env_config = load_env_config(env_config_path)
     env = canonical_env_for_script(script, env_config)
 

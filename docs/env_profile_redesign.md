@@ -135,6 +135,12 @@ carry the concept; the per-PR curated `smoke_tests.txt` gate keeps the word
 "smoke"). Mechanical rename, last migration step, after consumers are on the
 single resolver.
 
+**Step 6 status (2026-07-23):** the tooling half landed — every PyAutoHands
+reader now accepts BOTH the canonical and legacy names (canonical preferred)
+via `env_config.find_profile`, so workspace repos can rename with no breakage
+window. A later stage-3 PR removes the legacy `env_vars*.yaml` fallbacks once
+every workspace has renamed.
+
 ## 8. Migration path (each step green on its own)
 
 1. `validate_env_profiles` check (§6) against the *current* files — lands

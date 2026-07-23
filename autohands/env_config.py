@@ -28,6 +28,32 @@ import yaml
 MANAGED_ENV_PREFIXES = ("PYAUTO_",)
 
 
+# The per-script env profile pair, each as (canonical, legacy) filenames.
+# The canonical names are preferred; the legacy env_vars*.yaml names are
+# accepted only during the #161 step-6 rename migration window and DIE at the
+# step-6 cleanup (docs/env_profile_redesign.md §7) — a later stage-3 PR removes
+# the legacy fallbacks once every workspace has renamed.
+PROFILE_NAMES = {
+    "smoke": ("profile_smoke.yaml", "env_vars.yaml"),
+    "release": ("profile_release.yaml", "env_vars_release.yaml"),
+}
+
+
+def find_profile(build_dir: Path, kind: str) -> Optional[Path]:
+    """Return the profile file of the given kind ("smoke"/"release") in
+    ``build_dir``, or None if neither name exists.
+
+    The canonical name (``profile_smoke.yaml`` / ``profile_release.yaml``) is
+    preferred; the legacy ``env_vars*.yaml`` name is accepted during the #161
+    step-6 rename migration window (docs/env_profile_redesign.md §7).
+    """
+    for name in PROFILE_NAMES[kind]:
+        candidate = build_dir / name
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def load_env_config(config_path: Path) -> dict:
     """Load and return the parsed env_vars.yaml."""
     with open(config_path) as f:

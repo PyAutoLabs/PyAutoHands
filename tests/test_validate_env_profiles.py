@@ -27,6 +27,21 @@ def _workspace(tmp_path, smoke: str, release: str, scripts: list[str]) -> Path:
     return tmp_path
 
 
+def _workspace_canonical(
+    tmp_path, smoke: str, release: str, scripts: list[str]
+) -> Path:
+    """Like ``_workspace`` but writes the canonical profile_*.yaml names
+    (the post-step-6 layout)."""
+    (tmp_path / "config" / "build").mkdir(parents=True)
+    (tmp_path / "config" / "build" / "profile_smoke.yaml").write_text(smoke)
+    (tmp_path / "config" / "build" / "profile_release.yaml").write_text(release)
+    for rel in scripts:
+        p = tmp_path / "scripts" / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("# script\n")
+    return tmp_path
+
+
 GOOD_SMOKE = 'defaults:\n  PYAUTO_TEST_MODE: "2"\noverrides: []\n'
 GOOD_RELEASE = 'defaults:\n  PYAUTO_TEST_MODE: "0"\noverrides: []\n'
 
@@ -35,6 +50,38 @@ def test_clean_workspace_passes(tmp_path):
     ws = _workspace(tmp_path, GOOD_SMOKE, GOOD_RELEASE, ["imaging/run.py"])
     errors, warnings = validate_workspace(ws)
     assert errors == [] and warnings == []
+
+
+def test_canonical_named_workspace_passes(tmp_path):
+    # The post-step-6 layout (profile_smoke.yaml + profile_release.yaml)
+    # validates exactly as the legacy layout does.
+    ws = _workspace_canonical(tmp_path, GOOD_SMOKE, GOOD_RELEASE, ["imaging/run.py"])
+    errors, warnings = validate_workspace(ws)
+    assert errors == [] and warnings == []
+
+
+def test_both_names_for_one_kind_is_ambiguity_error(tmp_path):
+    # Canonical + legacy for the smoke kind: keeping both is ambiguous.
+    ws = _workspace_canonical(tmp_path, GOOD_SMOKE, GOOD_RELEASE, ["imaging/run.py"])
+    (ws / "config" / "build" / "env_vars.yaml").write_text(GOOD_SMOKE)
+    errors, _ = validate_workspace(ws)
+    assert any(
+        "profile_smoke.yaml AND legacy env_vars.yaml both exist" in e for e in errors
+    )
+
+
+def test_missing_profile_names_canonical(tmp_path):
+    # Neither name present for a kind → the missing error names the canonical
+    # file and notes the legacy one is also absent.
+    (tmp_path / "config" / "build").mkdir(parents=True)
+    (tmp_path / "config" / "build" / "profile_smoke.yaml").write_text(GOOD_SMOKE)
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "run.py").write_text("# script\n")
+    errors, _ = validate_workspace(tmp_path)
+    assert any(
+        "profile_release.yaml: missing (legacy env_vars_release.yaml also absent)" in e
+        for e in errors
+    )
 
 
 def test_unknown_top_key_is_an_error(tmp_path):

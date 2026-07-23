@@ -35,11 +35,15 @@ from typing import Any
 
 import yaml
 
-from env_config import _pattern_matches, apply_profile, is_jax_marked  # noqa: F401
+from env_config import (  # noqa: F401
+    PROFILE_NAMES,
+    _pattern_matches,
+    apply_profile,
+    is_jax_marked,
+)
 
 ALLOWED_TOP_KEYS = {"defaults", "overrides", "args_default", "derive_jax_markers"}
 ALLOWED_OVERRIDE_KEYS = {"pattern", "set", "unset"}
-PROFILE_FILES = ("env_vars.yaml", "env_vars_release.yaml")
 
 
 def resolve_clean(script: Path, cfg: dict) -> dict[str, str]:
@@ -143,10 +147,19 @@ def validate_workspace(
     )
     errors: list[str] = []
     warnings: list[str] = []
-    for fname in PROFILE_FILES:
-        p = root / "config" / "build" / fname
+    build_dir = root / "config" / "build"
+    for kind, (canonical, legacy) in PROFILE_NAMES.items():
+        canonical_p = build_dir / canonical
+        legacy_p = build_dir / legacy
+        if canonical_p.is_file() and legacy_p.is_file():
+            errors.append(
+                f"{canonical} AND legacy {legacy} both exist — ambiguous; "
+                "keep exactly one"
+            )
+            continue
+        p = canonical_p if canonical_p.is_file() else legacy_p
         if not p.is_file():
-            errors.append(f"{fname}: missing")
+            errors.append(f"{canonical}: missing (legacy {legacy} also absent)")
             continue
         e, w = check_profile(p, scripts, strict_derivation, strict_markers)
         errors += e
