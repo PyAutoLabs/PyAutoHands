@@ -51,14 +51,25 @@ def test_legacy_name_is_an_error(tmp_path):
     )
 
 
-def test_missing_profile_names_canonical(tmp_path):
-    # A kind whose canonical file is absent → the missing error names it.
+def test_missing_smoke_profile_is_an_error(tmp_path):
+    # The smoke profile is the universal contract — its absence errors.
+    (tmp_path / "config" / "build").mkdir(parents=True)
+    (tmp_path / "config" / "build" / "profile_release.yaml").write_text(GOOD_RELEASE)
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "run.py").write_text("# script\n")
+    errors, _ = validate_workspace(tmp_path)
+    assert any("profile_smoke.yaml: missing" in e for e in errors)
+
+
+def test_smoke_only_workspace_passes(tmp_path):
+    # The release profile is optional: smoke-only workspaces (HowTo*) are a
+    # legitimate shape and must validate clean on their smoke profile alone.
     (tmp_path / "config" / "build").mkdir(parents=True)
     (tmp_path / "config" / "build" / "profile_smoke.yaml").write_text(GOOD_SMOKE)
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "run.py").write_text("# script\n")
-    errors, _ = validate_workspace(tmp_path)
-    assert any("profile_release.yaml: missing" in e for e in errors)
+    errors, warnings = validate_workspace(tmp_path)
+    assert errors == [] and warnings == []
 
 
 def test_unknown_top_key_is_an_error(tmp_path):
