@@ -160,7 +160,14 @@ def validate_workspace(
     for kind, canonical in PROFILE_NAMES.items():
         p = build_dir / canonical
         if not p.is_file():
-            errors.append(f"{canonical}: missing")
+            # The smoke profile is the universal contract — every workspace in
+            # the PR gate carries one. The release profile is optional: smoke-
+            # only workspaces exist (HowTo*, excluded from mode=release runs),
+            # and a *_test repo that loses its release profile still fails
+            # loudly in the release runner itself (--env-config on a missing
+            # file), so absence here is not silent rot.
+            if kind == "smoke":
+                errors.append(f"{canonical}: missing")
             continue
         e, w = check_profile(p, scripts, strict_derivation, strict_markers)
         errors += e
