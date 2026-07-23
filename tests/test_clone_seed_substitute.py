@@ -18,7 +18,7 @@ one.
 
 import pytest
 
-from autobuild.clone_seed import substitute
+from autohands.clone_seed import substitute
 
 SKILL_PREFIX = ("al_", "ac_", "word")
 FULL_NAME = ("autolens_assistant", "autocti_assistant")
