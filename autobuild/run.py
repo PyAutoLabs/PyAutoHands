@@ -35,33 +35,36 @@ project = args.project
 directory = args.directory
 visualise = args.visualise
 
-AUTOBUILD_CONFIG = Path(__file__).parent / "config"
 WORKSPACE_BUILD_CONFIG = Path.cwd() / "config" / "build"
 
-# no_run.yaml: prefer workspace config/build/, fall back to autobuild config
+# Each workspace owns its build config in config/build/. There is no
+# autobuild-level fallback: the keyed-dict fallbacks were removed once every
+# build target owned its own files, so a missing config is a workspace bug and
+# is reported as one rather than silently resolving to someone else's rules.
 no_run_path = WORKSPACE_BUILD_CONFIG / "no_run.yaml"
 if not no_run_path.exists():
-    no_run_path = AUTOBUILD_CONFIG / "no_run.yaml"
+    raise FileNotFoundError(
+        f"{no_run_path} not found. Every workspace must own its "
+        f"config/build/no_run.yaml (an empty file is valid and skips nothing). "
+        f"Run from the workspace root, not from PyAutoHands."
+    )
 
 with open(no_run_path) as f:
-    no_run_data = yaml.safe_load(f)
-
-# Support both flat list (workspace) and keyed dict (legacy autobuild)
-if isinstance(no_run_data, dict):
-    no_run_list = no_run_data[project]
-else:
-    no_run_list = no_run_data or []
+    no_run_list = yaml.safe_load(f) or []
 
 if visualise:
-    # visualise_notebooks.yaml: prefer workspace config/build/ (flat list),
-    # fall back to autobuild's keyed dict indexed by project.
+    # A workspace with no visualise_notebooks.yaml has nothing marked for
+    # visualisation; that is not an error, it just selects nothing.
     workspace_visualise = WORKSPACE_BUILD_CONFIG / "visualise_notebooks.yaml"
     if workspace_visualise.exists():
         with open(workspace_visualise) as f:
             visualise_dict = yaml.safe_load(f) or []
     else:
-        with open(AUTOBUILD_CONFIG / "visualise_notebooks.yaml") as f:
-            visualise_dict = yaml.safe_load(f).get(project) or []
+        print(
+            f"--visualise: no {workspace_visualise} in this workspace; "
+            f"no notebooks are marked for visualisation."
+        )
+        visualise_dict = []
 else:
     visualise_dict = None
 

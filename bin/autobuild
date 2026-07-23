@@ -177,9 +177,8 @@ help_generate() {
 autobuild generate <project> [--report-dir DIR]
 
 Convert every script in scripts/ to a Jupyter notebook in notebooks/, run
-from inside the workspace root. The <project> argument selects which
-keyed config block to read from copy_files.yaml when the workspace has
-not yet migrated to its own config/build/copy_files.yaml flat-list form.
+from inside the workspace root. The <project> argument selects the Colab
+setup cell injected into each generated notebook.
 
 Arguments:
   project        Project name (e.g. autofit, autogalaxy, autolens, howtolens)
@@ -197,13 +196,14 @@ help_run() {
 autobuild run <project> <directory> [--visualise] [--report-dir DIR] [--env-config FILE]
 
 Execute Jupyter notebooks in <directory> for <project>, skipping files
-listed in config/build/no_run.yaml (or autobuild/config/no_run.yaml as
-fallback).
+listed in the workspace's config/build/no_run.yaml (required).
 
 Arguments:
   project        Project name (e.g. autofit, autogalaxy, autolens)
   directory      Subdirectory of notebooks/ to execute
-  --visualise    Only run notebooks listed in visualise_notebooks.yaml
+  --visualise    Only run notebooks listed in the workspace's
+                 config/build/visualise_notebooks.yaml (selects nothing
+                 if the workspace has no such file)
   --report-dir   Directory to write structured JSON results to
   --env-config   Path to env_vars.yaml for per-script environment config
 

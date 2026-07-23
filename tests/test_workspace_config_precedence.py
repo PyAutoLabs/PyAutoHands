@@ -1,14 +1,17 @@
-"""Precedence tests for workspace-level vs autobuild-level build configs.
+"""Tests for workspace-owned build configs.
 
 Phase 0 of the autobuild-release-prep migration moved per-project build config
 (no_run, env_vars, copy_files, visualise_notebooks) down to each workspace's
-config/build/ directory. PyAutoHands's own autobuild/config/ retains keyed-dict
-fallbacks for legacy workspaces only. These tests verify that a workspace
-copy always wins when present.
+config/build/ directory, leaving keyed-dict fallbacks in PyAutoHands's own
+autobuild/config/ for workspaces that had not migrated yet.
+
+Those fallbacks are now **gone**: every build target owns its config, so
+``config/build/`` is the single source of truth. The ``copy_files`` mechanism
+was removed entirely along with them (it resolved to nothing anywhere and
+produced no output in any build). These tests pin that contract down.
 """
 
 import sys
-import textwrap
 from pathlib import Path
 
 import pytest
@@ -46,67 +49,6 @@ def test_no_run_workspace_wins(tmp_path, monkeypatch):
     assert data == ["workspace_only_skip"]
 
 
-def test_no_run_falls_back_to_autobuild_when_workspace_missing(tmp_path, monkeypatch):
-    """If the workspace lacks no_run.yaml, autobuild's keyed dict is used."""
-    ws = _make_fake_workspace(tmp_path, "fake_ws")
-    autobuild_no_run = tmp_path / "autobuild_config" / "no_run.yaml"
-    _write(autobuild_no_run, "fake_project:\n- legacy_skip\n")
-
-    monkeypatch.chdir(ws)
-    workspace_no_run = Path.cwd() / "config" / "build" / "no_run.yaml"
-    assert not workspace_no_run.exists()
-
-    fallback_path = workspace_no_run if workspace_no_run.exists() else autobuild_no_run
-    data = yaml.safe_load(fallback_path.read_text())
-    assert isinstance(data, dict)
-    assert data["fake_project"] == ["legacy_skip"]
-
-
-def test_copy_files_workspace_wins(tmp_path, monkeypatch):
-    """generate.py prefers workspace copy_files.yaml (flat list) over autobuild's keyed dict."""
-    ws = _make_fake_workspace(tmp_path, "fake_ws")
-    _write(
-        ws / "config" / "build" / "copy_files.yaml",
-        "- subdir/script.py\n",
-    )
-
-    monkeypatch.chdir(ws)
-    workspace_copy = Path.cwd() / "config" / "build" / "copy_files.yaml"
-    assert workspace_copy.exists()
-
-    if workspace_copy.exists():
-        copy_files_list = yaml.safe_load(workspace_copy.read_text()) or []
-    else:
-        # would fall back to autobuild's keyed dict
-        copy_files_list = []
-    assert copy_files_list == ["subdir/script.py"]
-
-
-def test_copy_files_falls_back_to_autobuild_keyed(tmp_path, monkeypatch):
-    """Without a workspace file, generate.py reads autobuild's keyed dict."""
-    ws = _make_fake_workspace(tmp_path, "fake_ws")
-    autobuild_copy = tmp_path / "autobuild_config" / "copy_files.yaml"
-    _write(
-        autobuild_copy,
-        textwrap.dedent(
-            """\
-            howtofit:
-            - foo.py
-            - bar.py
-            """
-        ),
-    )
-
-    monkeypatch.chdir(ws)
-    workspace_copy = Path.cwd() / "config" / "build" / "copy_files.yaml"
-    if workspace_copy.exists():
-        copy_files_list = yaml.safe_load(workspace_copy.read_text()) or []
-    else:
-        copy_files_dict = yaml.safe_load(autobuild_copy.read_text())
-        copy_files_list = copy_files_dict.get("howtofit") or []
-    assert copy_files_list == ["foo.py", "bar.py"]
-
-
 def test_visualise_workspace_wins(tmp_path, monkeypatch):
     """run.py --visualise prefers workspace visualise_notebooks.yaml (flat list)."""
     ws = _make_fake_workspace(tmp_path, "fake_ws")
@@ -140,8 +82,29 @@ def test_env_vars_workspace_only_no_fallback(tmp_path, monkeypatch):
     assert env_config_path is None
 
 
+def test_visualise_missing_workspace_file_selects_nothing(tmp_path, monkeypatch):
+    """A workspace with no visualise_notebooks.yaml selects nothing — it must not raise.
+
+    Regression: the autobuild-level visualise_notebooks.yaml was a comment-only
+    husk, so ``yaml.safe_load`` returned ``None`` and the old fallback did
+    ``None.get(project)`` -> AttributeError. That crashed ``--visualise`` for
+    every target without its own file (HowToFit/HowToGalaxy/HowToLens/euclid).
+    """
+    ws = _make_fake_workspace(tmp_path, "fake_ws")
+    monkeypatch.chdir(ws)
+    workspace_vis = Path.cwd() / "config" / "build" / "visualise_notebooks.yaml"
+    assert not workspace_vis.exists()
+
+    # run.py: missing workspace file resolves to [], with no fallback lookup.
+    if workspace_vis.exists():
+        visualise_dict = yaml.safe_load(workspace_vis.read_text()) or []
+    else:
+        visualise_dict = []
+    assert visualise_dict == []
+
+
 def test_actual_workspace_files_exist():
-    """All 6 active workspaces should have their own config/build files after migration."""
+    """Every active workspace owns its own config/build files after migration."""
     repo_root = Path(__file__).parent.parent.parent
     workspaces = [
         "autofit_workspace",
@@ -155,17 +118,69 @@ def test_actual_workspace_files_exist():
         ws_root = repo_root / ws
         if not ws_root.exists():
             pytest.skip(f"{ws} not present in this checkout")
-        for fname in ("no_run.yaml", "env_vars.yaml", "copy_files.yaml", "visualise_notebooks.yaml"):
+        for fname in ("no_run.yaml", "env_vars.yaml", "visualise_notebooks.yaml"):
             p = ws_root / "config" / "build" / fname
             assert p.exists(), f"{ws}/config/build/{fname} missing — migration incomplete"
 
 
+def test_every_build_target_owns_no_run():
+    """run.py hard-requires config/build/no_run.yaml — there is no fallback left.
+
+    The autobuild-level no_run.yaml was deleted because every target already
+    owned one, making it unreachable. If a new build target is added to
+    workspaces.yaml without a no_run.yaml, run.py raises FileNotFoundError —
+    this catches that at test time instead of mid-release.
+    """
+    repo_root = Path(__file__).parent.parent.parent
+    matrix = yaml.safe_load(
+        (AUTOBUILD_DIR / "config" / "workspaces.yaml").read_text()
+    )["run_all"]
+
+    missing = []
+    for key, entry in matrix.items():
+        ws_root = repo_root / entry["repo"]
+        if not ws_root.exists():
+            continue  # repo not checked out here
+        if not (ws_root / "config" / "build" / "no_run.yaml").exists():
+            missing.append(f"{entry['repo']} (target '{key}')")
+
+    assert not missing, (
+        "build targets with no config/build/no_run.yaml — run.py will raise: "
+        + ", ".join(missing)
+    )
+
+
 def test_dead_autobuild_files_removed():
-    """notebooks_remove.yaml and the autobuild-level env_vars.yaml are dead and must be gone."""
+    """The autobuild-level config fallbacks are dead and must stay gone."""
     autobuild_config = AUTOBUILD_DIR / "config"
-    assert not (autobuild_config / "notebooks_remove.yaml").exists(), (
-        "notebooks_remove.yaml is dead code — should have been deleted"
-    )
-    assert not (autobuild_config / "env_vars.yaml").exists(), (
-        "autobuild/config/env_vars.yaml is dead code — workspaces own env_vars now"
-    )
+    for fname, why in (
+        ("notebooks_remove.yaml", "dead code"),
+        ("env_vars.yaml", "workspaces own env_vars now"),
+        ("no_run.yaml", "unreachable — every build target owns its own no_run.yaml"),
+        (
+            "visualise_notebooks.yaml",
+            "comment-only husk that crashed --visualise via None.get(project)",
+        ),
+        (
+            "copy_files.yaml",
+            "the copy-as-is mechanism was removed; it resolved to nothing anywhere",
+        ),
+    ):
+        assert not (autobuild_config / fname).exists(), (
+            f"autobuild/config/{fname} should have been deleted — {why}"
+        )
+
+
+def test_copy_files_mechanism_fully_removed():
+    """No workspace or autobuild config may reintroduce copy_files.yaml."""
+    repo_root = Path(__file__).parent.parent.parent
+    generate_src = (AUTOBUILD_DIR / "generate.py").read_text()
+    assert "copy_files" not in generate_src
+    assert "is_copy_file" not in generate_src
+
+    matrix = yaml.safe_load(
+        (AUTOBUILD_DIR / "config" / "workspaces.yaml").read_text()
+    )["run_all"]
+    for entry in matrix.values():
+        stray = repo_root / entry["repo"] / "config" / "build" / "copy_files.yaml"
+        assert not stray.exists(), f"{stray} — copy_files was removed; delete this file"

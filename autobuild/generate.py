@@ -4,10 +4,7 @@ import subprocess
 import sys
 import time
 from argparse import ArgumentParser
-from os import path
 from pathlib import Path
-
-import yaml
 
 import build_util
 import generate_autofit
@@ -24,29 +21,8 @@ parser.add_argument(
 args = parser.parse_args()
 
 WORKSPACE_PATH = Path.cwd()
-# Resolve the fallback config dir relative to this file (it lives beside it at
-# autobuild/config/) rather than hardcoding the sibling build-repo directory
-# name — so it works whether the repo is checked out as PyAutoHands or (via the
-# rename redirect / an un-migrated reusable workflow) PyAutoBuild.
-CONFIG_PATH = Path(__file__).resolve().parent / "config"
-WORKSPACE_BUILD_CONFIG = WORKSPACE_PATH / "config" / "build"
 
 project = args.project
-
-# copy_files.yaml: prefer workspace config/build/ (flat list), fall back to
-# autobuild's keyed dict indexed by project.
-workspace_copy_files = WORKSPACE_BUILD_CONFIG / "copy_files.yaml"
-if workspace_copy_files.exists():
-    with open(workspace_copy_files) as f:
-        copy_files_list = yaml.safe_load(f) or []
-else:
-    with open(path.join(CONFIG_PATH, "copy_files.yaml"), "r+") as f:
-        copy_files_dict = yaml.safe_load(f)
-    copy_files_list = copy_files_dict.get(project) or []
-
-
-def is_copy_file(file_path):
-    return any(str(file_path).endswith(copy_file) for copy_file in copy_files_list)
 
 
 def notebook_path_(script_path_):
@@ -139,51 +115,29 @@ if __name__ == "__main__":
 
     for script_path in iter_script_paths(scripts_path):
         start = time.time()
-        if is_copy_file(script_path):
-            try:
-                copy_to_notebooks(script_path)
-                if report is not None:
-                    from result_collector import ScriptResult, Status
-                    report.results.append(ScriptResult(
-                        file=str(script_path),
-                        status=Status.PASSED,
-                        duration_seconds=time.time() - start,
-                    ))
-            except Exception as e:
-                if report is not None:
-                    from result_collector import ScriptResult, Status
-                    report.results.append(ScriptResult(
-                        file=str(script_path),
-                        status=Status.FAILED,
-                        duration_seconds=time.time() - start,
-                        error_message=str(e),
-                    ))
-                else:
-                    raise
-        else:
-            try:
-                source_path = build_util.py_to_notebook(script_path)
-                build_util.inject_colab_setup(source_path, project)
-                copy_to_notebooks(source_path)
-                os.remove(source_path)
-                if report is not None:
-                    from result_collector import ScriptResult, Status
-                    report.results.append(ScriptResult(
-                        file=str(script_path),
-                        status=Status.PASSED,
-                        duration_seconds=time.time() - start,
-                    ))
-            except Exception as e:
-                if report is not None:
-                    from result_collector import ScriptResult, Status
-                    report.results.append(ScriptResult(
-                        file=str(script_path),
-                        status=Status.FAILED,
-                        duration_seconds=time.time() - start,
-                        error_message=str(e),
-                    ))
-                else:
-                    raise
+        try:
+            source_path = build_util.py_to_notebook(script_path)
+            build_util.inject_colab_setup(source_path, project)
+            copy_to_notebooks(source_path)
+            os.remove(source_path)
+            if report is not None:
+                from result_collector import ScriptResult, Status
+                report.results.append(ScriptResult(
+                    file=str(script_path),
+                    status=Status.PASSED,
+                    duration_seconds=time.time() - start,
+                ))
+        except Exception as e:
+            if report is not None:
+                from result_collector import ScriptResult, Status
+                report.results.append(ScriptResult(
+                    file=str(script_path),
+                    status=Status.FAILED,
+                    duration_seconds=time.time() - start,
+                    error_message=str(e),
+                ))
+            else:
+                raise
 
     for read_me_path in scripts_path.rglob("*.rst"):
         copy_to_notebooks(read_me_path)
