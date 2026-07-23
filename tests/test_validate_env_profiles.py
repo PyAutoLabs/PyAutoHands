@@ -17,21 +17,8 @@ from validate_env_profiles import (  # noqa: E402
 
 
 def _workspace(tmp_path, smoke: str, release: str, scripts: list[str]) -> Path:
-    (tmp_path / "config" / "build").mkdir(parents=True)
-    (tmp_path / "config" / "build" / "env_vars.yaml").write_text(smoke)
-    (tmp_path / "config" / "build" / "env_vars_release.yaml").write_text(release)
-    for rel in scripts:
-        p = tmp_path / "scripts" / rel
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text("# script\n")
-    return tmp_path
-
-
-def _workspace_canonical(
-    tmp_path, smoke: str, release: str, scripts: list[str]
-) -> Path:
-    """Like ``_workspace`` but writes the canonical profile_*.yaml names
-    (the post-step-6 layout)."""
+    """Build a workspace with the canonical profile_*.yaml names (the only
+    layout accepted since #161 step-6 stage 3)."""
     (tmp_path / "config" / "build").mkdir(parents=True)
     (tmp_path / "config" / "build" / "profile_smoke.yaml").write_text(smoke)
     (tmp_path / "config" / "build" / "profile_release.yaml").write_text(release)
@@ -52,36 +39,26 @@ def test_clean_workspace_passes(tmp_path):
     assert errors == [] and warnings == []
 
 
-def test_canonical_named_workspace_passes(tmp_path):
-    # The post-step-6 layout (profile_smoke.yaml + profile_release.yaml)
-    # validates exactly as the legacy layout does.
-    ws = _workspace_canonical(tmp_path, GOOD_SMOKE, GOOD_RELEASE, ["imaging/run.py"])
-    errors, warnings = validate_workspace(ws)
-    assert errors == [] and warnings == []
-
-
-def test_both_names_for_one_kind_is_ambiguity_error(tmp_path):
-    # Canonical + legacy for the smoke kind: keeping both is ambiguous.
-    ws = _workspace_canonical(tmp_path, GOOD_SMOKE, GOOD_RELEASE, ["imaging/run.py"])
+def test_legacy_name_is_an_error(tmp_path):
+    # A workspace that kept the dead env_vars.yaml name errors — the old names
+    # died at step-6 stage 3 and must not creep back.
+    ws = _workspace(tmp_path, GOOD_SMOKE, GOOD_RELEASE, ["imaging/run.py"])
     (ws / "config" / "build" / "env_vars.yaml").write_text(GOOD_SMOKE)
     errors, _ = validate_workspace(ws)
     assert any(
-        "profile_smoke.yaml AND legacy env_vars.yaml both exist" in e for e in errors
+        "legacy env_vars.yaml found — renamed to profile_smoke.yaml" in e
+        for e in errors
     )
 
 
 def test_missing_profile_names_canonical(tmp_path):
-    # Neither name present for a kind → the missing error names the canonical
-    # file and notes the legacy one is also absent.
+    # A kind whose canonical file is absent → the missing error names it.
     (tmp_path / "config" / "build").mkdir(parents=True)
     (tmp_path / "config" / "build" / "profile_smoke.yaml").write_text(GOOD_SMOKE)
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "run.py").write_text("# script\n")
     errors, _ = validate_workspace(tmp_path)
-    assert any(
-        "profile_release.yaml: missing (legacy env_vars_release.yaml also absent)" in e
-        for e in errors
-    )
+    assert any("profile_release.yaml: missing" in e for e in errors)
 
 
 def test_unknown_top_key_is_an_error(tmp_path):

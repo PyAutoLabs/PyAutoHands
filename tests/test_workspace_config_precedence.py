@@ -1,7 +1,7 @@
 """Tests for workspace-owned build configs.
 
 Phase 0 of the autohands-release-prep migration moved per-project build config
-(no_run, env_vars, copy_files, visualise_notebooks) down to each workspace's
+(no_run, env profiles, copy_files, visualise_notebooks) down to each workspace's
 config/build/ directory, leaving keyed-dict fallbacks in PyAutoHands's own
 autohands/config/ for workspaces that had not migrated yet.
 
@@ -68,11 +68,11 @@ def test_visualise_workspace_wins(tmp_path, monkeypatch):
     assert visualise_dict == ["start_here"]
 
 
-def test_env_vars_workspace_only_no_fallback(tmp_path, monkeypatch):
-    """env_vars.yaml has no autohands fallback — missing workspace file means no env."""
+def test_env_profile_workspace_only_no_fallback(tmp_path, monkeypatch):
+    """profile_smoke.yaml has no autohands fallback — missing workspace file means no env."""
     ws = _make_fake_workspace(tmp_path, "fake_ws")
     monkeypatch.chdir(ws)
-    workspace_env = Path.cwd() / "config" / "build" / "env_vars.yaml"
+    workspace_env = Path.cwd() / "config" / "build" / "profile_smoke.yaml"
     assert not workspace_env.exists()
 
     # run.py / run_python.py: env_config_path stays None when workspace file missing.
@@ -118,7 +118,7 @@ def test_actual_workspace_files_exist():
         ws_root = repo_root / ws
         if not ws_root.exists():
             pytest.skip(f"{ws} not present in this checkout")
-        for fname in ("no_run.yaml", "env_vars.yaml", "visualise_notebooks.yaml"):
+        for fname in ("no_run.yaml", "profile_smoke.yaml", "visualise_notebooks.yaml"):
             p = ws_root / "config" / "build" / fname
             assert p.exists(), f"{ws}/config/build/{fname} missing — migration incomplete"
 
@@ -155,7 +155,7 @@ def test_dead_autohands_files_removed():
     autohands_config = AUTOHANDS_DIR / "config"
     for fname, why in (
         ("notebooks_remove.yaml", "dead code"),
-        ("env_vars.yaml", "workspaces own env_vars now"),
+        ("profile_smoke.yaml", "workspaces own their env profile now"),
         ("no_run.yaml", "unreachable — every build target owns its own no_run.yaml"),
         (
             "visualise_notebooks.yaml",

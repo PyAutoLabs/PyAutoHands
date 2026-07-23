@@ -5,8 +5,7 @@ Given a path to a workspace script (e.g.
 exact shell command `autohands run_python` would have used to execute
 it — including all environment variables from the workspace's
 `config/build/profile_smoke.yaml` (defaults + matching per-pattern
-overrides; the legacy `env_vars.yaml` name is accepted during the #161
-step-6 migration window).
+overrides).
 
 Output format (single line):
 
@@ -34,8 +33,7 @@ from env_config import apply_profile, find_profile, load_env_config
 
 def _find_workspace_root(script: Path) -> Optional[Path]:
     """Walk up from `script` to find a dir containing a smoke profile
-    (canonical `config/build/profile_smoke.yaml`, or the legacy
-    `env_vars.yaml` name during the #161 step-6 migration window)."""
+    (`config/build/profile_smoke.yaml`)."""
     for candidate in (script.parent, *script.parents):
         if find_profile(candidate / "config" / "build", "smoke") is not None:
             return candidate

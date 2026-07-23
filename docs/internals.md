@@ -171,7 +171,7 @@ installation. Four pieces, spread over three organs plus PyAutoNerves:
 Each workspace owns its own build config under `<workspace>/config/build/`:
 
 - **`no_run.yaml`** — flat list of script/notebook patterns to skip during execution. **Required**: every build target must own one (an empty file is valid and skips nothing). `run.py` raises `FileNotFoundError` if it is missing.
-- **`profile_smoke.yaml`** / **`profile_release.yaml`** — defaults + per-pattern overrides for environment variables (legacy names `env_vars*.yaml` accepted during the step-6 migration window)
+- **`profile_smoke.yaml`** / **`profile_release.yaml`** — defaults + per-pattern overrides for environment variables
 - **`visualise_notebooks.yaml`** — flat list of notebook stems to run when the `--visualise` flag is used. Optional: a workspace without one simply has nothing marked for visualisation.
 
 `config/build/` is the **single source of truth** — `autohands/config/` holds no

@@ -68,8 +68,7 @@ if visualise:
 else:
     visualise_dict = None
 
-# smoke profile: explicit flag > workspace config/build/ (canonical name
-# preferred, legacy env_vars.yaml accepted during migration) > none
+# smoke profile: explicit flag > workspace config/build/profile_smoke.yaml > none
 env_config_path = None
 if args.env_config:
     env_config_path = Path(args.env_config)

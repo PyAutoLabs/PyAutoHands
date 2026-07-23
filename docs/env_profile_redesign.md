@@ -141,6 +141,11 @@ via `env_config.find_profile`, so workspace repos can rename with no breakage
 window. A later stage-3 PR removes the legacy `env_vars*.yaml` fallbacks once
 every workspace has renamed.
 
+**Stage 3 landed (2026-07-23):** every workspace repo has renamed, so the
+migration-window fallbacks are gone — `find_profile` resolves the canonical
+`profile_smoke.yaml` / `profile_release.yaml` only, and a legacy `env_vars*.yaml`
+file in `config/build/` is now a validator error so the old names cannot creep back.
+
 ## 8. Migration path (each step green on its own)
 
 1. `validate_env_profiles` check (§6) against the *current* files — lands
