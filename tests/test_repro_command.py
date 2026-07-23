@@ -45,6 +45,25 @@ defaults:
     assert cmd.endswith("python3 scripts/imaging/modeling.py)")
 
 
+def test_canonical_profile_name_is_discovered(tmp_path):
+    # The post-step-6 layout: profile_smoke.yaml (not env_vars.yaml) must be
+    # found walking up and loaded.
+    ws = tmp_path / "fake_ws"
+    (ws / "config" / "build").mkdir(parents=True)
+    (ws / "config" / "build" / "profile_smoke.yaml").write_text(
+        'defaults:\n  PYAUTO_TEST_MODE: "2"\n'
+    )
+    (ws / "scripts" / "imaging").mkdir(parents=True)
+    script = ws / "scripts" / "imaging" / "modeling.py"
+    script.write_text("# placeholder\n")
+
+    cmd = repro_command.repro_command(str(script))
+
+    assert cmd.startswith("(cd fake_ws && env ")
+    assert "PYAUTO_TEST_MODE=2" in cmd
+    assert cmd.endswith("python3 scripts/imaging/modeling.py)")
+
+
 def test_override_set_takes_precedence_over_default(tmp_path):
     ws = _make_fake_workspace(
         tmp_path,
