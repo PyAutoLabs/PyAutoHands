@@ -1,9 +1,11 @@
 """Validate a workspace's env profiles at PR time — no script execution.
 
 Migration step 1 of docs/env_profile_redesign.md (#161): parse BOTH profiles
-(``config/build/env_vars.yaml`` and ``env_vars_release.yaml``), resolve every
-script under each, and fail loudly on config errors that today surface only as
-the next nightly's red run (~24h feedback → seconds).
+(``config/build/profile_smoke.yaml`` and ``profile_release.yaml``), resolve
+every script under each, and fail loudly on config errors that today surface
+only as the next nightly's red run (~24h feedback → seconds). Since #161 step-6
+stage 3 a legacy ``env_vars*.yaml`` file in ``config/build/`` is itself an
+error — the old names died and must not creep back.
 
 Error tier (exit 1) — always on:
   - a profile that fails to parse, or parses to a non-mapping
@@ -36,6 +38,7 @@ from typing import Any
 import yaml
 
 from env_config import (  # noqa: F401
+    LEGACY_PROFILE_NAMES,
     PROFILE_NAMES,
     _pattern_matches,
     apply_profile,
@@ -148,18 +151,16 @@ def validate_workspace(
     errors: list[str] = []
     warnings: list[str] = []
     build_dir = root / "config" / "build"
-    for kind, (canonical, legacy) in PROFILE_NAMES.items():
-        canonical_p = build_dir / canonical
-        legacy_p = build_dir / legacy
-        if canonical_p.is_file() and legacy_p.is_file():
+    for legacy, canonical in LEGACY_PROFILE_NAMES.items():
+        if (build_dir / legacy).is_file():
             errors.append(
-                f"{canonical} AND legacy {legacy} both exist — ambiguous; "
-                "keep exactly one"
+                f"legacy {legacy} found — renamed to {canonical} (#161 step 6); "
+                "rename the file"
             )
-            continue
-        p = canonical_p if canonical_p.is_file() else legacy_p
+    for kind, canonical in PROFILE_NAMES.items():
+        p = build_dir / canonical
         if not p.is_file():
-            errors.append(f"{canonical}: missing (legacy {legacy} also absent)")
+            errors.append(f"{canonical}: missing")
             continue
         e, w = check_profile(p, scripts, strict_derivation, strict_markers)
         errors += e

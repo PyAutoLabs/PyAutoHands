@@ -19,7 +19,7 @@ import repro_command  # noqa: E402
 def _make_fake_workspace(tmp_path: Path, name: str, env_yaml: str) -> Path:
     ws = tmp_path / name
     (ws / "config" / "build").mkdir(parents=True)
-    (ws / "config" / "build" / "env_vars.yaml").write_text(env_yaml)
+    (ws / "config" / "build" / "profile_smoke.yaml").write_text(env_yaml)
     (ws / "scripts" / "imaging").mkdir(parents=True)
     return ws
 
@@ -46,8 +46,8 @@ defaults:
 
 
 def test_canonical_profile_name_is_discovered(tmp_path):
-    # The post-step-6 layout: profile_smoke.yaml (not env_vars.yaml) must be
-    # found walking up and loaded.
+    # The canonical config/build/profile_smoke.yaml must be found walking up
+    # and loaded — the only name accepted since step-6 stage 3.
     ws = tmp_path / "fake_ws"
     (ws / "config" / "build").mkdir(parents=True)
     (ws / "config" / "build" / "profile_smoke.yaml").write_text(
@@ -143,7 +143,7 @@ def test_no_workspace_root_raises(tmp_path):
 def test_empty_env_config_emits_no_env_prefix(tmp_path):
     ws = tmp_path / "fake_ws"
     (ws / "config" / "build").mkdir(parents=True)
-    (ws / "config" / "build" / "env_vars.yaml").write_text("# empty\n")
+    (ws / "config" / "build" / "profile_smoke.yaml").write_text("# empty\n")
     script_dir = ws / "scripts"
     script_dir.mkdir()
     script = script_dir / "foo.py"

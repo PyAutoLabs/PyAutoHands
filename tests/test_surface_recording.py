@@ -35,14 +35,14 @@ def _shard(results_dir: Path, project: str, directory: str, run_type: str,
 
 
 def test_surface_records_projects_shards_types_and_profile(tmp_path):
-    _shard(tmp_path, "autolens", "imaging", "script", "env_vars.yaml", ["passed"])
-    _shard(tmp_path, "howtolens", "chapter_1", "notebook", "env_vars.yaml", ["passed"])
+    _shard(tmp_path, "autolens", "imaging", "script", "profile_smoke.yaml", ["passed"])
+    _shard(tmp_path, "howtolens", "chapter_1", "notebook", "profile_smoke.yaml", ["passed"])
     report = aggregate(tmp_path)
     s = report["surface"]
     assert s["projects"] == ["autolens", "howtolens"]
     assert s["shards"] == ["autolens/imaging", "howtolens/chapter_1"]
     assert s["run_types"] == ["notebook", "script"]
-    assert s["env_profiles"] == ["env_vars.yaml"]
+    assert s["env_profiles"] == ["profile_smoke.yaml"]
     assert s["script_count"] == 2
 
 
@@ -51,11 +51,11 @@ def test_two_runs_with_equal_counts_but_different_surfaces_are_distinguishable(t
     # alone say "no change"; the surfaces say "not comparable".
     a = tmp_path / "a"
     a.mkdir()
-    _shard(a, "autolens", "imaging", "script", "env_vars.yaml", ["passed"])
+    _shard(a, "autolens", "imaging", "script", "profile_smoke.yaml", ["passed"])
     b = tmp_path / "b"
     b.mkdir()
-    _shard(b, "autolens", "imaging", "script", "env_vars.yaml", ["passed"])
-    _shard(b, "autolens", "imaging", "notebook", "env_vars.yaml", [])
+    _shard(b, "autolens", "imaging", "script", "profile_smoke.yaml", ["passed"])
+    _shard(b, "autolens", "imaging", "notebook", "profile_smoke.yaml", [])
     ra, rb = aggregate(a), aggregate(b)
     assert ra["summary"] == rb["summary"]              # counts agree ...
     assert ra["surface"] != rb["surface"]              # ... surfaces do not
@@ -64,8 +64,8 @@ def test_two_runs_with_equal_counts_but_different_surfaces_are_distinguishable(t
 
 
 def test_release_profile_surface_is_named(tmp_path):
-    _shard(tmp_path, "autolens", "imaging", "script", "env_vars_release.yaml", ["passed"])
-    assert aggregate(tmp_path)["surface"]["env_profiles"] == ["env_vars_release.yaml"]
+    _shard(tmp_path, "autolens", "imaging", "script", "profile_release.yaml", ["passed"])
+    assert aggregate(tmp_path)["surface"]["env_profiles"] == ["profile_release.yaml"]
 
 
 def test_empty_results_dir_still_carries_a_surface_key(tmp_path):

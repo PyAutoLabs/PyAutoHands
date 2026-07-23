@@ -1,6 +1,6 @@
 """Per-script environment variable configuration.
 
-Loads env_vars.yaml and builds a tailored environment dict for each script,
+Loads the profile yaml and builds a tailored environment dict for each script,
 applying defaults and per-pattern overrides.
 """
 
@@ -28,34 +28,33 @@ import yaml
 MANAGED_ENV_PREFIXES = ("PYAUTO_",)
 
 
-# The per-script env profile pair, each as (canonical, legacy) filenames.
-# The canonical names are preferred; the legacy env_vars*.yaml names are
-# accepted only during the #161 step-6 rename migration window and DIE at the
-# step-6 cleanup (docs/env_profile_redesign.md §7) — a later stage-3 PR removes
-# the legacy fallbacks once every workspace has renamed.
+# The per-script env profile filename for each kind. The legacy env_vars*.yaml
+# names died at #161 step-6 stage 3 — canonical names only.
 PROFILE_NAMES = {
-    "smoke": ("profile_smoke.yaml", "env_vars.yaml"),
-    "release": ("profile_release.yaml", "env_vars_release.yaml"),
+    "smoke": "profile_smoke.yaml",
+    "release": "profile_release.yaml",
+}
+
+# The legacy env_vars*.yaml names, kept only so the validator can raise a
+# targeted "you renamed away from this" error if one creeps back.
+LEGACY_PROFILE_NAMES = {
+    "env_vars.yaml": "profile_smoke.yaml",
+    "env_vars_release.yaml": "profile_release.yaml",
 }
 
 
 def find_profile(build_dir: Path, kind: str) -> Optional[Path]:
-    """Return the profile file of the given kind ("smoke"/"release") in
-    ``build_dir``, or None if neither name exists.
+    """Return the canonical profile file of the given kind ("smoke"/"release")
+    in ``build_dir``, or None if it does not exist.
 
-    The canonical name (``profile_smoke.yaml`` / ``profile_release.yaml``) is
-    preferred; the legacy ``env_vars*.yaml`` name is accepted during the #161
-    step-6 rename migration window (docs/env_profile_redesign.md §7).
+    The legacy ``env_vars*.yaml`` names died at #161 step-6 stage 3.
     """
-    for name in PROFILE_NAMES[kind]:
-        candidate = build_dir / name
-        if candidate.is_file():
-            return candidate
-    return None
+    candidate = build_dir / PROFILE_NAMES[kind]
+    return candidate if candidate.is_file() else None
 
 
 def load_env_config(config_path: Path) -> dict:
-    """Load and return the parsed env_vars.yaml."""
+    """Load and return the parsed profile yaml."""
     with open(config_path) as f:
         return yaml.safe_load(f)
 
@@ -135,7 +134,7 @@ def args_for_script(
 ) -> List[str]:
     """Return CLI args to append after the script path, based on env_config.
 
-    Reads the ``args_default`` field of env_vars.yaml — a single string
+    Reads the ``args_default`` field of the profile yaml — a single string
     that is shlex-split into argv tokens and appended to every
     ``python <script>`` invocation. Used by workspaces whose scripts
     require CLI args (e.g. euclid needs ``--dataset`` and ``--sample``).

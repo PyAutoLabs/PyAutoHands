@@ -128,9 +128,9 @@ def test_run_report_records_env_profile():
         project="autolens",
         directory="imaging",
         run_type="script",
-        env_profile="env_vars_release.yaml",
+        env_profile="profile_release.yaml",
     )
-    assert r.to_dict()["env_profile"] == "env_vars_release.yaml"
+    assert r.to_dict()["env_profile"] == "profile_release.yaml"
 
 
 def test_run_report_env_profile_defaults_to_unknown():
