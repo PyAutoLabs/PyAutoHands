@@ -179,27 +179,61 @@ def _find_skip_reason(file: Path, no_run_list: List[str], skip_reasons: dict) ->
     return "No reason documented"
 
 
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
+_SKIP_EXIT_RE = re.compile(r"^SystemExit\s*:\s*0$")
+
+
+def is_clean_skip_exit(output: str) -> bool:
+    """
+    Return True when a notebook run failed *only* because a cell called
+    ``sys.exit(0)`` — the workspace optional-dependency skip idiom:
+
+        if importlib.util.find_spec("<optional-dep>") is None:
+            print("Skipping ...")
+            sys.exit(0)
+
+    As a ``.py`` script that is a clean exit 0. Under Jupyter the same call
+    raises ``SystemExit`` in the kernel, nbclient marks the cell as errored and
+    ``jupyter nbconvert --execute`` exits non-zero — so an intentional skip is
+    reported as a failure. CI never sees it (its matrices install the optional
+    extras), but any user or local run without them does.
+
+    ``output`` is the combined stdout/stderr of the ``jupyter nbconvert`` run.
+    nbclient aborts at the *first* erroring cell, so its ``CellExecutionError``
+    message ends with that one cell's terminal ``<ename>: <evalue>`` line. We
+    therefore require the last non-empty line after the ``CellExecutionError``
+    marker to be exactly ``SystemExit: 0``: a non-zero ``sys.exit`` renders as
+    ``SystemExit: 1`` and any other error renders as its own ename, so both
+    stay failures. The traceback is ANSI-coloured by IPython, so escapes are
+    stripped before matching.
+    """
+    if not output:
+        return False
+    plain = _ANSI_ESCAPE_RE.sub("", output)
+    idx = plain.rfind("CellExecutionError")
+    if idx == -1:
+        return False
+    tail = [line.strip() for line in plain[idx:].splitlines() if line.strip()]
+    return bool(tail) and _SKIP_EXIT_RE.match(tail[-1]) is not None
+
+
 def execute_notebook(f, report=None, env=None):
     print(f"Running <{f}> at {datetime.datetime.now().isoformat()}")
 
     start = time.time()
     try:
-        if report is not None:
-            result = subprocess.run(
-                ["jupyter", "nbconvert", "--to", "notebook", "--execute", "--output", f, f],
-                check=True,
-                timeout=TIMEOUT_SECS,
-                capture_output=True,
-                text=True,
-                env=env,
-            )
-        else:
-            subprocess.run(
-                ["jupyter", "nbconvert", "--to", "notebook", "--execute", "--output", f, f],
-                check=True,
-                timeout=TIMEOUT_SECS,
-                env=env,
-            )
+        # stderr is always captured so a clean `sys.exit(0)` skip guard can be
+        # told apart from a genuine cell failure (is_clean_skip_exit); stdout
+        # keeps streaming live unless the report collector wants it.
+        subprocess.run(
+            ["jupyter", "nbconvert", "--to", "notebook", "--execute", "--output", f, f],
+            check=True,
+            timeout=TIMEOUT_SECS,
+            stdout=subprocess.PIPE if report is not None else None,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=env,
+        )
     except subprocess.TimeoutExpired as e:
         duration = time.time() - start
         if report is not None:
@@ -216,6 +250,23 @@ def execute_notebook(f, report=None, env=None):
         sys.exit(1)
     except subprocess.CalledProcessError as e:
         duration = time.time() - start
+        captured = (getattr(e, "stdout", "") or "") + (getattr(e, "stderr", "") or "")
+
+        if is_clean_skip_exit(captured):
+            # An optional-dependency skip guard fired: `.py` semantics are a
+            # clean exit 0, so the notebook form is a PASS too.
+            if report is not None:
+                from result_collector import ScriptResult, Status
+                print(f"  PASS (skipped via sys.exit(0), {duration:.1f}s)")
+                report.results.append(ScriptResult(
+                    file=str(f),
+                    status=Status.PASSED,
+                    duration_seconds=duration,
+                    error_message="sys.exit(0) skip guard (ignored)",
+                ))
+            else:
+                print(f"  PASS (skipped via sys.exit(0), {duration:.1f}s)")
+            return
 
         if "InversionException" in traceback.format_exc():
             if report is not None:
@@ -242,6 +293,10 @@ def execute_notebook(f, report=None, env=None):
                 traceback=stderr,
             ))
             return
+        # stderr is captured now (see the subprocess call above), so echo it
+        # before dying or the failure would be silent.
+        if captured:
+            print(captured, file=sys.stderr)
         logging.exception(e)
         sys.exit(1)
 

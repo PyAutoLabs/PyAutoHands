@@ -125,6 +125,58 @@ All scripts in `autohands/` are run from within a checked-out workspace director
 4. `build_util.inject_colab_setup()` prepends the standard Google Colab setup cell pair (see "Google Colab architecture" below)
 5. Generated notebooks are `git add -f`ed directly
 
+### Optional-dependency skip guards in notebooks
+
+The workspaces guard optional-dependency examples with the script idiom
+
+```python
+if importlib.util.find_spec("<optional-dep>") is None:
+    print("Skipping ...")
+    sys.exit(0)
+```
+
+As a `.py` script that is a clean exit 0. In a Jupyter kernel the same call
+raises `SystemExit`, nbclient marks the cell as errored and
+`jupyter nbconvert --execute` exits non-zero — so an *intended* skip is
+reported as a notebook failure. CI never sees it (its matrices install the
+optional extras); users and local runs without them do.
+
+The fix is classification at the point of execution, not a source rewrite:
+**`build_util.is_clean_skip_exit(output)`** inspects the combined
+stdout/stderr of an `nbconvert` run and returns True only when the run's single
+`CellExecutionError` terminates in `SystemExit: 0` (ANSI escapes stripped
+first — IPython colours the traceback). `SystemExit: 1` and every other
+exception stay failures. `build_util.execute_notebook` consults it in its
+`CalledProcessError` branch and records a PASS, alongside the existing
+`InversionException` exemption.
+
+Rewriting the guard at generation time was rejected: it would need a
+source-level transform of arbitrary "skip the rest of the notebook" control
+flow, would diverge notebook semantics from the script the user reads, and
+would require regenerating and committing notebooks across every workspace.
+
+**Propagation.** Each workspace repo carries its own
+`.github/scripts/run_smoke.py` (no template sync — PyAutoHeart's reusable
+`smoke-tests.yml` deliberately leaves the runner in the workspace), and that
+copy has its own `execute_notebook` used by the PR smoke gate. It already
+imports from PyAutoHands (`env_config`, `build_util.py_to_notebook`, with
+`PyAutoHands/autohands` on `PYTHONPATH`), so adoption is a two-line change per
+workspace:
+
+```python
+from build_util import is_clean_skip_exit
+...
+rc, output = execute_notebook(nb_path, env)
+if rc != 0 and is_clean_skip_exit(output):
+    rc = 0
+```
+
+Workspaces carrying a `run_smoke.py` copy: `autofit_workspace`,
+`autogalaxy_workspace`, `autolens_workspace`, `autofit_workspace_test`,
+`autogalaxy_workspace_test`, `autolens_workspace_test`,
+`autocti_workspace_test`, `HowToGalaxy`, `HowToLens` (nine copies, five distinct
+revisions — they have drifted, so each needs the edit applied individually).
+
 ### Google Colab architecture
 
 Every published notebook must be runnable on Google Colab with zero local
