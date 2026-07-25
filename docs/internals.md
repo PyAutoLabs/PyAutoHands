@@ -175,7 +175,11 @@ Workspaces carrying a `run_smoke.py` copy: `autofit_workspace`,
 `autogalaxy_workspace`, `autolens_workspace`, `autofit_workspace_test`,
 `autogalaxy_workspace_test`, `autolens_workspace_test`,
 `autocti_workspace_test`, `HowToGalaxy`, `HowToLens` (nine copies, five distinct
-revisions — they have drifted, so each needs the edit applied individually).
+revisions — they have drifted). Only the three **user-facing workspaces**
+(`autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace`) have a
+notebook execution leg, so only those three needed the edit — applied
+2026-07-25. The HowTo and `*_test` runners are scripts-only (no
+`smoke_notebooks.txt`, no nbconvert path) and require nothing.
 
 ### Google Colab architecture
 
