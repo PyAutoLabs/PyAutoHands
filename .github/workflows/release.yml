@@ -169,13 +169,27 @@ jobs:
             popd
         - name: Upload to test PyPI
           run: |
+            set -euo pipefail
             python3 -m pip install twine==6.0.1
             pushd "${{ matrix.project.path }}"
             # --skip-existing: the rehearsal is dispatched repeatedly, and a re-run
             # attempt may re-upload a sibling lib that already landed; tolerate the
             # duplicate-filename case instead of hard-failing. (Freshness of the
             # rehearsed code is guaranteed separately by the per-run dev version.)
-            python3 -m twine upload --repository-url https://test.pypi.org/legacy/ --skip-existing --verbose dist/*
+            # Bounded retry for the same reason as the live leg: a transient
+            # connect timeout must not fail a whole rehearsal.
+            for attempt in 1 2 3; do
+              if python3 -m twine upload --repository-url https://test.pypi.org/legacy/ --skip-existing --verbose dist/*; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "twine upload failed after 3 attempts."
+                exit 1
+              fi
+              DELAY=$(( attempt * 30 ))
+              echo "twine upload failed (attempt $attempt) — retrying in ${DELAY}s"
+              sleep "$DELAY"
+            done
             popd
         - name: Wait for packages and install
           run: |
@@ -402,13 +416,41 @@ jobs:
         VERSION="${{ needs.version_number.outputs.version_number }}"
         sed -i "s/__version__ = [\.\"\'0-9]*/__version__ = \"$VERSION\"/g" */__init__.py
     - name: Tag
+      # Idempotent so "Re-run failed jobs" can recover a partially-failed live
+      # release. 2026-07-25: a transient upload.pypi.org connect timeout killed
+      # the PyAutoArray twine upload AFTER its tag had been pushed, and every
+      # re-run then died here — `git tag -a` rejects the existing tag — before
+      # Build/Upload could run, so the only remedy was a full re-release.
+      # The clone above is fresh, so the REMOTE is the authority on whether the
+      # tag exists (local tags say nothing about what was published).
       run: |
+        set -euo pipefail
         pushd "${{ matrix.project.path }}"
         VERSION="${{ needs.version_number.outputs.version_number }}"
-        git tag -m "Release $VERSION" -a "$VERSION"
         PAT="${{ secrets[matrix.project.pat] }}"
         git remote set-url --push origin "https://$PAT@github.com/${{ matrix.project.repository }}.git"
-        git push --tags
+        HEAD_SHA="$(git rev-parse HEAD)"
+        # For an annotated tag `refs/tags/<v>` is the tag object and
+        # `refs/tags/<v>^{}` the commit it peels to; a lightweight tag has no
+        # peeled line, so fall back to the ref's own object id.
+        REMOTE_REFS="$(git ls-remote origin "refs/tags/$VERSION" "refs/tags/$VERSION^{}")"
+        TAG_SHA="$(printf '%s\n' "$REMOTE_REFS" | awk -v r="refs/tags/$VERSION^{}" '$2 == r {print $1}')"
+        if [ -z "$TAG_SHA" ]; then
+          TAG_SHA="$(printf '%s\n' "$REMOTE_REFS" | awk -v r="refs/tags/$VERSION" '$2 == r {print $1}')"
+        fi
+        if [ -z "$TAG_SHA" ]; then
+          git tag -m "Release $VERSION" -a "$VERSION"
+          git push origin "refs/tags/$VERSION"
+        elif [ "$TAG_SHA" = "$HEAD_SHA" ]; then
+          echo "Tag $VERSION already on origin at $HEAD_SHA — re-run, skipping tag and push."
+        else
+          echo "ERROR: tag $VERSION already exists on origin at $TAG_SHA,"
+          echo "but this job checked out $HEAD_SHA."
+          echo "The published tag does not point at the commit being released — that is a"
+          echo "real inconsistency, not a retry. Resolve it by hand; a release job must"
+          echo "never silently re-point a published tag."
+          exit 1
+        fi
     - name: Build
       run: |
         pushd "${{ matrix.project.path }}"
@@ -417,10 +459,26 @@ jobs:
         python3 -m pip install --upgrade build
         python3 -m build
     - name: Upload to PyPI
+      # --skip-existing: a re-run rebuilds artifacts that may already be on
+      # PyPI; step over those and publish the ones that are not, instead of
+      # hard-failing on the duplicate filename. Bounded retry: the 2026-07-25
+      # partial release was a single transient connect timeout.
       run: |
+        set -euo pipefail
         python3 -m pip install twine==6.0.1
         pushd "${{ matrix.project.path }}"
-        python3 -m twine upload --verbose dist/*
+        for attempt in 1 2 3; do
+          if python3 -m twine upload --skip-existing --verbose dist/*; then
+            break
+          fi
+          if [ "$attempt" -eq 3 ]; then
+            echo "twine upload failed after 3 attempts."
+            exit 1
+          fi
+          DELAY=$(( attempt * 30 ))
+          echo "twine upload failed (attempt $attempt) — retrying in ${DELAY}s"
+          sleep "$DELAY"
+        done
 
   # One Slack message per LIVE release outcome to #pipreleases
   # (PYAUTO_RELEASE_WEBHOOK_URL). Rehearsals stay silent — TestPyPI .dev builds
@@ -663,12 +721,38 @@ jobs:
         git add -u
         git commit -m "Release $VERSION: bump Colab URL tag refs" || true
     - name: Tag and push to main
+      # Same re-run failure mode as the library `Tag` step: a frozen
+      # `git tag -a` kills every re-run of a job whose tag already reached the
+      # remote. The nuance here is that this job creates commits (notebooks,
+      # Colab bumps) before tagging — so on a re-run where main was pushed, the
+      # `|| true` commits are no-ops, HEAD equals the tagged commit and the step
+      # skips; if HEAD differs, the published tag genuinely does not describe
+      # this tree and a human must decide, which is exactly the loud-fail case.
       run: |
+        set -euo pipefail
         cd workspace
         VERSION="${{ needs.version_number.outputs.version_number }}"
-        git tag -m "Release $VERSION" -a "$VERSION"
-        git push origin main
-        git push origin --tags
+        HEAD_SHA="$(git rev-parse HEAD)"
+        REMOTE_REFS="$(git ls-remote origin "refs/tags/$VERSION" "refs/tags/$VERSION^{}")"
+        TAG_SHA="$(printf '%s\n' "$REMOTE_REFS" | awk -v r="refs/tags/$VERSION^{}" '$2 == r {print $1}')"
+        if [ -z "$TAG_SHA" ]; then
+          TAG_SHA="$(printf '%s\n' "$REMOTE_REFS" | awk -v r="refs/tags/$VERSION" '$2 == r {print $1}')"
+        fi
+        if [ -z "$TAG_SHA" ]; then
+          git tag -m "Release $VERSION" -a "$VERSION"
+          git push origin main
+          git push origin "refs/tags/$VERSION"
+        elif [ "$TAG_SHA" = "$HEAD_SHA" ]; then
+          echo "Tag $VERSION already on origin at $HEAD_SHA — re-run, skipping tag and push."
+          git push origin main
+        else
+          echo "ERROR: tag $VERSION already exists on origin at $TAG_SHA,"
+          echo "but this job is releasing $HEAD_SHA."
+          echo "The published tag does not point at the commit being released — that is a"
+          echo "real inconsistency, not a retry. Resolve it by hand; a release job must"
+          echo "never silently re-point a published tag."
+          exit 1
+        fi
 
 
   bump_library_colab_urls:
