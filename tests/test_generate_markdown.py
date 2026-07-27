@@ -146,6 +146,100 @@ class TestStreamCleaning:
             "data": {},
         }
 
+    def test_progress_runs_collapsed_to_final_state(self):
+        text = "start\n" + "\n".join(
+            f"{i}it [00:{i:02d}, bound: 3 | eff: 12%]" for i in range(50)
+        ) + "\nend"
+        cleaned = generate_markdown._clean_stream_text(text)
+        assert cleaned == "start\n49it [00:49, bound: 3 | eff: 12%]\nend"
+
+    def test_separate_progress_runs_kept_apart(self):
+        text = "0it [a]\n1it [b]\nbetween\n0it [c]\n1it [d]"
+        cleaned = generate_markdown._clean_stream_text(text)
+        assert cleaned == "1it [b]\nbetween\n1it [d]"
+
+    def test_blank_interleaved_progress_run_collapsed(self):
+        # nbconvert renders each stream output as its own paragraph, so a
+        # rendered page interleaves progress lines with blank lines.
+        text = "    0it [00:00, ?it/s]\n\n    36it [00:00, nc: 3]\n\n    71it [00:00, nc: 1]\n\nafter"
+        cleaned = generate_markdown._clean_stream_text(text)
+        assert cleaned == "    71it [00:00, nc: 1]\n\nafter"
+
+    def test_split_stream_outputs_merged_before_truncation(self, tmp_path):
+        # Samplers emit each progress line as its OWN stream output; the
+        # per-cell merge must let truncation fire on the concatenation.
+        notebook = {
+            "cells": [
+                {
+                    "cell_type": "code",
+                    "outputs": [
+                        {"output_type": "stream", "name": "stderr", "text": [f"line {i}\n"]}
+                        for i in range(200)
+                    ]
+                    + [{"output_type": "display_data", "data": {}}],
+                }
+            ]
+        }
+        path = tmp_path / "nb.ipynb"
+        path.write_text(json.dumps(notebook))
+        generate_markdown.clean_notebook_outputs(path)
+        cleaned = json.loads(path.read_text())
+        outputs = cleaned["cells"][0]["outputs"]
+        assert len(outputs) == 2
+        assert outputs[0]["output_type"] == "stream"
+        assert "truncated" in outputs[0]["text"]
+        assert outputs[0]["text"].startswith("line 0\n")
+        assert outputs[1]["output_type"] == "display_data"
+
+    def test_split_progress_outputs_collapse_across_merge(self, tmp_path):
+        notebook = {
+            "cells": [
+                {
+                    "cell_type": "code",
+                    "outputs": [
+                        {"output_type": "stream", "name": "stderr", "text": [f"{i}it [00:27, nc: 5]\n"]}
+                        for i in range(2480)
+                    ],
+                }
+            ]
+        }
+        path = tmp_path / "nb.ipynb"
+        path.write_text(json.dumps(notebook))
+        generate_markdown.clean_notebook_outputs(path)
+        cleaned = json.loads(path.read_text())
+        outputs = cleaned["cells"][0]["outputs"]
+        assert len(outputs) == 1
+        assert outputs[0]["text"] == "2479it [00:27, nc: 5]\n"
+
+
+class TestOptimizePngs:
+    def test_quantizes_in_place_and_shrinks(self, tmp_path):
+        from PIL import Image
+        import random
+
+        files_dir = tmp_path / "page_files"
+        files_dir.mkdir()
+        png = files_dir / "fig_0.png"
+        random.seed(0)
+        image = Image.new("RGB", (128, 128))
+        image.putdata(
+            [
+                (random.randrange(50, 200), random.randrange(50, 200), 30)
+                for _ in range(128 * 128)
+            ]
+        )
+        image.save(png)
+        before = png.stat().st_size
+        generate_markdown.optimize_pngs(files_dir)
+        after = png.stat().st_size
+        assert after < before
+        with Image.open(png) as reopened:
+            assert reopened.size == (128, 128)
+        assert not list(files_dir.glob("*.opt"))
+
+    def test_missing_dir_is_noop(self, tmp_path):
+        generate_markdown.optimize_pngs(tmp_path / "absent")
+
 
 class TestMarkdownHeader:
     def test_scripts_page_links(self):

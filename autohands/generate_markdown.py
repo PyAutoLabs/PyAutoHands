@@ -59,6 +59,7 @@ PROJECT_DISPLAY_NAMES = {
 }
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
+PROGRESS_LINE_RE = re.compile(r"^\s*\d+it \[")
 STREAM_HEAD_LINES = 10
 STREAM_TAIL_LINES = 20
 STREAM_MAX_LINES = STREAM_HEAD_LINES + STREAM_TAIL_LINES + 10
@@ -146,17 +147,51 @@ def _redactions_for(workspace_path: Path):
     ]
 
 
+def _collapse_progress_runs(lines):
+    """
+    Collapse a run of iteration-progress lines (`NNNNit [...]` from
+    dynesty/tqdm) to the final line of the run. Samplers emit one such line per
+    update as newline-separated text, so carriage-return resolution never sees
+    them and a long search leaves thousands of near-identical lines behind.
+    Blank lines *between* progress lines belong to the run (nbconvert renders
+    each stream output as its own paragraph); blanks at the end of a run are
+    kept.
+    """
+    collapsed = []
+    held_blanks = []
+    in_run = False
+    for line in lines:
+        if PROGRESS_LINE_RE.match(line):
+            if in_run:
+                collapsed[-1] = line
+            else:
+                collapsed.append(line)
+                in_run = True
+            held_blanks = []
+        elif in_run and not line.strip():
+            held_blanks.append(line)
+        else:
+            collapsed.extend(held_blanks)
+            held_blanks = []
+            collapsed.append(line)
+            in_run = False
+    collapsed.extend(held_blanks)
+    return collapsed
+
+
 def _clean_stream_text(text: str, redactions=()) -> str:
     """
     Make captured stream output readable in markdown: drop ANSI escapes,
-    resolve carriage-return progress lines to their final state, redact
-    absolute local paths (a machine layout must not be published), and
-    truncate very long output (search progress logs) to head + tail.
+    resolve carriage-return progress lines to their final state, collapse
+    newline-separated progress runs, redact absolute local paths (a machine
+    layout must not be published), and truncate very long output (search
+    progress logs) to head + tail.
     """
     text = ANSI_RE.sub("", text)
     for old, new in redactions:
         text = text.replace(old, new)
     lines = [raw.split("\r")[-1] for raw in text.split("\n")]
+    lines = _collapse_progress_runs(lines)
     if len(lines) > STREAM_MAX_LINES:
         truncated = len(lines) - STREAM_HEAD_LINES - STREAM_TAIL_LINES
         lines = (
@@ -168,21 +203,70 @@ def _clean_stream_text(text: str, redactions=()) -> str:
 
 
 def clean_notebook_outputs(notebook_path: Path, redactions=()):
-    """Clean every stream output in an executed notebook, in place."""
+    """
+    Clean every stream output in an executed notebook, in place.
+
+    Consecutive stream outputs in a cell are merged first: samplers emit each
+    progress update as its own one-line stream output, so cleaning per output
+    would never trigger truncation on exactly the cells that need it most.
+    """
     with open(notebook_path) as f:
         notebook = json.load(f)
 
     for cell in notebook.get("cells", []):
+        merged = []
         for output in cell.get("outputs", []):
             if output.get("output_type") != "stream":
+                merged.append(output)
                 continue
-            source = output.get("text", "")
-            if isinstance(source, list):
-                source = "".join(source)
-            output["text"] = _clean_stream_text(source, redactions=redactions)
+            text = output.get("text", "")
+            if isinstance(text, list):
+                text = "".join(text)
+            if merged and merged[-1].get("output_type") == "stream":
+                merged[-1]["text"] += text
+            else:
+                merged.append({**output, "text": text})
+        for output in merged:
+            if output.get("output_type") == "stream":
+                output["text"] = _clean_stream_text(
+                    output["text"], redactions=redactions
+                )
+        cell["outputs"] = merged
 
     with open(notebook_path, "w") as f:
         json.dump(notebook, f, indent=1)
+
+
+def optimize_pngs(files_dir: Path):
+    """
+    Shrink the figure PNGs nbconvert just extracted (256-colour quantize +
+    optimized encode; 35-43% of the matplotlib originals on the measured
+    corpus). Forward-only by construction: it touches the files of the render
+    in progress, never previously committed images. Skips any image that does
+    not get smaller.
+    """
+    if not files_dir.exists():
+        return
+    from PIL import Image
+
+    for png in sorted(files_dir.glob("*.png")):
+        original_size = png.stat().st_size
+        tmp = png.with_name(png.name + ".opt")
+        with Image.open(png) as image:
+            if image.mode not in ("RGB", "RGBA", "L", "P"):
+                continue
+            if image.mode in ("RGB", "RGBA"):
+                method = (
+                    Image.Quantize.FASTOCTREE
+                    if "A" in image.getbands()
+                    else Image.Quantize.MEDIANCUT
+                )
+                image = image.quantize(colors=256, method=method)
+            image.save(tmp, format="PNG", optimize=True)
+        if tmp.stat().st_size < original_size:
+            tmp.replace(png)
+        else:
+            tmp.unlink()
 
 
 def _markdown_header(script_rel: Path, md_dir: Path) -> str:
@@ -291,6 +375,8 @@ def render_script(
             ],
             check=True,
         )
+
+        optimize_pngs(files_dir)
     finally:
         if notebook_path.exists():
             os.remove(notebook_path)
