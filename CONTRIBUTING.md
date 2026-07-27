@@ -1,12 +1,8 @@
-# Contributing
+# Contributing to PyAutoLabs
 
-PyAutoHands (formerly PyAutoBuild) is an organ of **PyAutoScientist** — a living reference implementation
-that is the maintainer's daily working system. `main` moves fast and
-carries **no compatibility promises**: adopt by fork-and-pull (confining
-your diff to the declared config surfaces), never by tracking, and pin what
-you depend on. Issues and PRs are welcome; triage pace is set by the live
-instance's needs.
+PyAutoLabs maintains its shared contribution guidance in one place.
 
-The full contribution and stability policy is
-[PyAutoBrain/CONTRIBUTING.md](https://github.com/PyAutoLabs/PyAutoBrain/blob/main/CONTRIBUTING.md);
-the adoption model is documented at <https://pyautoscientist.readthedocs.io>.
+Read the [canonical PyAutoLabs contribution guide](https://github.com/PyAutoLabs/PyAutoScientist/blob/main/CONTRIBUTING.md).
+
+Repository-specific setup, test commands, and editing rules are documented in
+that repository's `README.md` and `AGENTS.md`, where present.
