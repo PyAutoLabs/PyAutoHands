@@ -225,8 +225,19 @@ def execute_notebook(f, report=None, env=None):
         # stderr is always captured so a clean `sys.exit(0)` skip guard can be
         # told apart from a genuine cell failure (is_clean_skip_exit); stdout
         # keeps streaming live unless the report collector wants it.
+        # Run via run_notebook.py rather than `jupyter nbconvert --execute`:
+        # nbconvert starts the kernel in the notebook's own directory, but the
+        # workspaces document (and their auto-simulate guards require) execution
+        # from the repo root. nbconvert has no CLI flag for the kernel cwd, so
+        # the runner sets resources['metadata']['path'] via the Python API.
+        # Still a subprocess, so isolation/timeout/env are unchanged.
         subprocess.run(
-            ["jupyter", "nbconvert", "--to", "notebook", "--execute", "--output", f, f],
+            [
+                sys.executable,
+                str(Path(__file__).parent / "run_notebook.py"),
+                str(f),
+                str(Path.cwd()),
+            ],
             check=True,
             timeout=TIMEOUT_SECS,
             stdout=subprocess.PIPE if report is not None else None,
