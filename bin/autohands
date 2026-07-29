@@ -116,11 +116,12 @@ cmd_pre_build() {
 
 help_verify_install() {
   cat <<'EOF'
-autohands verify_install [CHECKS...] [--version VERSION] [--keep]
+autohands verify_install [CHECKS...] [--version VERSION] [--testpypi]
+                         [--find-links DIR] [--keep]
 
 Shim → `pyauto-heart verify_install`. Release-readiness checking is Heart's
 job now (PyAutoHands is a pure executor), so this delegates to PyAutoHeart,
-which owns the install-path checks (pip & conda, A–E) and writes the JSON
+which owns the install-path checks (pip, conda & Colab, A–F) and writes the JSON
 sidecar that `pyauto-heart readiness` consumes.
 
 See `pyauto-heart help verify_install` for full docs.
