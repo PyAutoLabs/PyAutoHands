@@ -1,0 +1,11 @@
+{
+  "project": "howtofit",
+  "directory": "scripts/chapter_2_scientific_workflow",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T22:30:00.329009",
+  "completed_at": "2026-07-21T22:30:00.333198",
+  "summary": {},
+  "total_duration_seconds": 0,
+  "results": []
+}

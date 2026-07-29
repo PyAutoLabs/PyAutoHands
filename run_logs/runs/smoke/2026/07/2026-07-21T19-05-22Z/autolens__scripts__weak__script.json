@@ -1,0 +1,66 @@
+{
+  "project": "autolens",
+  "directory": "scripts/weak",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T21:23:13.821633",
+  "completed_at": "2026-07-21T21:29:44.171731",
+  "summary": {
+    "passed": 9,
+    "timeout": 1
+  },
+  "total_duration_seconds": 390.34,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/features/strong_lensing/simulator.py",
+      "status": "passed",
+      "duration_seconds": 6.14
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/simulator.py",
+      "status": "passed",
+      "duration_seconds": 5.02
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/start_here.py",
+      "status": "passed",
+      "duration_seconds": 8.33
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/features/strong_lensing/a2744.py",
+      "status": "timeout",
+      "duration_seconds": 300.07,
+      "error_message": "Timed out after 300s"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/features/strong_lensing/fit.py",
+      "status": "passed",
+      "duration_seconds": 17.08
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/features/strong_lensing/modeling.py",
+      "status": "passed",
+      "duration_seconds": 14.83
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/fit.py",
+      "status": "passed",
+      "duration_seconds": 11.16
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 10.32
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/modeling.py",
+      "status": "passed",
+      "duration_seconds": 11.08
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/real_data/a2744.py",
+      "status": "passed",
+      "duration_seconds": 6.3
+    }
+  ]
+}

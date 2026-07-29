@@ -1,0 +1,206 @@
+{
+  "project": "autolens",
+  "directory": "scripts/interferometer",
+  "run_type": "script",
+  "started_at": "2026-06-08T18:05:25.817927",
+  "completed_at": "2026-06-08T18:11:38.866422",
+  "summary": {
+    "passed": 36,
+    "skipped": 2
+  },
+  "total_duration_seconds": 373.03,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/simulator.py",
+      "status": "passed",
+      "duration_seconds": 8.58
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/extra_galaxies/simulator.py",
+      "status": "passed",
+      "duration_seconds": 4.23
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/subhalo/simulator.py",
+      "status": "passed",
+      "duration_seconds": 4.55
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/simulator.py",
+      "status": "passed",
+      "duration_seconds": 7.41
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/start_here.py",
+      "status": "passed",
+      "duration_seconds": 13.04
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/subhalo/detect/start_here.py",
+      "status": "passed",
+      "duration_seconds": 18.32
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/subhalo/sensitivity/start_here.py",
+      "status": "passed",
+      "duration_seconds": 0.06
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/start_here.py",
+      "status": "passed",
+      "duration_seconds": 25.62
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/casa_reduction.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Requires CASA MeasurementSet output, not runnable standalone"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/data_preparation.py",
+      "status": "passed",
+      "duration_seconds": 11.95
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/advanced/shapelets/fit.py",
+      "status": "passed",
+      "duration_seconds": 10.04
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/advanced/shapelets/modeling.py",
+      "status": "passed",
+      "duration_seconds": 18.57
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/data_preparation.py",
+      "status": "passed",
+      "duration_seconds": 4.35
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/delaunay.py",
+      "status": "passed",
+      "duration_seconds": 11.72
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 9.97
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/modeling.py",
+      "status": "passed",
+      "duration_seconds": 10.79
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/modeling_parametric.py",
+      "status": "passed",
+      "duration_seconds": 7.27
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/extra_galaxies/modeling.py",
+      "status": "passed",
+      "duration_seconds": 10.15
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/extra_galaxies/slam.py",
+      "status": "passed",
+      "duration_seconds": 13.33
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/fit.py",
+      "status": "passed",
+      "duration_seconds": 7.6
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 10.58
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/modeling.py",
+      "status": "passed",
+      "duration_seconds": 9.22
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/slam.py",
+      "status": "passed",
+      "duration_seconds": 11.48
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/fit.py",
+      "status": "passed",
+      "duration_seconds": 9.0
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 7.78
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/modeling.py",
+      "status": "passed",
+      "duration_seconds": 9.16
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/slam.py",
+      "status": "passed",
+      "duration_seconds": 13.25
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/delaunay.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - broadcast shape mismatch (2,2) vs (1032,1032) in Delaunay interferometer"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/fit.py",
+      "status": "passed",
+      "duration_seconds": 11.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 11.6
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/many_visibilities_preparation.py",
+      "status": "passed",
+      "duration_seconds": 7.17
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/modeling.py",
+      "status": "passed",
+      "duration_seconds": 10.2
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/slam.py",
+      "status": "passed",
+      "duration_seconds": 13.79
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/source_science.py",
+      "status": "passed",
+      "duration_seconds": 10.51
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/fit.py",
+      "status": "passed",
+      "duration_seconds": 9.67
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 7.24
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/modeling.py",
+      "status": "passed",
+      "duration_seconds": 16.85
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/source_science.py",
+      "status": "passed",
+      "duration_seconds": 5.99
+    }
+  ]
+}

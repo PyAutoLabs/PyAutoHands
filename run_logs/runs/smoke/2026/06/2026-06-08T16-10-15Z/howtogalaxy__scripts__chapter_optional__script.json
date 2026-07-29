@@ -1,0 +1,19 @@
+{
+  "project": "howtogalaxy",
+  "directory": "scripts/chapter_optional",
+  "run_type": "script",
+  "started_at": "2026-06-08T19:11:43.424366",
+  "completed_at": "2026-06-08T19:11:43.428769",
+  "summary": {
+    "skipped": 1
+  },
+  "total_duration_seconds": 0.0,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_optional/tutorial_searches.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "No reason documented"
+    }
+  ]
+}

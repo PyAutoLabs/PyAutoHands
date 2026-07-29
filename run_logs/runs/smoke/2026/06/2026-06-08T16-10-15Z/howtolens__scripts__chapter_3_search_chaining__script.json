@@ -1,0 +1,43 @@
+{
+  "project": "howtolens",
+  "directory": "scripts/chapter_3_search_chaining",
+  "run_type": "script",
+  "started_at": "2026-06-08T19:13:33.176296",
+  "completed_at": "2026-06-08T19:14:06.777949",
+  "summary": {
+    "passed": 6
+  },
+  "total_duration_seconds": 33.59,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_3_search_chaining/tutorial_1_search_chaining.py",
+      "status": "passed",
+      "duration_seconds": 5.91
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_3_search_chaining/tutorial_2_prior_passing.py",
+      "status": "passed",
+      "duration_seconds": 5.68
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_3_search_chaining/tutorial_3_lens_and_source.py",
+      "status": "passed",
+      "duration_seconds": 8.14
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_3_search_chaining/tutorial_4_x2_lens_galaxies.py",
+      "status": "passed",
+      "duration_seconds": 5.86
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_3_search_chaining/tutorial_5_complex_source.py",
+      "status": "passed",
+      "duration_seconds": 7.96
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_3_search_chaining/tutorial_6_slam.py",
+      "status": "passed",
+      "duration_seconds": 0.05
+    }
+  ]
+}

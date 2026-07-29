@@ -1,0 +1,461 @@
+{
+  "ready": true,
+  "run_path": "/home/jammy/Code/PyAutoLabs/PyAutoBuild/test_results/runs/2026-05-28T13-33-31Z",
+  "run_label": "2026-05-28T13-33-31Z",
+  "total_duration_seconds": 345.72,
+  "summary": {
+    "passed": 5
+  },
+  "per_project": {
+    "euclid": {
+      "passed": 5
+    }
+  },
+  "per_project_duration_seconds": {
+    "euclid": 345.72
+  },
+  "slowest": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/euclid_strong_lens_modeling_pipeline/scripts/lens_model_waveband.py",
+      "status": "passed",
+      "duration_seconds": 97.08,
+      "project": "euclid"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/euclid_strong_lens_modeling_pipeline/scripts/full_model.py",
+      "status": "passed",
+      "duration_seconds": 77.2,
+      "project": "euclid"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/euclid_strong_lens_modeling_pipeline/scripts/mge_lens_only.py",
+      "status": "passed",
+      "duration_seconds": 74.3,
+      "project": "euclid"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/euclid_strong_lens_modeling_pipeline/scripts/sersic_lens_model.py",
+      "status": "passed",
+      "duration_seconds": 67.38,
+      "project": "euclid"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/euclid_strong_lens_modeling_pipeline/scripts/initial_lens_model.py",
+      "status": "passed",
+      "duration_seconds": 29.76,
+      "project": "euclid"
+    }
+  ],
+  "failures": [],
+  "failure_pr_correlations": {},
+  "skipped": [],
+  "pr_changes": [
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "Cache model.parameterization; try interactive matplotlib backends",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1299",
+      "api_changes": "None \u2014 `parameterization` was already a `@property`, now `@functools.cached_property`. Same external interface. The live_viewer backend selection is internal.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "Prefer fit_quick.png in quick-update display candidates",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1298",
+      "api_changes": "None \u2014 internal constant change only.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "Remove use_jax_for_visualization; add visualization warmup",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1297",
+      "api_changes": "`Analysis.__init__` no longer accepts `use_jax_for_visualization`. Visualization now automatically follows `use_jax` \u2014 if the search uses JAX, visualization does too. The `_jitted_fit_from` lazy JIT cache on Analysis is removed; the warmup in `Fitness.__init__` is a better approach (pre-compiles before sampling, not on first quick update). See full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "fix: skip _compute_latent_samples in PYAUTO_TEST_MODE (#1294)",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1295",
+      "api_changes": "Public API: no change. Purely internal \u2014 adds `if skip_latents(): return None` at the top of the private `SearchUpdater._compute_latent_samples` method. The `PYAUTO_SKIP_LATENTS` env var is a new user-facing env knob but documented inline in `autoconf.test_mode.skip_latents()`'s docstring.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "Add live_visual_update flag for opt-in on-the-fly visualization",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1293",
+      "api_changes": "`NonLinearSearch.__init__` gains optional `live_visual_update` kwarg (default `None`, falls back to `general.updates.live_visual_update` in config \u2014 defaults `false`). `Fitness.__init__` and `BackgroundQuickUpdate.__init__` gain the same flag. A new `LiveDisplay` helper class composes the display surfaces and replaces the inline IPython-push logic that lived on `BackgroundQuickUpdate`. New standalone module `autofit.non_linear.live_viewer` for the script-mode subprocess. New config default `general.updates.live_visual_update: false`. See full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "fix: PYAUTO_TEST_MODE should write to a separate output dir",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1292",
+      "api_changes": "No public symbol additions, removals, or signature changes.\n\nBehaviour change: when the `PYAUTO_TEST_MODE` environment variable is set (any truthy value), AutoFit search output paths get a `test_mode/` segment inserted directly after `conf.instance.output_path`. This affects every search-output path including SQLite database files opened via `open_database()` with a relative filename.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "feat(quick_update): IPython.display.update_display for live Jupyter cells",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1290",
+      "api_changes": "One additive optional kwarg on `BackgroundQuickUpdate`: `display_id: str = \"pyauto_fit_progress\"`. Behavioural change: when running inside a Jupyter / Colab kernel, the worker additionally pushes the freshly-written `subplot_fit.png` to the active cell via `IPython.display.update_display`. Outside a kernel \u2014 unchanged (PNG-on-disk only). No public symbol removed, renamed, or signature-broken.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "feat(analysis): LATENT_BATCH_MODE attribute (vmap default, jit option)",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1288",
+      "api_changes": "New public class attribute `Analysis.LATENT_BATCH_MODE: str` (default `\"vmap\"`). Two values supported: `\"vmap\"` and `\"jit\"`. Other values raise `ValueError` at `compute_latent_samples` time with a clear message.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "Fix Sample.kwargs mixed string/tuple key bug",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1287",
+      "api_changes": "Internal in-memory representation of `Sample.kwargs` is now uniformly tuple-keyed \u2014 single-name keys become `('name',)` instead of staying as raw strings. All serialized forms (CSV headers, database JSON via `Sample.dict()`) are unchanged because they already join tuples back to dotted strings on serialize, and `Sample.__init__` re-tuples them on deserialize, so the round-trip is symmetric. The change also silently repairs `Samples.values_for_path` and the aggregator CSV `Column.value` lookup, both of which expected tuple keys but would have silently failed on dotless-name kwargs pre-fix.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "fix: VectorYX2DIrregular from_dict round-trip (missing values property)",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/342",
+      "api_changes": "Added a new public read-only `values` property on `VectorYX2DIrregular` returning the underlying `(N, 2)` ndarray. Purely additive \u2014 no existing call sites read `vec.values`. See full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "perf: cache expensive @property on Fit classes",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/341",
+      "api_changes": "None \u2014 same properties, same return types. Now cached after first access.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "fix: make Array2D.native jit-traceable for JAX simulator path",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/339",
+      "api_changes": "None \u2014 internal changes only. `array_2d_via_indexes_from` is a private utility; the simulator public interface is unchanged.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "fix: raise ValueError on xp=np + jnp-backed-grid mismatch",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/337",
+      "api_changes": "- **Changed behaviour:** `AbstractMaker.__init__` now raises `ValueError` when `xp is np` and `grid.use_jax` is `True`. Pre-existing call sites are unaffected \u2014 all of PyAutoArray, PyAutoLens, PyAutoGalaxy continue to pass the tests (verified: 837 / 317 / 918 pass).\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "feat: SimulatorInterferometer(use_jax=True) + xp-aware preprocess Gaussian noise",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/336",
+      "api_changes": "- **Added:** `aa.SimulatorInterferometer(..., use_jax=False)` constructor flag.\n- **Added:** `aa.SimulatorInterferometer._xp` property.\n- **Changed signature:** `aa.SimulatorInterferometer.via_image_from(image, xp=None)` \u2014 fixed asymmetry with `SimulatorImaging` by adding the `xp` parameter. `xp=None` defaults to `self._xp`.\n- **Changed signature:** `preprocess.gaussian_noise_via_shape_and_sigma_from(..., xp=np)`, `data_with_gaussian_noise_added(..., xp=np)`, `data_with_complex_gaussian_noise_added(..., xp=np)` all gain `xp` parameter.\n- **Changed behaviour:** NaN-noise-map runtime guard now NumPy-side only.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "feat: SimulatorImaging(use_jax=True) + xp-aware preprocess noise",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/335",
+      "api_changes": "- **Added:** `aa.SimulatorImaging(..., use_jax=False)` constructor flag.\n- **Added:** `aa.SimulatorImaging._xp` property (returns `jnp` if `use_jax`, else `np`).\n- **Changed signature:** `aa.SimulatorImaging.via_image_from(xp=None)` \u2014 defaults to `self._xp` when `None`.\n- **Changed signature:** `preprocess.poisson_noise_via_data_eps_from(..., xp=np)` and `preprocess.data_eps_with_poisson_noise_added(..., xp=np)` gain `xp` parameter; JAX path uses `jax.random.PRNGKey(noise_seed)` + `jax.random.poisson`.\n- **Changed behaviour:** the `if xp.isnan(noise_map.array).any():` NaN-guard now only fires on the NumPy path (Python `if` on a JAX tracer triggers `TracerBoolConversionError`).\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "feat(grids): add respect_small_datasets kwarg to Grid2D.uniform",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/327",
+      "api_changes": "Adds one optional kwarg `respect_small_datasets: bool = True` to `aa.Grid2D.uniform`. No removed or renamed symbols; existing callers continue to work without change.\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "fix: raw-flux latent + soft-fail magzero-required \u00b5Jy",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/463",
+      "api_changes": "- **Added** `total_galaxy_0_flux(fit, magzero=None, xp=np)` \u2014 raw integrated\n  flux of galaxy 0 in the fit's image units; no instrument inputs required.\n  Default-on in `autogalaxy/config/latent.yaml`.\n- **Added** module-level helper `_maybe_magzero_warn(magzero, name) -> bool`\n  to dedupe the new soft-fail warning across the many fit evaluations in a\n  search.\n- **Behaviour change** on `total_galaxy_0_flux_mujy(fit, magzero=None, xp=np)`:\n  no longer raises `ValueError` when `magzero is None` \u2014 returns `xp.nan` and\n  emits a single `logging.WARNING` per latent name per process.\n- **Default config change** in `autogalaxy/config/latent.yaml`:\n  `total_galaxy_0_flux: true` added; `total_galaxy_0_flux_mujy` stays `false`.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "perf: cache expensive @property on Fit classes",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/462",
+      "api_changes": "None \u2014 same properties, same return types. Now cached after first access.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "fix: elliptical MGE potential via deflection line integral",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/460",
+      "api_changes": "Changed internal implementation of `MGEDecomposer.potential_2d_via_mge_from`. Added `sigma_function` static method and `n_quad` parameter. No public API changes.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "fix: add xp=np to convergence_func across all mass profiles",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/457",
+      "api_changes": "Added `xp=np` keyword to 5 `convergence_func` signatures. Default is `np` so existing callers are unaffected.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "feat: vmapped_deflections_from for batched subhalo deflections",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/455",
+      "api_changes": "New methods on `MassProfile`:\n- `MassProfile.vmapped_deflections_from(grid, params_batch, mask, xp=None)` \u2014 classmethod\n- `MassProfile.radial_deflection_from(r, params, xp)` \u2014 static method (default raises `NotImplementedError`)\n\nNew static methods:\n- `NFWTruncatedSph.radial_deflection_from(r, params, xp)` \u2014 params = `[kappa_s, scale_radius, truncation_radius]`\n- `cNFWSph.radial_deflection_from(r, params, xp)` \u2014 params = `[kappa_s, scale_radius, core_radius]`\n\nNew module-level functions:\n- `abstract.coord_func_f_from(grid_radius, xp)`\n- `nfw_truncated.coord_func_k_from(grid_radius, tau, xp)`\n- `nfw_truncated.coord_func_m_from(grid_radius, tau, xp)`\n- `cnfw.F_func_from(theta, radius, xp)`\n- `cnfw.dev_F_func_from(theta, radius, xp)`",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "fix: cNFWSph deflection boundary bug and MCR validation (#451)",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/454",
+      "api_changes": "None \u2014 internal bug fix. The warning for invalid f_c is new user-visible behaviour.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "docs: LaTeX docstrings for all mass profile classes",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/453",
+      "api_changes": "None \u2014 documentation only. No code logic changed.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "feat: MGE/CSE fallback for zero-returning mass profile potentials",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/449",
+      "api_changes": "Added `MGEDecomposer.potential_2d_via_mge_from()` \u2014 new public method computing lensing potential from MGE-decomposed convergence using the E1 exponential integral. Added helper methods `E1()` (Abramowitz & Stegun approximation, JAX-compatible) and `potential_func_gaussian()`. All existing zero-returning methods now return physically meaningful values instead of zeros. See full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "fix: raw-flux latents + soft-fail magzero-required \u00b5Jy",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/557",
+      "api_changes": "- **Added** three raw-flux latents (`total_lens_flux`, `total_lensed_source_flux`,\n  `total_source_flux`), default-on. Same image-source and exception-handling\n  contract as their `_mujy` siblings \u2014 they just skip the AB-mag \u2192 \u00b5Jy step.\n- **Added** module-level helper `_maybe_magzero_warn(magzero, name) -> bool`.\n- **Removed** `_require_magzero` (replaced by the helper above).\n- **Behaviour change** on the three `_mujy` latents: `magzero=None` no\n  longer raises \u2014 returns `xp.nan` + one warning per process per latent name.\n- **Default config change**: three new raw-flux keys default-on in\n  `autolens/config/latent.yaml`; existing keys unchanged.\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "test: lock down WeakDataset json round-trip (paired with PyAutoArray fix)",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/555",
+      "api_changes": "None \u2014 test-only change. See full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "Add placeholder subplot_fit_quick for weak lensing and combined fits",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/553",
+      "api_changes": "New functions: \\`subplot_fit_quick\\` (weak), \\`subplot_fit_combined_quick\\` (imaging combined).\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "Add subplot_fit_quick for point source quick updates",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/552",
+      "api_changes": "New function `autolens.point.plot.fit_point_plots.subplot_fit_quick`.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "Simplify subplot_fit_quick: use fit properties directly",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/551",
+      "api_changes": "None \u2014 same function, same output.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "Fix subplot_fit_quick styling: arcsecond axes, source plane, code reuse",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/550",
+      "api_changes": "None \u2014 same functions, same output filenames.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "Add subplot_fit_quick for interferometer quick updates",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/549",
+      "api_changes": "New function `autolens.interferometer.plot.fit_interferometer_plots.subplot_fit_quick`. The plotter's quick-update branch now calls this instead of `subplot_fit_dirty_images`.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "perf: cache expensive @property on Fit classes",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/548",
+      "api_changes": "None \u2014 same properties, same return types. Now cached after first access.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "Fast subplot_fit_quick: sub-second rendering for quick updates",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/547",
+      "api_changes": "None \u2014 `subplot_fit_quick` has the same signature. Internal rendering pipeline is different but the output PNG is the same 6-panel layout.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "Add subplot_fit_quick for faster quick-update rendering",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/546",
+      "api_changes": "New function `autolens.imaging.plot.fit_imaging_plots.subplot_fit_quick` \u2014 same signature as `subplot_fit` minus the `plane_index` arg. Saves as `fit_quick.png` at 200 DPI. The plotter's quick-update branch now calls this instead of `subplot_fit`.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "docs: expand quick-update cookbook + add config flag defaults",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/67",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/cookbooks/analysis.py` \u2014 rewrote the `__Live Quick-Update Visualization__` section: documents `live_visual_update` separately from `background_quick_update` (the two are independent), adds an Analysis API surface subsection (`perform_quick_update`, `supports_background_update`, `supports_jax_visualization`), mentions `Fitness.manage_quick_update`, updates the commented API-shape example to show both flags, and adds a commented `perform_quick_update` override example. Tightens the Jupyter / script display surface description to name `IPython.display.update_display` with a stable `display_id` (the actual shipped mechanism) and the matplotlib viewer subprocess for script mode.\n- `config/general.yaml` \u2014 appends `quick_update_background: false` and `live_visual_update: false` under both `updates:` and `hpc:` with explanatory comments."
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "docs: foundational latent-variables cookbook in autofit_workspace",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/64",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/cookbooks/latent_variables.py` (new, ~200 lines) \u2014 10 sections in order: Model Fit, What is a Latent Variable, Why Latent Variables, How PyAutoFit Computes Latents, Two Output Modes, Errors on Latents, Posterior Draws Under the Hood, Loading Results Downstream, When To Add A Latent vs A Sampled Parameter. Reuses `af.ex.Analysis` (already has `LATENT_KEYS = [\"gaussian.fwhm\"]`) so no new model classes live in the tutorial body.\n- `smoke_tests.txt` \u2014 append `cookbooks/latent_variables.py`. Deliberate addition per memory `feedback_smoke_tests_small_subset` because this is the canonical reference for the latent epic."
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "docs(cookbooks/analysis): __Live Quick-Update Visualization__ section",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/62",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/cookbooks/analysis.py` \u2014 new `__Live Quick-Update Visualization__` section (52 lines) covering `iterations_per_quick_update`, `background_quick_update=True`, the new IPython live-cell rendering when running in a Jupyter / Colab kernel, the script-mode fallback (PNGs on disk unchanged), and the `PYAUTO_DISABLE_IPYTHON_DISPLAY=1` opt-out. Inserts a small commented API-shape example showing the Nautilus kwargs that opt into it. Matches existing cookbook prose convention \u2014 no runnable Nautilus fit in the cookbook itself.\n- `notebooks/cookbooks/analysis.ipynb` \u2014 regenerated via `PyAutoBuild/autobuild/build_util.py_to_notebook` to match the updated script."
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "chore(scripts): Phase 3 use_jax=True consistency in features/search_chaining",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/61",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/features/search_chaining.py` \u2014 added `use_jax=True` to all 4 `af.ex.Analysis(...)` calls so the chained pipeline runs the same JAX path as the grid-search sibling"
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "feat: add af.NSS section to searches/nest.py tutorial (Phase 5)",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/60",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/searches/nest.py` \u2014 added a new **Search: NSS** section after the existing Nautilus section walking through the NSS-specific kwargs (`n_live`, `num_mcmc_steps`, `num_delete`, `termination`, `checkpoint_interval`, `iterations_per_quick_update`); extended the top docstring + Contents block to include NSS; added an \"Install Precondition for NSS\" callout (`pip install autofit[nss]`); built a separate `af.ex.Analysis(use_jax=True)` for the NSS section to demonstrate the production pattern (NSS needs a JAX-traceable analysis; the boundary samplers above share the default NumPy analysis).\n- `scripts/searches/README.md` \u2014 updated the `nest.py` entry to mention NSS alongside the boundary samplers; added a \"When to use NSS\" paragraph explaining the JAX-traceable-likelihood criterion for choosing NSS over Nautilus/Dynesty."
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "Disable model.graph output by default",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/56",
+      "api_changes": "",
+      "scripts_changed": "- None \u2014 config-only change to `config/output.yaml`."
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "docs: raw-flux latent guide + workspace config updates",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/108",
+      "api_changes": "",
+      "scripts_changed": "- `config/latent.yaml` \u2014 Add `total_galaxy_0_flux: true` explicitly alongside the existing `total_galaxy_0_flux_mujy: true`; reflow the comment block to explain the raw / \u00b5Jy split.\n- `scripts/guides/units/flux.py` \u2014 New \"Latent Variables: Total Flux Directly from the Fit\" section. Documents that `latent/samples.csv` now ships a raw-flux column out of the box, demos converting raw flux \u2192 \u00b5Jy in post via `ab_mag_via_flux_from` / `flux_mujy_via_ab_mag_from`, and closes with a pointer to enabling `_mujy` via workspace config + `magzero=` on the analysis.\n- `scripts/guides/results/latent_variables.py` \u2014 Catalogue section rewritten from a single-latent entry to the raw / \u00b5Jy couplet, with clear \"no instrument inputs needed\" framing for the raw key. Updated the \"Toggling Latents\" section to describe the new \"raw default-on, \u00b5Jy default-off\" library split. Updated the model-fit `magzero` paragraph to describe the NaN+warning soft-fail behaviour rather than the old `ValueError`. Updated the loading-results section to print both latents."
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "interferometer: switch to TransformerNUFFT + apply_sparse_operator, reduce MGE to 5 Gaussians",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/106",
+      "api_changes": "None \u2014 pure workspace edits.",
+      "scripts_changed": "- `features/multi_gaussian_expansion/{modeling,fit,likelihood_function}.py`\n- `features/pixelization/{modeling,fit,galaxy_reconstruction,many_visibilities_preparation,likelihood_function}.py`"
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "config: add quick_update_background + live_visual_update defaults",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/105",
+      "api_changes": "",
+      "scripts_changed": "- `config/general.yaml` \u2014 appends `quick_update_background: false` and `live_visual_update: false` under both `updates:` and `hpc:` with explanatory comments."
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "docs: remove Array2D.native jit-blocked caveats from JAX variant blocks",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/104",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/imaging/simulator.py` \u2014 removed jit-blocked caveat from JAX variant notes\n- `scripts/interferometer/simulator.py` \u2014 removed jit-blocked caveat from JAX variant notes"
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "docs: __JAX__ in autogalaxy deferred (multi + guides mirror)",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/103",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/multi/start_here.py` \u2014 refresh 2 stale `__JAX__` blocks per Phase 0 contract\n- `scripts/guides/data_structures.py` \u2014 new `__JAX__` covering `.array` story, host transfer, the not-pytree rule + `.array` unwrap-rewrap workaround\n- `scripts/guides/galaxies.py` \u2014 new `__JAX__` covering Galaxy / Galaxies pytree registration (auto via Analysis/Simulator; explicit Analysis-as-trigger workaround); closure-captured `self` vs traced argument\n\nBoth guide sections cross-reference `autolens_workspace/scripts/guides/lens_calc.py` for the canonical \"JIT-it-yourself\" deep-dive \u2014 autogalaxy has no `lens_calc.py` equivalent."
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "docs: __JAX__ sections in per-dataset scripts (imaging + interferometer)",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/101",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/imaging/start_here.py` \u2014 refresh 2 stale `__JAX__` blocks\n- `scripts/imaging/simulator.py` \u2014 new `__JAX Variant__` (`SimulatorImaging(use_jax=True)`)\n- `scripts/imaging/fit.py` \u2014 `__JAX__` prose\n- `scripts/imaging/likelihood_function.py` \u2014 `__JAX__` section with `@jax.jit` recipe + `Fitness._vmap` validation\n- `scripts/interferometer/start_here.py` \u2014 refresh 2 `__JAX__` blocks + TransformerDFT/NUFFT caveat\n- `scripts/interferometer/simulator.py` \u2014 new `__JAX Variant__` (`SimulatorInterferometer(use_jax=True)`)\n- `scripts/interferometer/fit.py` \u2014 `__JAX__` prose\n- `scripts/interferometer/likelihood_function.py` \u2014 `__JAX__` section"
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "docs: add __JAX__ section to top-level start_here.py",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/99",
+      "api_changes": "",
+      "scripts_changed": "- `start_here.py` \u2014 new `__JAX__` section (~70 lines of prose + one illustrative `simulator.via_galaxies_from(use_jax=True)` snippet) inserted after `__Galaxies__`."
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "docs: workspace tutorial for latent variables in autogalaxy_workspace",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/97",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/guides/results/latent_variables.py` (new, ~180 lines) \u2014 sections in order: Galaxy Latents in PyAutoGalaxy (the curated catalogue), Toggling Latents (workspace yaml override pattern), Model Fit (quick Nautilus run on the simple dataset with `magzero=25.0`), Loading Latent Results (via `analysis.compute_latent_samples(result.samples)` + standard `Samples` API), Extending with a Custom Latent (subclass `ag.AnalysisImaging`, override `LATENT_KEYS` and `compute_latent_variables` to add `bulge_axis_ratio` as a derived quantity), Contributing Upstream (PR checklist for promoting custom latents to the library registry).\n- `config/latent.yaml` (new) \u2014 workspace overrides enabling `total_galaxy_0_flux_mujy: true`. The library default is `false` so existing fits stay unchanged; the workspace shadowing means a fit that passes `magzero` to `AnalysisImaging` produces real latent output."
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "docs: raw-flux latent guides + workspace config updates",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/214",
+      "api_changes": "",
+      "scripts_changed": "- `config/latent.yaml` \u2014 Add `total_lens_flux`, `total_lensed_source_flux`, `total_source_flux` (all `true`) to the workspace overrides; reflow the comment block to explain the raw / \u00b5Jy / dimensionless grouping; add `total_galaxy_0_flux: false` as an explicit cross-library silencer (the autogalaxy library default leaks into autolens's conf node).\n- `scripts/guides/units/flux.py` \u2014 New \"Latent Variables: Total Flux Directly from the Fit\" section. Documents that `latent/samples.csv` now ships raw-flux columns out of the box, explains the units (same as `dataset.data.array`), and demos converting raw flux \u2192 \u00b5Jy in post via `ab_mag_via_flux_from` / `flux_mujy_via_ab_mag_from`. Closes with a pointer to enabling the `_mujy` latents via workspace config + `magzero=` on the analysis (Euclid pipeline pattern).\n- `scripts/guides/results/latent_variables.py` \u2014 Catalogue section restructured from 5 entries to 8, grouped into raw-flux / \u00b5Jy / dimensionless. Updated the \"All five default to false\" claim to reflect the new \"raw default-on, \u00b5Jy default-off\" split. Updated the \"Toggling Latents\" section and the model-fit `magzero` paragraph to describe the NaN+warning soft-fail behaviour rather than the old `ValueError`. Updated the \"extra column on top of five library defaults\" line to 8."
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "docs: simplify weak/fit.py to load dataset via al.from_json",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/212",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/weak/fit.py` \u2014 replaced inline `WeakDataset` reconstruction with `al.from_json(file_path=dataset_path / \"dataset.json\")`; revised the `__Dataset__` docstring accordingly. (\u221220 / +5 lines.)"
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "interferometer: switch to TransformerNUFFT + apply_sparse_operator, MGE to 5 Gaussians",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/211",
+      "api_changes": "None \u2014 pure workspace edits.",
+      "scripts_changed": "22 scripts across `features/{datacube,extra_galaxies,linear_light_profiles,multi_gaussian_expansion,pixelization,subhalo/detect}/` plus 2 READMEs."
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "config: add quick_update_background + live_visual_update defaults",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/210",
+      "api_changes": "",
+      "scripts_changed": "- `config/general.yaml` \u2014 appends `quick_update_background: false` and `live_visual_update: false` under both `updates:` and `hpc:` with explanatory comments."
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "docs: remove Array2D.native jit-blocked caveats from JAX variant blocks",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/208",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/imaging/simulator.py` \u2014 removed jit-blocked caveat from JAX variant notes\n- `scripts/interferometer/simulator.py` \u2014 removed jit-blocked caveat from JAX variant notes\n- `scripts/group/simulator.py` \u2014 removed jit-blocked caveat from JAX variant notes\n- `scripts/point_source/simulator.py` \u2014 updated note about PointSolver not using Array2D.native\n- `scripts/point_source/fit.py` \u2014 simplified note about PointSolver jit compatibility"
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "docs: __JAX__ in deferred datasets (multi + group + cluster) + cluster simulator migration",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/207",
+      "api_changes": "",
+      "scripts_changed": "**3c \u2014 multi (refresh):**\n- `scripts/multi/start_here.py` \u2014 refresh 2 stale `__JAX__` blocks per Phase 0 contract.\n\n**3e \u2014 group (full add):**\n- `scripts/group/start_here.py` \u2014 refresh 2 stale `__JAX__` blocks\n- `scripts/group/simulator.py` \u2014 `__JAX Variant__` reference (delegates to `imaging/simulator.py`)\n- `scripts/group/fit.py` \u2014 `__JAX__` prose\n- `scripts/group/likelihood_function.py` \u2014 `__JAX__` reference to imaging recipe\n- `scripts/group/modeling.py` \u2014 refresh stale `__JAX__` block\n\n**3f \u2014 cluster (migration + add):**\n- `scripts/cluster/simulator.py` \u2014 **MIGRATE**: collapse ~60-line manual ceremony to single `register_tracer_classes(tracer)` + `PointSolver(use_jax=True)` + `@jax.jit` pattern; drop stale imports\n- `scripts/cluster/start_here.py` \u2014 refresh stale `__JAX__` block\n- `scripts/cluster/likelihood_function.py` \u2014 `__JAX__` section with hand-rolled `@jax.jit` recipe using the new API\n- `scripts/cluster/modeling.py` \u2014 refresh stale `__JAX__` block"
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "docs: __JAX__ sections in workspace guides (data_structures, galaxies, tracer, lens_calc)",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/205",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/guides/data_structures.py` \u2014 `__JAX__` section covering the `.array` story, when backing becomes `jax.Array`, host-transfer mechanics, the not-pytree rule + `.array` unwrap-rewrap workaround.\n- `scripts/guides/galaxies.py` \u2014 pytree registration for `Galaxy` / `Galaxies` (implicit via Analysis/Simulator; explicit via `autolens.jax.register_tracer_classes`); closure-captured `self` vs traced-argument distinction.\n- `scripts/guides/tracer.py` \u2014 tracer ray-tracing on JAX (implicit + explicit paths), multi-plane under JIT, performance expectations.\n- `scripts/guides/lens_calc.py` \u2014 the canonical \"JIT-it-yourself\" guide: `@jax.jit + xp=jnp` rule, mismatch `ValueError`, decorator vs bound method, cache identity, closure vs traced argument, LensCalc `if xp is np:` guard return-type discipline."
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "docs: __JAX__ sections in per-dataset scripts (imaging + interferometer + point_source)",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/203",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/imaging/start_here.py` \u2014 refresh 2 stale `__JAX__` blocks\n- `scripts/imaging/simulator.py` \u2014 new `__JAX Variant__` (`SimulatorImaging(use_jax=True)`)\n- `scripts/imaging/fit.py` \u2014 `__JAX__` prose\n- `scripts/imaging/likelihood_function.py` \u2014 `__JAX__` section with `@jax.jit` recipe + `Fitness._vmap` validation\n- `scripts/interferometer/start_here.py` \u2014 refresh 2 `__JAX__` blocks + TransformerDFT/NUFFT caveat\n- `scripts/interferometer/simulator.py` \u2014 new `__JAX Variant__` (`SimulatorInterferometer(use_jax=True)`)\n- `scripts/interferometer/fit.py` \u2014 `__JAX__` prose\n- `scripts/interferometer/likelihood_function.py` \u2014 `__JAX__` section\n- `scripts/point_source/start_here.py` \u2014 refresh 2 `__JAX__` blocks + `register_tracer_classes` note\n- `scripts/point_source/simulator.py` \u2014 new `__JAX Variant__` with `PointSolver(use_jax=True)` + `register_tracer_classes`\n- `scripts/point_source/fit.py` \u2014 `__JAX__` section in top docstring"
+    }
+  ],
+  "runs": [
+    {
+      "project": "euclid",
+      "directory": "scripts",
+      "run_type": "script",
+      "started_at": "2026-05-28T14:33:32.142811",
+      "completed_at": "2026-05-28T14:39:17.876149",
+      "summary": {
+        "passed": 5
+      },
+      "total_duration_seconds": 345.72
+    }
+  ],
+  "slow_skips": [],
+  "needs_fix_skips": []
+}

@@ -1,0 +1,49 @@
+{
+  "project": "howtofit",
+  "directory": "scripts/chapter_3_graphical_models",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T22:30:00.470106",
+  "completed_at": "2026-07-21T22:30:21.615875",
+  "summary": {
+    "passed": 7
+  },
+  "total_duration_seconds": 21.14,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_3_graphical_models/tutorial_1_individual_models.py",
+      "status": "passed",
+      "duration_seconds": 2.99
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_3_graphical_models/tutorial_2_graphical_model.py",
+      "status": "passed",
+      "duration_seconds": 2.41
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_3_graphical_models/tutorial_3_graphical_benefits.py",
+      "status": "passed",
+      "duration_seconds": 2.73
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_3_graphical_models/tutorial_4_hierachical_models.py",
+      "status": "passed",
+      "duration_seconds": 2.38
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_3_graphical_models/tutorial_5_expectation_propagation.py",
+      "status": "passed",
+      "duration_seconds": 5.77
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_3_graphical_models/tutorial_optional_hierarchical_ep.py",
+      "status": "passed",
+      "duration_seconds": 2.12
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_3_graphical_models/tutorial_optional_hierarchical_individual.py",
+      "status": "passed",
+      "duration_seconds": 2.74
+    }
+  ]
+}

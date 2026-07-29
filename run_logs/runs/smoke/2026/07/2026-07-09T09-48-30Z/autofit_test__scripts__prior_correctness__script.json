@@ -1,0 +1,23 @@
+{
+  "project": "autofit_test",
+  "directory": "scripts/prior_correctness",
+  "run_type": "script",
+  "started_at": "2026-07-09T12:16:35.402789",
+  "completed_at": "2026-07-09T12:17:34.912513",
+  "summary": {
+    "passed": 2
+  },
+  "total_duration_seconds": 59.5,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/prior_correctness/emcee_gaussian_bias_check.py",
+      "status": "passed",
+      "duration_seconds": 56.3
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/prior_correctness/lbfgs_gaussian_bias_check.py",
+      "status": "passed",
+      "duration_seconds": 3.2
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# Test Report: autolens / scripts/weak (script)
+
+**2 scripts** | 2 passed
+
+| Status | Count |
+|--------|-------|
+| passed | 2 |
+
+## Passed
+
+- `/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/simulator.py` (7.6s)
+- `/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/fit.py` (8.7s)

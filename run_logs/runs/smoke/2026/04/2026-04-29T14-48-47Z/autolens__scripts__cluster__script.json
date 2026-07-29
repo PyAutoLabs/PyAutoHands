@@ -1,0 +1,33 @@
+{
+  "project": "autolens",
+  "directory": "scripts/cluster",
+  "run_type": "script",
+  "started_at": "2026-04-29T16:07:52.547921",
+  "completed_at": "2026-04-29T16:07:56.614488",
+  "summary": {
+    "failed": 1,
+    "skipped": 2
+  },
+  "total_duration_seconds": 4.06,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace/scripts/cluster/simulator.py",
+      "status": "failed",
+      "duration_seconds": 4.06,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace/scripts/cluster/simulator.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace/scripts/cluster/simulator.py\", line 418, in <module>\n    raw = np.asarray(jitted_solve(tracer, coord).array)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: function jitted_solve at /home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace/scripts/cluster/simulator.py:405 traced for jit returned a value of type <class 'autoarray.structures.grids.irregular_2d.Grid2DIrregular'> at output component jit, which is not a valid JAX type\n--------------------\nFor simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace/scripts/cluster/start_here.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Cluster analysis is not maintained and test mode breaks it."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace/scripts/cluster/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Cluster modeling is not maintained and test mode breaks it."
+    }
+  ]
+}

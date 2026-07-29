@@ -1,0 +1,212 @@
+{
+  "project": "autolens",
+  "directory": "scripts/group",
+  "run_type": "script",
+  "started_at": "2026-05-04T12:34:15.108267",
+  "completed_at": "2026-05-04T12:41:14.445453",
+  "summary": {
+    "passed": 34,
+    "failed": 3,
+    "skipped": 1
+  },
+  "total_duration_seconds": 419.31,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/operated_light_profile/simulator.py",
+      "status": "passed",
+      "duration_seconds": 8.54
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/sky_background/simulator.py",
+      "status": "passed",
+      "duration_seconds": 4.37
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/subhalo/simulator.py",
+      "status": "passed",
+      "duration_seconds": 6.1
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/multi_gaussian_expansion/simulator.py",
+      "status": "passed",
+      "duration_seconds": 5.02
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/no_lens_light/simulator.py",
+      "status": "passed",
+      "duration_seconds": 4.65
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/simulator.py",
+      "status": "passed",
+      "duration_seconds": 6.02
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/data_preparation/start_here.py",
+      "status": "passed",
+      "duration_seconds": 2.47
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/subhalo/detect/start_here.py",
+      "status": "failed",
+      "duration_seconds": 18.47,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/subhalo/detect/start_here.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/subhalo/detect/start_here.py\", line 827, in <module>\n    result_with_subhalo = subhalo_refine(\n                          ^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/subhalo/detect/start_here.py\", line 634, in subhalo_refine\n    galaxies=af.Collection(**lens_dict, source=source),\n                                               ^^^^^^\nNameError: name 'source' is not defined. Did you mean: 'source_lp'?"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/start_here.py",
+      "status": "passed",
+      "duration_seconds": 43.59
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/operated_light_profile/modeling.py",
+      "status": "passed",
+      "duration_seconds": 13.7
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/shapelets/fit.py",
+      "status": "passed",
+      "duration_seconds": 6.36
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/shapelets/modeling.py",
+      "status": "passed",
+      "duration_seconds": 39.57
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/sky_background/fit.py",
+      "status": "passed",
+      "duration_seconds": 4.99
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/sky_background/modeling.py",
+      "status": "passed",
+      "duration_seconds": 13.39
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/linear_light_profiles/fit.py",
+      "status": "passed",
+      "duration_seconds": 8.27
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/linear_light_profiles/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 6.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/linear_light_profiles/modeling.py",
+      "status": "passed",
+      "duration_seconds": 19.1
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/linear_light_profiles/slam.py",
+      "status": "failed",
+      "duration_seconds": 15.8,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/linear_light_profiles/slam.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/linear_light_profiles/slam.py\", line 950, in <module>\n    mass_result = mass_total(\n                  ^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/linear_light_profiles/slam.py\", line 704, in mass_total\n    mass.einstein_radius = af.UniformPrior(\n                           ^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/mapper/prior/uniform.py\", line 53, in __init__\n    raise exc.PriorException(\nautoconf.exc.PriorException: The upper limit of a prior must be greater than its lower limit"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/multi_gaussian_expansion/fit.py",
+      "status": "passed",
+      "duration_seconds": 5.06
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/multi_gaussian_expansion/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 5.02
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/multi_gaussian_expansion/modeling.py",
+      "status": "passed",
+      "duration_seconds": 12.21
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/multi_gaussian_expansion/slam.py",
+      "status": "passed",
+      "duration_seconds": 12.35
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/multi_gaussian_expansion/source_science.py",
+      "status": "passed",
+      "duration_seconds": 4.67
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/no_lens_light/modeling.py",
+      "status": "passed",
+      "duration_seconds": 11.23
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/no_lens_light/slam.py",
+      "status": "passed",
+      "duration_seconds": 14.63
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/adaptive.py",
+      "status": "passed",
+      "duration_seconds": 14.51
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/cpu_fast_modeling.py",
+      "status": "passed",
+      "duration_seconds": 19.08
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/delaunay.py",
+      "status": "passed",
+      "duration_seconds": 10.6
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/fit.py",
+      "status": "passed",
+      "duration_seconds": 9.11
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 5.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/modeling.py",
+      "status": "passed",
+      "duration_seconds": 15.96
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/slam.py",
+      "status": "failed",
+      "duration_seconds": 10.18,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/slam.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/operators/convolver.py:925: UserWarning: No blurring_image provided. Only the direct image will be convolved. This may change the correctness of the PSF convolution.\n  warnings.warn(\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/slam.py\", line 741, in <module>\n    source_lp_result_1 = source_lp_1(\n                         ^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/slam.py\", line 234, in source_lp_1\n    mass.einstein_radius = af.UniformPrior(\n                           ^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/mapper/prior/uniform.py\", line 53, in __init__\n    raise exc.PriorException(\nautoconf.exc.PriorException: The upper limit of a prior must be greater than its lower limit"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/pixelization/source_science.py",
+      "status": "passed",
+      "duration_seconds": 5.43
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/fit.py",
+      "status": "passed",
+      "duration_seconds": 6.0
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 5.21
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/modeling.py",
+      "status": "passed",
+      "duration_seconds": 16.66
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/slam.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - PriorException: upper limit must be greater than lower limit in group SLaM pipeline"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/source_science.py",
+      "status": "passed",
+      "duration_seconds": 8.04
+    }
+  ]
+}

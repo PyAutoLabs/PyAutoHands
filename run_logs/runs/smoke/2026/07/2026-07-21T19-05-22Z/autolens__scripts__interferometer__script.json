@@ -1,0 +1,221 @@
+{
+  "project": "autolens",
+  "directory": "scripts/interferometer",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T21:08:57.527207",
+  "completed_at": "2026-07-21T21:17:44.197007",
+  "summary": {
+    "passed": 37,
+    "failed": 2,
+    "skipped": 1
+  },
+  "total_duration_seconds": 526.65,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/simulator.py",
+      "status": "passed",
+      "duration_seconds": 8.11
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/extra_galaxies/simulator.py",
+      "status": "passed",
+      "duration_seconds": 6.36
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/subhalo/simulator.py",
+      "status": "passed",
+      "duration_seconds": 6.01
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/simulator.py",
+      "status": "passed",
+      "duration_seconds": 10.66
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/start_here.py",
+      "status": "passed",
+      "duration_seconds": 11.22
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py",
+      "status": "failed",
+      "duration_seconds": 12.89,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py:5: SyntaxWarning: invalid escape sequence '\\d'\n  This example performs gravitational imaging on interferometer data: pixelized corrections $\\delta\\psi$ to the\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py:90: SyntaxWarning: invalid escape sequence '\\o'\n  An `Isothermal` lens whose true mass also contains a $10^{10} M_\\odot$ NFW subhalo on the Einstein ring, and a\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py:168: SyntaxWarning: invalid escape sequence '\\c'\n  $\\chi^2$/dof is far above ~1-3, the corrections will absorb source-model error instead of mass structure and\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py\", line 234, in <module>\n    print(f\"one-shot joint log evidence = {fit.log_evidence:.4e}\")\n                                           ^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 481, in log_evidence\n    self.src_dpsi_slim = self.solve_src_dpsi()\n                         ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 445, in solve_src_dpsi\n    curve_reg = np.asarray(self.curvature_regularization_matrix)\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 442, in curvature_regularization_matrix\n    return self.curvature_matrix + self.regularization_matrix\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 372, in curvature_matrix\n    rows, cols, vals, n_src = self._joint_triplets()\n                              ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 345, in _joint_triplets\n    G = self.dpsi_response_matrix\n        ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 274, in dpsi_response_matrix\n    -1.0 * self.source_gradient_matrix @ self.dpsi_gradient_matrix\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 246, in source_gradient_matrix\n    traced = np.asarray(self.source_plane_data_grid)[self._dpsi_rows_in_full]\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 239, in _dpsi_rows_in_full\n    self.pair_dpsi_data_obj.mask_data,\n    ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 221, in pair_dpsi_data_obj\n    self._pair_dpsi_data_obj = self.dpsi_pixelization.pair_dpsi_data_mesh(\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/pixelization.py\", line 90, in pair_dpsi_data_mesh\n    return dpsi_mesh.PairRegularDpsiMesh(mask, pixel_scale, self.mesh.factor)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 99, in __init__\n    self.get_itp_box_ctr()\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 132, in get_itp_box_ctr\n    raise ValueError(\nValueError: The dpsi grid is too sparse. Try decreasing the dpsi_factor to smaller values."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/subhalo/detect/start_here.py",
+      "status": "passed",
+      "duration_seconds": 12.34
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/subhalo/sensitivity/start_here.py",
+      "status": "passed",
+      "duration_seconds": 0.1
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/start_here.py",
+      "status": "passed",
+      "duration_seconds": 146.1
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/casa_reduction.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Requires CASA MeasurementSet output, not runnable standalone"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/data_preparation.py",
+      "status": "passed",
+      "duration_seconds": 11.47
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/advanced/shapelets/fit.py",
+      "status": "passed",
+      "duration_seconds": 8.03
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/advanced/shapelets/modeling.py",
+      "status": "passed",
+      "duration_seconds": 17.42
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/data_preparation.py",
+      "status": "passed",
+      "duration_seconds": 4.24
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/delaunay.py",
+      "status": "passed",
+      "duration_seconds": 7.76
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 10.39
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/modeling.py",
+      "status": "passed",
+      "duration_seconds": 7.45
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/datacube/modeling_parametric.py",
+      "status": "passed",
+      "duration_seconds": 6.01
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/extra_galaxies/modeling.py",
+      "status": "passed",
+      "duration_seconds": 8.49
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/extra_galaxies/slam.py",
+      "status": "passed",
+      "duration_seconds": 8.87
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/fit.py",
+      "status": "passed",
+      "duration_seconds": 7.4
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 8.74
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/modeling.py",
+      "status": "passed",
+      "duration_seconds": 10.95
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/linear_light_profiles/slam.py",
+      "status": "passed",
+      "duration_seconds": 10.19
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/fit.py",
+      "status": "passed",
+      "duration_seconds": 10.44
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 9.17
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/modeling.py",
+      "status": "passed",
+      "duration_seconds": 10.6
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/multi_gaussian_expansion/slam.py",
+      "status": "passed",
+      "duration_seconds": 10.22
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/delaunay.py",
+      "status": "passed",
+      "duration_seconds": 20.47
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/fit.py",
+      "status": "passed",
+      "duration_seconds": 12.28
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 14.31
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/many_visibilities_preparation.py",
+      "status": "passed",
+      "duration_seconds": 9.23
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/modeling.py",
+      "status": "passed",
+      "duration_seconds": 12.88
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/slam.py",
+      "status": "passed",
+      "duration_seconds": 9.37
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/pixelization/source_science.py",
+      "status": "passed",
+      "duration_seconds": 11.09
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py",
+      "status": "failed",
+      "duration_seconds": 7.78,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:6: SyntaxWarning: invalid escape sequence '\\d'\n  `Interferometer` data for a pixelized source and pixelized corrections $\\delta\\psi$ to the lensing potential.\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:77: SyntaxWarning: invalid escape sequence '\\o'\n  `Isothermal` lens whose true mass also contains a $10^{10} M_\\odot$ NFW subhalo on the Einstein ring, and a\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:144: SyntaxWarning: invalid escape sequence '\\p'\n  gradients $(\\partial S / \\partial y, \\partial S / \\partial x)$ at arbitrary source-plane positions.\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:187: SyntaxWarning: invalid escape sequence '\\d'\n  - `hamiltonian_dpsi`: the mesh Laplacian, used later to convert $\\delta\\psi$ to $\\delta\\kappa$.\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:204: SyntaxWarning: invalid escape sequence '\\d'\n  As in the imaging walkthrough, a correction $\\delta\\psi$ perturbs the observed image via the source's brightness\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:242: SyntaxWarning: invalid escape sequence '\\,'\n  The joint real-space response stacks the two blocks, $A = [\\, f \\; | \\; G \\,]$, alongside the block-diagonal\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:293: SyntaxWarning: invalid escape sequence '\\,'\n  - the curvature is $F = A^T \\, (T^H C^{-1} T) \\, A$, where the operator $T^H C^{-1} T$ is a **convolution** in\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:317: SyntaxWarning: invalid escape sequence '\\,'\n  $(F + R) \\, x = D$\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:330: SyntaxWarning: invalid escape sequence '\\d'\n  $\\delta\\kappa = \\frac{1}{2}\\nabla^2 \\delta\\psi$, via the mesh Laplacian. A dark subhalo missing from the smooth\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:357: SyntaxWarning: invalid escape sequence '\\c'\n  visibility-space specifics that the noise normalization and $\\chi^2$ run over the real **and** imaginary parts:\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py\", line 196, in <module>\n    pair = al.pc.PairRegularDpsiMesh(dpsi_mask, pixel_scale=0.1, dpsi_factor=2)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 99, in __init__\n    self.get_itp_box_ctr()\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 132, in get_itp_box_ctr\n    raise ValueError(\nValueError: The dpsi grid is too sparse. Try decreasing the dpsi_factor to smaller values."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/fit.py",
+      "status": "passed",
+      "duration_seconds": 9.93
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 9.43
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/modeling.py",
+      "status": "passed",
+      "duration_seconds": 20.89
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/source_science.py",
+      "status": "passed",
+      "duration_seconds": 7.36
+    }
+  ]
+}

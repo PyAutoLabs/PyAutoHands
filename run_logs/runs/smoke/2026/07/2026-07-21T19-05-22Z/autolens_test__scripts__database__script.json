@@ -1,0 +1,50 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/database",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T21:48:03.163137",
+  "completed_at": "2026-07-21T21:49:07.481382",
+  "summary": {
+    "skipped": 5,
+    "passed": 1
+  },
+  "total_duration_seconds": 64.31,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/general.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-27 - PyAutoGalaxy abstract_fit.linear_light_profile_intensity_dict raises \"TypeError: __hash__ method should return an integer\" during subplot_fit_imaging after the search completes (a light-profile object's __hash__ returns a non-int). Surfaced once the dataset_label=\"build\" path fix let the script progress past Imaging.from_fits."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/multi_analysis.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/scaling_relation.py",
+      "status": "passed",
+      "duration_seconds": 64.31
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/slam_general.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/slam_multi_one_by_one.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/slam_pix.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "project": "autogalaxy",
+  "directory": "scripts/interferometer",
+  "run_type": "script",
+  "started_at": "2026-07-08T18:21:11.784196",
+  "completed_at": "2026-07-08T18:26:39.227559",
+  "summary": {
+    "passed": 21,
+    "skipped": 2
+  },
+  "total_duration_seconds": 327.42,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/extra_galaxies/simulator.py",
+      "status": "passed",
+      "duration_seconds": 12.28
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/pixelization/simulator.py",
+      "status": "passed",
+      "duration_seconds": 13.71
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/simulator.py",
+      "status": "passed",
+      "duration_seconds": 13.35
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/start_here.py",
+      "status": "passed",
+      "duration_seconds": 27.5
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/casa_reduction.py",
+      "status": "passed",
+      "duration_seconds": 4.23
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/data_preparation.py",
+      "status": "passed",
+      "duration_seconds": 15.4
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/extra_galaxies/modeling.py",
+      "status": "passed",
+      "duration_seconds": 11.78
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/linear_light_profiles/fit.py",
+      "status": "passed",
+      "duration_seconds": 9.15
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/linear_light_profiles/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 11.61
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/linear_light_profiles/modeling.py",
+      "status": "passed",
+      "duration_seconds": 17.14
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/multi_gaussian_expansion/fit.py",
+      "status": "passed",
+      "duration_seconds": 11.38
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/multi_gaussian_expansion/likelihood_function.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-05-20 - LinAlgError: matrix singular in MGE inversion -> InversionException (known_numerical; same family as pixelization variants above)"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/multi_gaussian_expansion/modeling.py",
+      "status": "passed",
+      "duration_seconds": 25.04
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/pixelization/fit.py",
+      "status": "passed",
+      "duration_seconds": 15.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/pixelization/galaxy_reconstruction.py",
+      "status": "passed",
+      "duration_seconds": 14.69
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/pixelization/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 25.1
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/pixelization/many_visibilities_preparation.py",
+      "status": "passed",
+      "duration_seconds": 11.2
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/pixelization/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - LinAlgError: matrix not positive definite in interferometer pixelization modeling"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/shapelets/fit.py",
+      "status": "passed",
+      "duration_seconds": 10.18
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/features/shapelets/modeling.py",
+      "status": "passed",
+      "duration_seconds": 43.55
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/fit.py",
+      "status": "passed",
+      "duration_seconds": 9.18
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/likelihood_function.py",
+      "status": "passed",
+      "duration_seconds": 11.04
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/interferometer/modeling.py",
+      "status": "passed",
+      "duration_seconds": 13.93
+    }
+  ]
+}

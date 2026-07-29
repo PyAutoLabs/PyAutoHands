@@ -1,0 +1,33 @@
+{
+  "project": "autofit_test",
+  "directory": "scripts/features",
+  "run_type": "script",
+  "started_at": "2026-05-04T13:27:28.561429",
+  "completed_at": "2026-05-04T13:27:56.661534",
+  "summary": {
+    "passed": 4
+  },
+  "total_duration_seconds": 28.09,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/features/assertion.py",
+      "status": "passed",
+      "duration_seconds": 4.35
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/features/grid_search_parallel.py",
+      "status": "passed",
+      "duration_seconds": 12.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/features/latent.py",
+      "status": "passed",
+      "duration_seconds": 4.99
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/features/minimal_output.py",
+      "status": "passed",
+      "duration_seconds": 5.77
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "project": "autofit",
+  "directory": "scripts/cookbooks",
+  "run_type": "script",
+  "started_at": "2026-05-04T12:18:14.920760",
+  "completed_at": "2026-05-04T12:18:34.293566",
+  "summary": {
+    "passed": 9
+  },
+  "total_duration_seconds": 19.37,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/analysis.py",
+      "status": "passed",
+      "duration_seconds": 1.29
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/configs.py",
+      "status": "passed",
+      "duration_seconds": 5.29
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/model.py",
+      "status": "passed",
+      "duration_seconds": 2.83
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/model_internal.py",
+      "status": "passed",
+      "duration_seconds": 1.41
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/multi_level_model.py",
+      "status": "passed",
+      "duration_seconds": 1.6
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/multiple_datasets.py",
+      "status": "passed",
+      "duration_seconds": 2.5
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/result.py",
+      "status": "passed",
+      "duration_seconds": 1.72
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/samples.py",
+      "status": "passed",
+      "duration_seconds": 1.48
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/cookbooks/search.py",
+      "status": "passed",
+      "duration_seconds": 1.24
+    }
+  ]
+}

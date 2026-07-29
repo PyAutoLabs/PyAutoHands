@@ -1,0 +1,11 @@
+{
+  "project": "autofit",
+  "directory": "scripts/dataset",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-20T16:10:52.302385",
+  "completed_at": "2026-07-20T16:10:52.314497",
+  "summary": {},
+  "total_duration_seconds": 0,
+  "results": []
+}

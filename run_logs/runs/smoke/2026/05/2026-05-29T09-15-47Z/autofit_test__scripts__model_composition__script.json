@@ -1,0 +1,18 @@
+{
+  "project": "autofit_test",
+  "directory": "scripts/model_composition",
+  "run_type": "script",
+  "started_at": "2026-05-29T11:36:01.658471",
+  "completed_at": "2026-05-29T11:36:04.629465",
+  "summary": {
+    "passed": 1
+  },
+  "total_duration_seconds": 2.97,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/model_composition/model_composition.py",
+      "status": "passed",
+      "duration_seconds": 2.97
+    }
+  ]
+}

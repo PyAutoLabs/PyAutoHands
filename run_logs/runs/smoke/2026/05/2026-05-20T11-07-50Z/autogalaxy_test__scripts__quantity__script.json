@@ -1,0 +1,26 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/quantity",
+  "run_type": "script",
+  "started_at": "2026-05-20T13:43:21.351916",
+  "completed_at": "2026-05-20T13:44:07.629452",
+  "summary": {
+    "failed": 1,
+    "passed": 1
+  },
+  "total_duration_seconds": 46.25,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/quantity/visualization.py",
+      "status": "failed",
+      "duration_seconds": 27.13,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/quantity/visualization.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:173: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test matches the installed library version (2026.5.14.2): no `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.\n\nIf you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.\n\nYou can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.\n  warnings.warn(_missing_version_warning(root, library_version))\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/quantity/visualization.py\", line 107, in <module>\n    assert (image_path / \"fit.png\").exists(), \"fit.png was not produced\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: fit.png was not produced"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/quantity/visualization_jax.py",
+      "status": "passed",
+      "duration_seconds": 19.12
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/jax_assertions",
+  "run_type": "script",
+  "started_at": "2026-05-04T13:33:41.664199",
+  "completed_at": "2026-05-04T13:33:51.331580",
+  "summary": {
+    "passed": 1
+  },
+  "total_duration_seconds": 9.66,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_assertions/hessian_parity.py",
+      "status": "passed",
+      "duration_seconds": 9.66
+    }
+  ]
+}

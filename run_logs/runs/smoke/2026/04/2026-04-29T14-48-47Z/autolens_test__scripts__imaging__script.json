@@ -1,0 +1,70 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/imaging",
+  "run_type": "script",
+  "started_at": "2026-04-29T17:06:14.603127",
+  "completed_at": "2026-04-29T17:09:13.901957",
+  "summary": {
+    "passed": 3,
+    "failed": 4,
+    "skipped": 2
+  },
+  "total_duration_seconds": 179.29,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/simulator/no_lens_light.py",
+      "status": "passed",
+      "duration_seconds": 5.17
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/simulator/with_lens_light.py",
+      "status": "passed",
+      "duration_seconds": 3.39
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/convolution.py",
+      "status": "failed",
+      "duration_seconds": 4.95,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/convolution.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/PyAutoArray/autoarray/mask/mask_2d_util.py:564: UserWarning: Mask padded from (80, 80) to (np.int64(82), np.int64(82)) (parity preserved) to support kernel footprint (11, 11).\n  warnings.warn(\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/convolution.py\", line 149, in <module>\n    plt.savefig(script_path / \"residuals.png\", dpi=300)\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/pyplot.py\", line 1228, in savefig\n    res = fig.savefig(*args, **kwargs)  # type: ignore[func-returns-value]\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/figure.py\", line 3395, in savefig\n    self.canvas.print_figure(fname, **kwargs)\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/backend_bases.py\", line 2204, in print_figure\n    result = print_method(\n             ^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/backend_bases.py\", line 2054, in <lambda>\n    print_method = functools.wraps(meth)(lambda *args, **kwargs: meth(\n                                                                 ^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/backends/backend_agg.py\", line 496, in print_png\n    self._print_pil(filename_or_obj, \"png\", pil_kwargs, metadata)\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/backends/backend_agg.py\", line 445, in _print_pil\n    mpl.image.imsave(\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/image.py\", line 1676, in imsave\n    image.save(fname, **pil_kwargs)\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/PIL/Image.py\", line 2576, in save\n    fp = builtins.open(filename, \"w+b\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: 'scripts/imaging/images/residuals.png'"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/model_fit.py",
+      "status": "passed",
+      "duration_seconds": 130.12
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit.py",
+      "status": "failed",
+      "duration_seconds": 17.25,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/PyAutoArray/autoarray/operators/convolver.py:925: UserWarning: No blurring_image provided. Only the direct image will be convolved. This may change the correctness of the PSF convolution.\n  warnings.warn(\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit.py\", line 149, in <module>\n    assert isinstance(fit_1.log_likelihood, jnp.ndarray), (\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: expected jax.Array, got <class 'numpy.float64'>"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_delaunay.py",
+      "status": "failed",
+      "duration_seconds": 9.14,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_delaunay.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_delaunay.py\", line 191, in <module>\n    assert isinstance(fit_1.log_likelihood, jnp.ndarray), (\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: expected jax.Array, got <class 'numpy.float64'>"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_rectangular.py",
+      "status": "failed",
+      "duration_seconds": 9.27,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_rectangular.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_rectangular.py\", line 175, in <module>\n    assert isinstance(fit_1.log_likelihood, jnp.ndarray), (\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: expected jax.Array, got <class 'numpy.float64'>"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/visualization.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - AssertionError: dataset.png missing after visualization refactor"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/imaging/visualization_jax.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - AssertionError: dataset.png missing after visualization refactor"
+    }
+  ]
+}

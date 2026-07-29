@@ -1,0 +1,11 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/quantity",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T21:47:03.064511",
+  "completed_at": "2026-07-21T21:47:03.072491",
+  "summary": {},
+  "total_duration_seconds": 0,
+  "results": []
+}

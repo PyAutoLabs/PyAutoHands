@@ -1,0 +1,28 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/jax_substructure",
+  "run_type": "script",
+  "started_at": "2026-06-09T09:36:35.809674",
+  "completed_at": "2026-06-09T09:37:13.938184",
+  "summary": {
+    "passed": 3
+  },
+  "total_duration_seconds": 38.12,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_batched_simulate.py",
+      "status": "passed",
+      "duration_seconds": 21.64
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_scan_multiplane.py",
+      "status": "passed",
+      "duration_seconds": 4.97
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_simulate_e2e.py",
+      "status": "passed",
+      "duration_seconds": 11.51
+    }
+  ]
+}

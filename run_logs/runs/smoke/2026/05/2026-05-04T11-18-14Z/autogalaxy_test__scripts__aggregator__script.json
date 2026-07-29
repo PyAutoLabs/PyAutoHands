@@ -1,0 +1,33 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/aggregator",
+  "run_type": "script",
+  "started_at": "2026-05-04T13:29:29.600820",
+  "completed_at": "2026-05-04T13:31:16.534181",
+  "summary": {
+    "passed": 4
+  },
+  "total_duration_seconds": 106.91,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/aggregator/ellipse.py",
+      "status": "passed",
+      "duration_seconds": 40.84
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/aggregator/fit_imaging.py",
+      "status": "passed",
+      "duration_seconds": 30.07
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/aggregator/fit_interferometer.py",
+      "status": "passed",
+      "duration_seconds": 20.3
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/aggregator/galaxies.py",
+      "status": "passed",
+      "duration_seconds": 15.7
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "project": "autofit_test",
+  "directory": "scripts/searches",
+  "run_type": "script",
+  "started_at": "2026-07-08T13:45:54.970999",
+  "completed_at": "2026-07-08T13:46:39.085633",
+  "summary": {
+    "passed": 9
+  },
+  "total_duration_seconds": 44.11,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/BlackJAXNUTS.py",
+      "status": "passed",
+      "duration_seconds": 15.71
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/DynestyDynamic.py",
+      "status": "passed",
+      "duration_seconds": 3.96
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/DynestyStatic.py",
+      "status": "passed",
+      "duration_seconds": 3.94
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/Dynesty_jax.py",
+      "status": "passed",
+      "duration_seconds": 2.89
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/Emcee.py",
+      "status": "passed",
+      "duration_seconds": 4.16
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/LBFGS.py",
+      "status": "passed",
+      "duration_seconds": 3.81
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/Nautilus.py",
+      "status": "passed",
+      "duration_seconds": 3.15
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/Nautilus_jax.py",
+      "status": "passed",
+      "duration_seconds": 2.55
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/Zeus.py",
+      "status": "passed",
+      "duration_seconds": 3.93
+    }
+  ]
+}

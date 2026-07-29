@@ -1,0 +1,43 @@
+{
+  "project": "autofit_test",
+  "directory": "scripts/jax_assertions",
+  "run_type": "script",
+  "started_at": "2026-06-09T19:52:39.669560",
+  "completed_at": "2026-06-09T19:52:54.190661",
+  "summary": {
+    "passed": 6
+  },
+  "total_duration_seconds": 14.52,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/enable_pytrees.py",
+      "status": "passed",
+      "duration_seconds": 1.94
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/fitness_dispatch.py",
+      "status": "passed",
+      "duration_seconds": 2.07
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/nested.py",
+      "status": "passed",
+      "duration_seconds": 1.65
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/priors_xp_dispatch.py",
+      "status": "passed",
+      "duration_seconds": 4.29
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/pytrees.py",
+      "status": "passed",
+      "duration_seconds": 2.11
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/shared_state.py",
+      "status": "passed",
+      "duration_seconds": 2.45
+    }
+  ]
+}

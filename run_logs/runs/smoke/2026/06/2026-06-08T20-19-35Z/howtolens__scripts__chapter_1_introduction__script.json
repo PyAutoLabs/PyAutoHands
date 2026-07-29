@@ -1,0 +1,61 @@
+{
+  "project": "howtolens",
+  "directory": "scripts/chapter_1_introduction",
+  "run_type": "script",
+  "started_at": "2026-06-09T09:45:02.396496",
+  "completed_at": "2026-06-09T09:45:41.639231",
+  "summary": {
+    "passed": 8,
+    "failed": 1
+  },
+  "total_duration_seconds": 39.24,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_0_visualization.py",
+      "status": "passed",
+      "duration_seconds": 5.05
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_1_grids_and_galaxies.py",
+      "status": "passed",
+      "duration_seconds": 3.49
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_2_ray_tracing.py",
+      "status": "passed",
+      "duration_seconds": 3.81
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_3_more_ray_tracing.py",
+      "status": "failed",
+      "duration_seconds": 3.88,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_3_more_ray_tracing.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/profiles/mass/total/power_law.py:232: RuntimeWarning: invalid value encountered in divide\n  * xp.divide(\n/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/profiles/mass/total/power_law.py:232: RuntimeWarning: invalid value encountered in divide\n  * xp.divide(\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_3_more_ray_tracing.py\", line 151, in <module>\n    aplt.plot_grid(grid=tracer.traced_grid_2d_list_from(grid=grid)[1], title=\"Plane 1 Grid\")\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/util/plot_utils.py\", line 322, in plot_grid\n    _aa_plot_grid(\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/plot/grid.py\", line 181, in plot_grid\n    apply_extent(ax, extent)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/plot/utils.py\", line 921, in apply_extent\n    ax.set_xlim(xmin, xmax)\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/axes/_base.py\", line 3739, in set_xlim\n    return self.xaxis._set_lim(left, right, emit=emit, auto=auto)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/axis.py\", line 1236, in _set_lim\n    v0 = self.axes._validate_converted_limits(v0, self.convert_units)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/matplotlib/axes/_base.py\", line 3660, in _validate_converted_limits\n    raise ValueError(\"Axis limits cannot be NaN or Inf\")\nValueError: Axis limits cannot be NaN or Inf"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_4_point_sources.py",
+      "status": "passed",
+      "duration_seconds": 3.04
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_5_lensing_formalism.py",
+      "status": "passed",
+      "duration_seconds": 2.82
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_6_data.py",
+      "status": "passed",
+      "duration_seconds": 4.11
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_7_fitting.py",
+      "status": "passed",
+      "duration_seconds": 8.99
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_1_introduction/tutorial_8_summary.py",
+      "status": "passed",
+      "duration_seconds": 4.05
+    }
+  ]
+}

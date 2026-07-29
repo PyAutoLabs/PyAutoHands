@@ -1,0 +1,19 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/model_composition",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T21:46:52.453662",
+  "completed_at": "2026-07-21T21:47:02.945855",
+  "summary": {
+    "passed": 1
+  },
+  "total_duration_seconds": 10.48,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/model_composition/multi_galaxy_mge.py",
+      "status": "passed",
+      "duration_seconds": 10.48
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# Test Report: autofit / scripts/features (script)
+
+**7 scripts** | 6 passed | 1 skipped
+
+| Status | Count |
+|--------|-------|
+| passed | 6 |
+| skipped | 1 |
+
+## Skipped
+
+| Script | Reason |
+|--------|--------|
+| `interpolate.py` | NEEDS_FIX 2026-04-10 - IndexError in InstanceInterpolator.__getitem__ when querying time == 1.5; value_map lookup falls through to empty instances list |
+
+## Passed
+
+- `/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/features/graphical_models.py` (4.1s)
+- `/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/features/model_comparison.py` (3.7s)
+- `/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/features/search_chaining.py` (3.3s)
+- `/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/features/search_grid_search.py` (3.5s)
+- `/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/features/sensitivity_mapping.py` (4.0s)
+- `/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/features/shared_analysis_state.py` (2.9s)

@@ -1,0 +1,75 @@
+{
+  "project": "autolens",
+  "directory": "scripts/point_source",
+  "run_type": "script",
+  "started_at": "2026-05-04T13:23:10.906324",
+  "completed_at": "2026-05-04T13:25:48.616941",
+  "summary": {
+    "passed": 7,
+    "skipped": 3,
+    "failed": 1
+  },
+  "total_duration_seconds": 157.67,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/deblending/simulator.py",
+      "status": "passed",
+      "duration_seconds": 12.04
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/multiple_sources/simulator.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Blocked by PyAutoLens #480: solver finds 0 positions for intermediate-plane source"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/simulator.py",
+      "status": "passed",
+      "duration_seconds": 10.0
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/simulator_sample.py",
+      "status": "passed",
+      "duration_seconds": 17.49
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/start_here.py",
+      "status": "passed",
+      "duration_seconds": 47.19
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/deblending/modeling.py",
+      "status": "passed",
+      "duration_seconds": 16.32
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/fluxes.py",
+      "status": "passed",
+      "duration_seconds": 30.32
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/multiple_sources/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Blocked by PyAutoLens #480: same root cause as simulator above"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/time_delays.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not support cosmology ift"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/fit.py",
+      "status": "failed",
+      "duration_seconds": 8.02,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/fit.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/fit.py:195: SyntaxWarning: invalid escape sequence '\\h'\n  $\\beta = \\theta - \\hat{\\alpha}(\\theta)$\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/fit.py\", line 349, in <module>\n    print(fit.positions.log_likelihood)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/fit/fit_dataset.py\", line 109, in log_likelihood\n    chi_squared=self.chi_squared, noise_normalization=self.noise_normalization\n                ^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/fit/fit_dataset.py\", line 87, in chi_squared\n    chi_squared_map=self.chi_squared_map.array, xp=self._xp\n                    ^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/fit/fit_dataset.py\", line 77, in chi_squared_map\n    return fit_util.chi_squared_map_from(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/fit/fit_util.py\", line 78, in chi_squared_map_from\n    return (residual_map / noise_map) ** 2.0\n            ~~~~~~~~~~~~~^~~~~~~~~~~\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/abstract_ndarray.py\", line 35, in wrapper\n    return self.with_new_array(func(self, *args, **kwargs))\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/abstract_ndarray.py\", line 57, in wrapper\n    return func(self, other.array)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/abstract_ndarray.py\", line 326, in __truediv__\n    return self._array / other\n           ~~~~~~~~~~~~^~~~~~~\nValueError: operands could not be broadcast together with shapes (2,) (4,) "
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/modeling.py",
+      "status": "passed",
+      "duration_seconds": 16.28
+    }
+  ]
+}

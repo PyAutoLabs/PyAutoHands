@@ -1,0 +1,36 @@
+{
+  "project": "autofit",
+  "directory": "scripts/searches",
+  "run_type": "script",
+  "started_at": "2026-07-09T10:49:49.105482",
+  "completed_at": "2026-07-09T10:49:56.976977",
+  "summary": {
+    "skipped": 2,
+    "passed": 2
+  },
+  "total_duration_seconds": 7.87,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/searches/mcmc.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Zeus section in merged mcmc.py fails Test Model Initialization."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/searches/mle.py",
+      "status": "passed",
+      "duration_seconds": 3.84
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/searches/nest.py",
+      "status": "passed",
+      "duration_seconds": 4.03
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/searches/start_point.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "bug https://github.com/rhayes777/PyAutoFit/issues/1017"
+    }
+  ]
+}

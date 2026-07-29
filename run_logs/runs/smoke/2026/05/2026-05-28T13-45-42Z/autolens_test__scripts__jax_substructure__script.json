@@ -1,0 +1,33 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/jax_substructure",
+  "run_type": "script",
+  "started_at": "2026-05-28T16:39:54.612519",
+  "completed_at": "2026-05-28T16:40:19.283096",
+  "summary": {
+    "failed": 2,
+    "passed": 1
+  },
+  "total_duration_seconds": 24.66,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_batched_simulate.py",
+      "status": "failed",
+      "duration_seconds": 7.72,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_batched_simulate.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:173: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_workspace_test matches the installed library version (2026.5.21.1): no `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.\n\nIf you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.\n\nYou can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.\n  warnings.warn(_missing_version_warning(root, library_version))\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_batched_simulate.py\", line 174, in <module>\n    img = substructure_util.simulate_substructure(\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/lens/substructure_util.py\", line 168, in simulate_substructure\n    image_2d = image_1d.reshape(image_shape)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py\", line 316, in _reshape\n    newshape = _compute_newshape(self, args[0] if len(args) == 1 else args)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py\", line 481, in _compute_newshape\n    raise TypeError(f\"cannot reshape array of shape {arr.shape} (size {arr.size}) \"\nTypeError: cannot reshape array of shape (225,) (size 225) into shape (41, 41) (size 1681)"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_scan_multiplane.py",
+      "status": "passed",
+      "duration_seconds": 6.7
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_simulate_e2e.py",
+      "status": "failed",
+      "duration_seconds": 10.24,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_simulate_e2e.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/PyAutoConf/autoconf/workspace.py:173: UserWarning: Cannot verify the workspace at /home/jammy/Code/PyAutoLabs/autolens_workspace_test matches the installed library version (2026.5.21.1): no `version.workspace_version` key in config/general.yaml and no version.txt at the workspace root.\n\nIf you cloned the workspace from `main` rather than a release tag, set `version.workspace_version_check: False` in config/general.yaml to silence this warning. The `main` branch updates more frequently than library releases, so version mismatches are expected and not actionable for `main`-branch users.\n\nYou can also set the environment variable PYAUTO_SKIP_WORKSPACE_VERSION_CHECK=1 to disable temporarily.\n  warnings.warn(_missing_version_warning(root, library_version))\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_substructure/test_simulate_e2e.py\", line 169, in <module>\n    image_scan = substructure_util.simulate_substructure(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/lens/substructure_util.py\", line 168, in simulate_substructure\n    image_2d = image_1d.reshape(image_shape)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py\", line 316, in _reshape\n    newshape = _compute_newshape(self, args[0] if len(args) == 1 else args)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py\", line 481, in _compute_newshape\n    raise TypeError(f\"cannot reshape array of shape {arr.shape} (size {arr.size}) \"\nTypeError: cannot reshape array of shape (225,) (size 225) into shape (51, 51) (size 2601)"
+    }
+  ]
+}

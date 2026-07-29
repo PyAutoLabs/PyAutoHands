@@ -1,0 +1,163 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/jax_likelihood_functions",
+  "run_type": "script",
+  "started_at": "2026-05-21T10:52:46.364054",
+  "completed_at": "2026-05-21T11:04:01.989989",
+  "summary": {
+    "passed": 30
+  },
+  "total_duration_seconds": 675.61,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/ellipse/simulator.py",
+      "status": "passed",
+      "duration_seconds": 3.84
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/simulator.py",
+      "status": "passed",
+      "duration_seconds": 7.47
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/simulator.py",
+      "status": "passed",
+      "duration_seconds": 7.8
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/simulator.py",
+      "status": "passed",
+      "duration_seconds": 9.1
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/ellipse/fit.py",
+      "status": "passed",
+      "duration_seconds": 7.41
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/ellipse/multipoles.py",
+      "status": "passed",
+      "duration_seconds": 10.08
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/ellipse/multipoles_scaled.py",
+      "status": "passed",
+      "duration_seconds": 8.39
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/delaunay.py",
+      "status": "passed",
+      "duration_seconds": 29.86
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/delaunay_mge.py",
+      "status": "passed",
+      "duration_seconds": 55.05
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/lp.py",
+      "status": "passed",
+      "duration_seconds": 7.85
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/mge.py",
+      "status": "passed",
+      "duration_seconds": 14.95
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/mge_group.py",
+      "status": "passed",
+      "duration_seconds": 33.29
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/rectangular.py",
+      "status": "passed",
+      "duration_seconds": 21.68
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/rectangular_mge.py",
+      "status": "passed",
+      "duration_seconds": 30.87
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/delaunay.py",
+      "status": "passed",
+      "duration_seconds": 17.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/delaunay_mge.py",
+      "status": "passed",
+      "duration_seconds": 47.44
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/lp.py",
+      "status": "passed",
+      "duration_seconds": 13.34
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/mge.py",
+      "status": "passed",
+      "duration_seconds": 14.64
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/mge_group.py",
+      "status": "passed",
+      "duration_seconds": 29.73
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/rectangular.py",
+      "status": "passed",
+      "duration_seconds": 17.76
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/rectangular_mge.py",
+      "status": "passed",
+      "duration_seconds": 20.61
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/light_multipole/multipole.py",
+      "status": "passed",
+      "duration_seconds": 9.76
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/dataset_model.py",
+      "status": "passed",
+      "duration_seconds": 7.83
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/delaunay.py",
+      "status": "passed",
+      "duration_seconds": 16.78
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/delaunay_mge.py",
+      "status": "passed",
+      "duration_seconds": 46.9
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/lp.py",
+      "status": "passed",
+      "duration_seconds": 9.06
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/mge.py",
+      "status": "passed",
+      "duration_seconds": 27.35
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/mge_group.py",
+      "status": "passed",
+      "duration_seconds": 73.19
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/rectangular.py",
+      "status": "passed",
+      "duration_seconds": 24.43
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/rectangular_mge.py",
+      "status": "passed",
+      "duration_seconds": 51.17
+    }
+  ]
+}

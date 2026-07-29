@@ -1,0 +1,43 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/jax_grad",
+  "run_type": "script",
+  "started_at": "2026-05-29T11:41:50.995105",
+  "completed_at": "2026-05-29T11:43:30.784528",
+  "summary": {
+    "passed": 6
+  },
+  "total_duration_seconds": 99.77,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/imaging/lp.py",
+      "status": "passed",
+      "duration_seconds": 19.54
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/imaging/mge.py",
+      "status": "passed",
+      "duration_seconds": 20.0
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/interferometer/lp.py",
+      "status": "passed",
+      "duration_seconds": 8.94
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/interferometer/mge.py",
+      "status": "passed",
+      "duration_seconds": 15.28
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/multi/lp.py",
+      "status": "passed",
+      "duration_seconds": 11.71
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/multi/mge.py",
+      "status": "passed",
+      "duration_seconds": 24.31
+    }
+  ]
+}

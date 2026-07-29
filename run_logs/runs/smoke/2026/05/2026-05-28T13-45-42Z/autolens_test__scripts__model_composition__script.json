@@ -1,0 +1,18 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/model_composition",
+  "run_type": "script",
+  "started_at": "2026-05-28T16:42:07.211538",
+  "completed_at": "2026-05-28T16:42:23.593616",
+  "summary": {
+    "passed": 1
+  },
+  "total_duration_seconds": 16.37,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/model_composition/multi_galaxy_mge.py",
+      "status": "passed",
+      "duration_seconds": 16.37
+    }
+  ]
+}

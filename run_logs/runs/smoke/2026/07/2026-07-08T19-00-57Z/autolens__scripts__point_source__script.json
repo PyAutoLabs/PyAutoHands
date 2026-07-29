@@ -1,0 +1,72 @@
+{
+  "project": "autolens",
+  "directory": "scripts/point_source",
+  "run_type": "script",
+  "started_at": "2026-07-08T21:38:52.638245",
+  "completed_at": "2026-07-08T21:41:34.295287",
+  "summary": {
+    "passed": 8,
+    "skipped": 3
+  },
+  "total_duration_seconds": 161.63,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/deblending/simulator.py",
+      "status": "passed",
+      "duration_seconds": 14.4
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/multiple_sources/simulator.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Blocked by PyAutoLens #480: solver finds 0 positions for intermediate-plane source"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/simulator.py",
+      "status": "passed",
+      "duration_seconds": 24.68
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/simulator_sample.py",
+      "status": "passed",
+      "duration_seconds": 21.84
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/start_here.py",
+      "status": "passed",
+      "duration_seconds": 36.47
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/deblending/modeling.py",
+      "status": "passed",
+      "duration_seconds": 18.38
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/fluxes.py",
+      "status": "passed",
+      "duration_seconds": 22.7
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/multiple_sources/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Blocked by PyAutoLens #480: same root cause as simulator above"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/time_delays.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not support cosmology ift"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/fit.py",
+      "status": "passed",
+      "duration_seconds": 9.87
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/modeling.py",
+      "status": "passed",
+      "duration_seconds": 13.29
+    }
+  ]
+}

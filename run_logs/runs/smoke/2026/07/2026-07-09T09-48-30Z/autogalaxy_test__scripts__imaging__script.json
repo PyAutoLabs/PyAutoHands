@@ -1,0 +1,33 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/imaging",
+  "run_type": "script",
+  "started_at": "2026-07-09T12:20:20.569519",
+  "completed_at": "2026-07-09T12:21:54.328815",
+  "summary": {
+    "passed": 4
+  },
+  "total_duration_seconds": 93.74,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/imaging/model_fit.py",
+      "status": "passed",
+      "duration_seconds": 6.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/imaging/modeling_visualization_jit.py",
+      "status": "passed",
+      "duration_seconds": 12.2
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/imaging/visualization.py",
+      "status": "passed",
+      "duration_seconds": 55.05
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/imaging/visualization_jax.py",
+      "status": "passed",
+      "duration_seconds": 19.52
+    }
+  ]
+}

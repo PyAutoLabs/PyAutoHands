@@ -1,0 +1,53 @@
+{
+  "project": "howtogalaxy",
+  "directory": "scripts/chapter_2_modeling",
+  "run_type": "script",
+  "started_at": "2026-05-29T12:31:45.974067",
+  "completed_at": "2026-05-29T12:32:45.861171",
+  "summary": {
+    "passed": 8
+  },
+  "total_duration_seconds": 59.88,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_1_non_linear_search.py",
+      "status": "passed",
+      "duration_seconds": 6.98
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_2_practicalities.py",
+      "status": "passed",
+      "duration_seconds": 5.76
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_3_realism_and_complexity.py",
+      "status": "passed",
+      "duration_seconds": 5.54
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_4_dealing_with_failure.py",
+      "status": "passed",
+      "duration_seconds": 8.58
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_5_linear_profiles.py",
+      "status": "passed",
+      "duration_seconds": 17.19
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_6_masking.py",
+      "status": "passed",
+      "duration_seconds": 9.72
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_7_results.py",
+      "status": "passed",
+      "duration_seconds": 6.05
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_2_modeling/tutorial_8_need_for_speed.py",
+      "status": "passed",
+      "duration_seconds": 0.05
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/potential_correction",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-21T22:23:57.713913",
+  "completed_at": "2026-07-21T22:29:31.700233",
+  "summary": {
+    "timeout": 1,
+    "passed": 1
+  },
+  "total_duration_seconds": 333.94,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/potential_correction/subhalo_recovery.py",
+      "status": "timeout",
+      "duration_seconds": 300.26,
+      "error_message": "Timed out after 300s"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/potential_correction/subhalo_recovery_interferometer.py",
+      "status": "passed",
+      "duration_seconds": 33.67
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "project": "autofit",
+  "directory": "scripts/plot",
+  "run_type": "script",
+  "started_at": "2026-05-28T10:28:24.755225",
+  "completed_at": "2026-05-28T10:28:41.476137",
+  "summary": {
+    "skipped": 3,
+    "passed": 2
+  },
+  "total_duration_seconds": 16.72,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/dynesty_plotter.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test Model Iniitalization no good."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/emcee_plotter.py",
+      "status": "passed",
+      "duration_seconds": 13.16
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/get_dist.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Cant get it to install, even in optional requirements."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/nautilus_plotter.py",
+      "status": "passed",
+      "duration_seconds": 3.55
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/zeus_plotter.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test Model Iniitalization no good."
+    }
+  ]
+}

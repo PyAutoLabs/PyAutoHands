@@ -1,0 +1,2832 @@
+{
+  "ready": false,
+  "run_path": "/home/jammy/Code/PyAutoLabs/PyAutoHands/test_results/runs/2026-07-21T19-05-22Z",
+  "run_label": "2026-07-21T19-05-22Z",
+  "surface": {
+    "projects": [
+      "autofit",
+      "autofit_test",
+      "autogalaxy",
+      "autogalaxy_test",
+      "autolens",
+      "autolens_test",
+      "euclid",
+      "howtofit",
+      "howtogalaxy",
+      "howtolens"
+    ],
+    "shards": [
+      "autofit/scripts/cookbooks",
+      "autofit/scripts/dataset",
+      "autofit/scripts/features",
+      "autofit/scripts/model",
+      "autofit/scripts/overview",
+      "autofit/scripts/plot",
+      "autofit/scripts/searches",
+      "autofit/scripts/simulators",
+      "autofit_test/scripts/database",
+      "autofit_test/scripts/features",
+      "autofit_test/scripts/graphical",
+      "autofit_test/scripts/jax_assertions",
+      "autofit_test/scripts/model_composition",
+      "autofit_test/scripts/prior_correctness",
+      "autofit_test/scripts/profiling",
+      "autofit_test/scripts/searches",
+      "autofit_test/scripts/simulators",
+      "autogalaxy/scripts/ellipse",
+      "autogalaxy/scripts/guides",
+      "autogalaxy/scripts/imaging",
+      "autogalaxy/scripts/interferometer",
+      "autogalaxy/scripts/multi",
+      "autogalaxy_test/scripts/aggregator",
+      "autogalaxy_test/scripts/ellipse",
+      "autogalaxy_test/scripts/imaging",
+      "autogalaxy_test/scripts/interferometer",
+      "autogalaxy_test/scripts/jax_assertions",
+      "autogalaxy_test/scripts/jax_grad",
+      "autogalaxy_test/scripts/jax_likelihood_functions",
+      "autogalaxy_test/scripts/latent",
+      "autogalaxy_test/scripts/model_composition",
+      "autogalaxy_test/scripts/quantity",
+      "autolens/scripts/cluster",
+      "autolens/scripts/group",
+      "autolens/scripts/guides",
+      "autolens/scripts/imaging",
+      "autolens/scripts/interferometer",
+      "autolens/scripts/multi",
+      "autolens/scripts/point_source",
+      "autolens/scripts/weak",
+      "autolens_test/scripts/aggregator",
+      "autolens_test/scripts/cluster",
+      "autolens_test/scripts/database",
+      "autolens_test/scripts/gallery",
+      "autolens_test/scripts/imaging",
+      "autolens_test/scripts/interferometer",
+      "autolens_test/scripts/jax_assertions",
+      "autolens_test/scripts/jax_grad",
+      "autolens_test/scripts/jax_likelihood_functions",
+      "autolens_test/scripts/jax_substructure",
+      "autolens_test/scripts/latent",
+      "autolens_test/scripts/mass",
+      "autolens_test/scripts/mass_via_integral",
+      "autolens_test/scripts/model_composition",
+      "autolens_test/scripts/multi",
+      "autolens_test/scripts/point_source",
+      "autolens_test/scripts/potential_correction",
+      "autolens_test/scripts/profiling",
+      "euclid/scripts",
+      "howtofit/scripts/chapter_1_introduction",
+      "howtofit/scripts/chapter_2_scientific_workflow",
+      "howtofit/scripts/chapter_3_graphical_models",
+      "howtofit/scripts/simulators",
+      "howtogalaxy/scripts/chapter_1_introduction",
+      "howtogalaxy/scripts/chapter_2_modeling",
+      "howtogalaxy/scripts/chapter_3_search_chaining",
+      "howtogalaxy/scripts/chapter_4_pixelizations",
+      "howtogalaxy/scripts/chapter_optional",
+      "howtogalaxy/scripts/simulators",
+      "howtolens/scripts/chapter_1_introduction",
+      "howtolens/scripts/chapter_2_lens_modeling",
+      "howtolens/scripts/chapter_3_search_chaining",
+      "howtolens/scripts/chapter_4_pixelizations",
+      "howtolens/scripts/chapter_optional",
+      "howtolens/scripts/simulator"
+    ],
+    "run_types": [
+      "script"
+    ],
+    "env_profiles": [
+      "env_vars.yaml"
+    ],
+    "script_count": 742
+  },
+  "total_duration_seconds": 9754.9,
+  "summary": {
+    "passed": 646,
+    "skipped": 78,
+    "failed": 13,
+    "timeout": 5
+  },
+  "per_project": {
+    "autofit": {
+      "passed": 27,
+      "skipped": 6
+    },
+    "autofit_test": {
+      "passed": 43,
+      "skipped": 2,
+      "failed": 4
+    },
+    "autogalaxy": {
+      "passed": 110,
+      "skipped": 11,
+      "failed": 1
+    },
+    "autogalaxy_test": {
+      "passed": 46,
+      "skipped": 9
+    },
+    "autolens": {
+      "passed": 242,
+      "timeout": 3,
+      "failed": 5,
+      "skipped": 23
+    },
+    "autolens_test": {
+      "passed": 95,
+      "skipped": 23,
+      "failed": 3,
+      "timeout": 2
+    },
+    "euclid": {
+      "passed": 5
+    },
+    "howtofit": {
+      "passed": 15,
+      "skipped": 1
+    },
+    "howtogalaxy": {
+      "passed": 25,
+      "skipped": 1
+    },
+    "howtolens": {
+      "passed": 38,
+      "skipped": 2
+    }
+  },
+  "per_project_duration_seconds": {
+    "autofit": 87.21,
+    "autofit_test": 246.2,
+    "autogalaxy": 889.77,
+    "autogalaxy_test": 789.67,
+    "autolens": 4081.01,
+    "autolens_test": 2562.8,
+    "euclid": 167.51,
+    "howtofit": 58.79,
+    "howtogalaxy": 315.04,
+    "howtolens": 556.9
+  },
+  "slowest": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/advanced/potential_correction.py",
+      "status": "timeout",
+      "duration_seconds": 300.38,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/potential_correction/subhalo_recovery.py",
+      "status": "timeout",
+      "duration_seconds": 300.26,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens_test",
+      "directory": "scripts/potential_correction"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_grad/imaging_pixelization.py",
+      "status": "timeout",
+      "duration_seconds": 300.17,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens_test",
+      "directory": "scripts/jax_grad"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/cluster/start_here.py",
+      "status": "timeout",
+      "duration_seconds": 300.12,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens",
+      "directory": "scripts/cluster"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/features/strong_lensing/a2744.py",
+      "status": "timeout",
+      "duration_seconds": 300.07,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens",
+      "directory": "scripts/weak"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/start_here.py",
+      "status": "passed",
+      "duration_seconds": 146.1,
+      "project": "autolens",
+      "directory": "scripts/interferometer"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/cluster/lenstool/modeling.py",
+      "status": "passed",
+      "duration_seconds": 132.85,
+      "project": "autolens",
+      "directory": "scripts/cluster"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_4_pixelizations/tutorial_10_brightness_adaption.py",
+      "status": "passed",
+      "duration_seconds": 127.82,
+      "project": "howtolens",
+      "directory": "scripts/chapter_4_pixelizations"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_4_pixelizations/tutorial_4_bayesian_regularization.py",
+      "status": "passed",
+      "duration_seconds": 97.21,
+      "project": "howtogalaxy",
+      "directory": "scripts/chapter_4_pixelizations"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/units/flux.py",
+      "status": "passed",
+      "duration_seconds": 87.99,
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/imaging/visualization_jax.py",
+      "status": "passed",
+      "duration_seconds": 86.49,
+      "project": "autolens_test",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/profiles/light_and_mass_profiles.py",
+      "status": "passed",
+      "duration_seconds": 84.12,
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/multi_gaussian_expansion/modeling.py",
+      "status": "passed",
+      "duration_seconds": 78.97,
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/multi/mge_group.py",
+      "status": "passed",
+      "duration_seconds": 78.26,
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/multi/start_here.py",
+      "status": "passed",
+      "duration_seconds": 75.08,
+      "project": "autolens",
+      "directory": "scripts/multi"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/imaging/subhalo.py",
+      "status": "passed",
+      "duration_seconds": 70.6,
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/start_here.py",
+      "status": "passed",
+      "duration_seconds": 69.77,
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/imaging/rectangular_mge.py",
+      "status": "passed",
+      "duration_seconds": 68.84,
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/scaling_relation.py",
+      "status": "passed",
+      "duration_seconds": 64.31,
+      "project": "autolens_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/start_here.py",
+      "status": "passed",
+      "duration_seconds": 61.96,
+      "project": "autolens",
+      "directory": "scripts/group"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/visualization_jax.py",
+      "status": "passed",
+      "duration_seconds": 60.17,
+      "project": "autolens_test",
+      "directory": "scripts/interferometer"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/imaging/rectangular_dspl.py",
+      "status": "passed",
+      "duration_seconds": 59.63,
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/prior_correctness/emcee_gaussian_bias_check.py",
+      "status": "passed",
+      "duration_seconds": 59.28,
+      "project": "autofit_test",
+      "directory": "scripts/prior_correctness"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/imaging/visualization.py",
+      "status": "passed",
+      "duration_seconds": 53.43,
+      "project": "autogalaxy_test",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/mge_group.py",
+      "status": "passed",
+      "duration_seconds": 51.96,
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    }
+  ],
+  "failures": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/multi_start_gradient_auto_convergence.py",
+      "status": "failed",
+      "duration_seconds": 4.82,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/multi_start_gradient_auto_convergence.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/jax_assertions/multi_start_gradient_auto_convergence.py\", line 105, in <module>\n    total_steps = int(result.samples.samples_info[\"total_steps\"])\n                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^\nKeyError: 'total_steps'",
+      "classification": "workspace_issue",
+      "project": "autofit_test",
+      "directory": "scripts/jax_assertions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/profiling/aggregator/profile_database.py",
+      "status": "failed",
+      "duration_seconds": 5.41,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/profiling/aggregator/profile_database.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/aggregator/scrape.py:147: SAWarning: relationship 'Fit.arrays' will copy column fit.id to column array.fit_id, which conflicts with relationship(s): 'HDU.fit' (copies fit.id to array.fit_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps=\"fit\"' to the 'Fit.arrays' relationship. (Background on this warning at: https://sqlalche.me/e/20/qzyx) (This warning originated from the `configure_mappers()` process, which was invoked automatically in response to a user-initiated operation.)\n  return self.session.query(m.Fit).filter(m.Fit.id == item.id).one()\n/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/aggregator/scrape.py:147: SAWarning: relationship 'Fit.hdus' will copy column fit.id to column array.fit_id, which conflicts with relationship(s): 'Array.fit' (copies fit.id to array.fit_id), 'Fit.arrays' (copies fit.id to array.fit_id). If this is not the intention, consider if these relationships should be linked with back_populates, or if viewonly=True should be applied to one or more if they are read-only. For the less common case that foreign key constraints are partially overlapping, the orm.foreign() annotation can be used to isolate the columns that should be written towards.   To silence this warning, add the parameter 'overlaps=\"arrays,fit\"' to the 'Fit.hdus' relationship. (Background on this warning at: https://sqlalche.me/e/20/qzyx) (This warning originated from the `configure_mappers()` process, which was invoked automatically in response to a user-initiated operation.)\n  return self.session.query(m.Fit).filter(m.Fit.id == item.id).one()\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/profiling/aggregator/profile_database.py\", line 187, in <module>\n    rows.append(profile_cell(cell, keep=args.keep))\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/profiling/aggregator/profile_database.py\", line 93, in profile_cell\n    timings[\"database_build\"] = timed(database_build)\n                                ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/profiling/aggregator/profile_aggregator.py\", line 109, in timed\n    func()\n  File \"/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/profiling/aggregator/profile_database.py\", line 90, in database_build\n    agg.add_directory(directory=str(results_root))\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/aggregator/aggregator.py\", line 428, in add_directory\n    scraper.scrape()\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/aggregator/scrape.py\", line 52, in scrape\n    for fit in self._fits():\n               ^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/aggregator/scrape.py\", line 93, in _fits\n    _add_files_fit(fit, item)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/aggregator/scrape.py\", line 160, in _add_files_fit\n    _add_files(fit, item)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/aggregator/scrape.py\", line 187, in _add_files\n    fit.set_fits(fits.name, fits.value)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/model/fit.py\", line 457, in set_fits\n    new = Fits(name=key, hdu_list=value)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 4, in __init__\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/orm/state.py\", line 571, in _initialize_instance\n    with util.safe_reraise():\n         ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py\", line 146, in __exit__\n    raise exc_value.with_traceback(exc_tb)\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/orm/state.py\", line 569, in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n  File \"<string>\", line 6, in __init__\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/orm/decl_base.py\", line 2170, in _declarative_constructor\n    setattr(self, k, kwargs[k])\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/model/array.py\", line 112, in hdu_list\n    self.hdus = [HDU(hdu=hdu) for hdu in hdu_list]\n                 ^^^^^^^^^^^^\n  File \"<string>\", line 4, in __init__\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/orm/state.py\", line 571, in _initialize_instance\n    with util.safe_reraise():\n         ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py\", line 146, in __exit__\n    raise exc_value.with_traceback(exc_tb)\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/orm/state.py\", line 569, in _initialize_instance\n    manager.original_init(*mixed[1:], **kwargs)\n  File \"<string>\", line 6, in __init__\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/model/array.py\", line 16, in __init__\n    super().__init__(**kwargs)\n  File \"<string>\", line 6, in __init__\n  File \"/home/jammy/venv/PyAuto/lib/python3.12/site-packages/sqlalchemy/orm/decl_base.py\", line 2170, in _declarative_constructor\n    setattr(self, k, kwargs[k])\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/model/array.py\", line 188, in hdu\n    self.array = hdu.data\n    ^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/database/model/array.py\", line 56, in array\n    self._dtype = get_class_path(getattr(np, array.dtype.name))\n                                             ^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'dtype'",
+      "classification": "source_code_bug",
+      "project": "autofit_test",
+      "directory": "scripts/profiling"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/MultiStartProdigy.py",
+      "status": "failed",
+      "duration_seconds": 2.32,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/MultiStartProdigy.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/MultiStartProdigy.py\", line 113, in <module>\n    assert abs(instance.normalization - 25.0) < 3.0, instance.normalization\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1.0",
+      "classification": "workspace_issue",
+      "project": "autofit_test",
+      "directory": "scripts/searches"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/MultiStartResurrect.py",
+      "status": "failed",
+      "duration_seconds": 2.43,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/MultiStartResurrect.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/searches/MultiStartResurrect.py\", line 94, in <module>\n    f\"sigma={off[2]:.3f}  (n_resurrections={info_off['n_resurrections']})\"\n                                            ~~~~~~~~^^^^^^^^^^^^^^^^^^^\nKeyError: 'n_resurrections'",
+      "classification": "workspace_issue",
+      "project": "autofit_test",
+      "directory": "scripts/searches"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py",
+      "status": "failed",
+      "duration_seconds": 3.55,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py\", line 51, in <module>\n    blurring_gaussian = ag.Convolver.from_gaussian(\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/operators/convolver.py\", line 746, in from_gaussian\n    gaussian = Array2D.no_mask(\n               ^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/uniform_2d.py\", line 696, in no_mask\n    return Array2D(values=values, mask=mask, header=header)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/uniform_2d.py\", line 243, in __init__\n    values = array_2d_util.convert_array_2d(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/array_2d_util.py\", line 133, in convert_array_2d\n    check_array_2d_and_mask_2d(array_2d=array_2d, mask_2d=mask_2d)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/array_2d_util.py\", line 69, in check_array_2d_and_mask_2d\n    raise exc.ArrayException(\nautoarray.exc.ArrayException: \n                The input array is a slim 1D array, but it does not have the same number of entries as pixels in\n                the mask.\n\n                This indicates that the number of unmaksed pixels in the mask  is different to the input slim array \n                shape.\n\n                The shapes of the two arrays (which this exception is raised because they are different) are as follows:\n\n                Input array_2d_slim.shape = 256\n                Input mask_2d.pixels_in_mask = 961\n                Input mask_2d.shape_native = (31, 31)\n                ",
+      "classification": "source_code_bug",
+      "project": "autogalaxy",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/cluster/start_here.py",
+      "status": "timeout",
+      "duration_seconds": 300.12,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens",
+      "directory": "scripts/cluster"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/double_einstein_ring/slam.py",
+      "status": "failed",
+      "duration_seconds": 9.28,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/double_einstein_ring/slam.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/double_einstein_ring/slam.py\", line 709, in <module>\n    source_pix_result_2 = source_pix_2(\n                          ^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/double_einstein_ring/slam.py\", line 515, in source_pix_2\n    pix1_dict = al.galaxy_name_image_dict_via_result_from(\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/analysis/adapt_images/adapt_images.py\", line 155, in galaxy_name_image_dict_via_result_from\n    raw_image_dict[path] = result.subtracted_signal_to_noise_map_galaxy_dict[\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/analysis/result.py\", line 138, in subtracted_signal_to_noise_map_galaxy_dict\n    self.max_log_likelihood_fit.subtracted_signal_to_noise_maps_of_galaxies_dict\n  File \"/usr/lib/python3.12/functools.py\", line 998, in __get__\n    val = self.func(instance)\n          ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/imaging/fit_imaging.py\", line 293, in subtracted_signal_to_noise_maps_of_galaxies_dict\n    for (galaxy, subtracted_image) in self.subtracted_images_of_galaxies_dict.items():\n                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/functools.py\", line 998, in __get__\n    val = self.func(instance)\n          ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/imaging/fit_imaging.py\", line 270, in subtracted_images_of_galaxies_dict\n    for (galaxy, galaxy_model_image) in self.galaxy_model_image_dict.items():\n                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/imaging/fit_imaging.py\", line 251, in galaxy_model_image_dict\n    galaxy_linear_obj_image_dict = self.galaxy_linear_obj_data_dict_from(\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/abstract_fit.py\", line 183, in galaxy_linear_obj_data_dict_from\n    self.inversion.mapped_reconstructed_operated_data_dict[linear_obj]\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py\", line 195, in mapped_reconstructed_operated_data_dict\n    return self._mapped_reconstructed_data_dict_from(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py\", line 112, in _mapped_reconstructed_data_dict_from\n    source_quantity=self.reconstruction\n                    ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/abstract.py\", line 515, in reconstruction\n    curvature_reg_matrix = self.curvature_reg_matrix[\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/abstract.py\", line 366, in curvature_reg_matrix\n    return self._xp.add(self.curvature_matrix, self.regularization_matrix)\n                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/abstract.py\", line 327, in regularization_matrix\n    *[linear_obj.regularization_matrix for linear_obj in self.linear_obj_list]\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/linear_obj/linear_obj.py\", line 160, in regularization_matrix\n    return self.regularization.regularization_matrix_from(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/regularization/adapt.py\", line 233, in regularization_matrix_from\n    regularization_weights = self.regularization_weights_from(\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/regularization/adapt.py\", line 210, in regularization_weights_from\n    pixel_signals = linear_obj.pixel_signals_from(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/mappers/abstract.py\", line 469, in pixel_signals_from\n    return mapper_util.adaptive_pixel_signals_from(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/mappers/mapper_util.py\", line 62, in adaptive_pixel_signals_from\n    flat_data_vals = xp.take(adapt_data[slim_index_for_sub_slim_index], I_sub, axis=0)\n                             ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nIndexError: index 177 is out of bounds for axis 0 with size 177",
+      "classification": "source_code_bug",
+      "project": "autolens",
+      "directory": "scripts/group"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/advanced/potential_correction.py",
+      "status": "timeout",
+      "duration_seconds": 300.38,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py",
+      "status": "failed",
+      "duration_seconds": 5.53,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py\", line 53, in <module>\n    blurring_gaussian = al.Convolver.from_gaussian(\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/operators/convolver.py\", line 746, in from_gaussian\n    gaussian = Array2D.no_mask(\n               ^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/uniform_2d.py\", line 696, in no_mask\n    return Array2D(values=values, mask=mask, header=header)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/uniform_2d.py\", line 243, in __init__\n    values = array_2d_util.convert_array_2d(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/array_2d_util.py\", line 133, in convert_array_2d\n    check_array_2d_and_mask_2d(array_2d=array_2d, mask_2d=mask_2d)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/array_2d_util.py\", line 69, in check_array_2d_and_mask_2d\n    raise exc.ArrayException(\nautoarray.exc.ArrayException: \n                The input array is a slim 1D array, but it does not have the same number of entries as pixels in\n                the mask.\n\n                This indicates that the number of unmaksed pixels in the mask  is different to the input slim array \n                shape.\n\n                The shapes of the two arrays (which this exception is raised because they are different) are as follows:\n\n                Input array_2d_slim.shape = 256\n                Input mask_2d.pixels_in_mask = 961\n                Input mask_2d.shape_native = (31, 31)\n                ",
+      "classification": "source_code_bug",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/double_einstein_ring/slam.py",
+      "status": "failed",
+      "duration_seconds": 19.59,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/double_einstein_ring/slam.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/double_einstein_ring/slam.py\", line 580, in <module>\n    source_pix_result_2 = source_pix_2(\n                          ^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/double_einstein_ring/slam.py\", line 399, in source_pix_2\n    pix1_dict = al.galaxy_name_image_dict_via_result_from(\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/analysis/adapt_images/adapt_images.py\", line 155, in galaxy_name_image_dict_via_result_from\n    raw_image_dict[path] = result.subtracted_signal_to_noise_map_galaxy_dict[\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/analysis/result.py\", line 138, in subtracted_signal_to_noise_map_galaxy_dict\n    self.max_log_likelihood_fit.subtracted_signal_to_noise_maps_of_galaxies_dict\n  File \"/usr/lib/python3.12/functools.py\", line 998, in __get__\n    val = self.func(instance)\n          ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/imaging/fit_imaging.py\", line 293, in subtracted_signal_to_noise_maps_of_galaxies_dict\n    for (galaxy, subtracted_image) in self.subtracted_images_of_galaxies_dict.items():\n                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/functools.py\", line 998, in __get__\n    val = self.func(instance)\n          ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/imaging/fit_imaging.py\", line 270, in subtracted_images_of_galaxies_dict\n    for (galaxy, galaxy_model_image) in self.galaxy_model_image_dict.items():\n                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/imaging/fit_imaging.py\", line 251, in galaxy_model_image_dict\n    galaxy_linear_obj_image_dict = self.galaxy_linear_obj_data_dict_from(\n                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoGalaxy/autogalaxy/abstract_fit.py\", line 183, in galaxy_linear_obj_data_dict_from\n    self.inversion.mapped_reconstructed_operated_data_dict[linear_obj]\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py\", line 195, in mapped_reconstructed_operated_data_dict\n    return self._mapped_reconstructed_data_dict_from(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/imaging/mapping.py\", line 112, in _mapped_reconstructed_data_dict_from\n    source_quantity=self.reconstruction\n                    ^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/abstract.py\", line 515, in reconstruction\n    curvature_reg_matrix = self.curvature_reg_matrix[\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/abstract.py\", line 366, in curvature_reg_matrix\n    return self._xp.add(self.curvature_matrix, self.regularization_matrix)\n                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoNerves/autonerves/tools/decorators.py\", line 22, in __get__\n    obj.__dict__[self.func.__name__] = self.func(obj)\n                                       ^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/inversion/abstract.py\", line 327, in regularization_matrix\n    *[linear_obj.regularization_matrix for linear_obj in self.linear_obj_list]\n      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/linear_obj/linear_obj.py\", line 160, in regularization_matrix\n    return self.regularization.regularization_matrix_from(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/regularization/adapt.py\", line 233, in regularization_matrix_from\n    regularization_weights = self.regularization_weights_from(\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/regularization/adapt.py\", line 210, in regularization_weights_from\n    pixel_signals = linear_obj.pixel_signals_from(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/mappers/abstract.py\", line 469, in pixel_signals_from\n    return mapper_util.adaptive_pixel_signals_from(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/inversion/mappers/mapper_util.py\", line 62, in adaptive_pixel_signals_from\n    flat_data_vals = xp.take(adapt_data[slim_index_for_sub_slim_index], I_sub, axis=0)\n                             ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nIndexError: index 177 is out of bounds for axis 0 with size 177",
+      "classification": "source_code_bug",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py",
+      "status": "failed",
+      "duration_seconds": 12.89,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py:5: SyntaxWarning: invalid escape sequence '\\d'\n  This example performs gravitational imaging on interferometer data: pixelized corrections $\\delta\\psi$ to the\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py:90: SyntaxWarning: invalid escape sequence '\\o'\n  An `Isothermal` lens whose true mass also contains a $10^{10} M_\\odot$ NFW subhalo on the Einstein ring, and a\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py:168: SyntaxWarning: invalid escape sequence '\\c'\n  $\\chi^2$/dof is far above ~1-3, the corrections will absorb source-model error instead of mass structure and\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/start_here.py\", line 234, in <module>\n    print(f\"one-shot joint log evidence = {fit.log_evidence:.4e}\")\n                                           ^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 481, in log_evidence\n    self.src_dpsi_slim = self.solve_src_dpsi()\n                         ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 445, in solve_src_dpsi\n    curve_reg = np.asarray(self.curvature_regularization_matrix)\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 442, in curvature_regularization_matrix\n    return self.curvature_matrix + self.regularization_matrix\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 372, in curvature_matrix\n    rows, cols, vals, n_src = self._joint_triplets()\n                              ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 345, in _joint_triplets\n    G = self.dpsi_response_matrix\n        ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 274, in dpsi_response_matrix\n    -1.0 * self.source_gradient_matrix @ self.dpsi_gradient_matrix\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 246, in source_gradient_matrix\n    traced = np.asarray(self.source_plane_data_grid)[self._dpsi_rows_in_full]\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 239, in _dpsi_rows_in_full\n    self.pair_dpsi_data_obj.mask_data,\n    ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/fit_interferometer.py\", line 221, in pair_dpsi_data_obj\n    self._pair_dpsi_data_obj = self.dpsi_pixelization.pair_dpsi_data_mesh(\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/pixelization.py\", line 90, in pair_dpsi_data_mesh\n    return dpsi_mesh.PairRegularDpsiMesh(mask, pixel_scale, self.mesh.factor)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 99, in __init__\n    self.get_itp_box_ctr()\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 132, in get_itp_box_ctr\n    raise ValueError(\nValueError: The dpsi grid is too sparse. Try decreasing the dpsi_factor to smaller values.",
+      "classification": "source_code_bug",
+      "project": "autolens",
+      "directory": "scripts/interferometer"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py",
+      "status": "failed",
+      "duration_seconds": 7.78,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:6: SyntaxWarning: invalid escape sequence '\\d'\n  `Interferometer` data for a pixelized source and pixelized corrections $\\delta\\psi$ to the lensing potential.\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:77: SyntaxWarning: invalid escape sequence '\\o'\n  `Isothermal` lens whose true mass also contains a $10^{10} M_\\odot$ NFW subhalo on the Einstein ring, and a\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:144: SyntaxWarning: invalid escape sequence '\\p'\n  gradients $(\\partial S / \\partial y, \\partial S / \\partial x)$ at arbitrary source-plane positions.\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:187: SyntaxWarning: invalid escape sequence '\\d'\n  - `hamiltonian_dpsi`: the mesh Laplacian, used later to convert $\\delta\\psi$ to $\\delta\\kappa$.\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:204: SyntaxWarning: invalid escape sequence '\\d'\n  As in the imaging walkthrough, a correction $\\delta\\psi$ perturbs the observed image via the source's brightness\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:242: SyntaxWarning: invalid escape sequence '\\,'\n  The joint real-space response stacks the two blocks, $A = [\\, f \\; | \\; G \\,]$, alongside the block-diagonal\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:293: SyntaxWarning: invalid escape sequence '\\,'\n  - the curvature is $F = A^T \\, (T^H C^{-1} T) \\, A$, where the operator $T^H C^{-1} T$ is a **convolution** in\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:317: SyntaxWarning: invalid escape sequence '\\,'\n  $(F + R) \\, x = D$\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:330: SyntaxWarning: invalid escape sequence '\\d'\n  $\\delta\\kappa = \\frac{1}{2}\\nabla^2 \\delta\\psi$, via the mesh Laplacian. A dark subhalo missing from the smooth\n/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py:357: SyntaxWarning: invalid escape sequence '\\c'\n  visibility-space specifics that the noise normalization and $\\chi^2$ run over the real **and** imaginary parts:\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py\", line 196, in <module>\n    pair = al.pc.PairRegularDpsiMesh(dpsi_mask, pixel_scale=0.1, dpsi_factor=2)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 99, in __init__\n    self.get_itp_box_ctr()\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoLens/autolens/potential_correction/mesh.py\", line 132, in get_itp_box_ctr\n    raise ValueError(\nValueError: The dpsi grid is too sparse. Try decreasing the dpsi_factor to smaller values.",
+      "classification": "source_code_bug",
+      "project": "autolens",
+      "directory": "scripts/interferometer"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/weak/features/strong_lensing/a2744.py",
+      "status": "timeout",
+      "duration_seconds": 300.07,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens",
+      "directory": "scripts/weak"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/imaging/model_fit.py",
+      "status": "failed",
+      "duration_seconds": 8.56,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/imaging/model_fit.py']' returned non-zero exit status 1.",
+      "traceback": "/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/mask/mask_2d_util.py:564: UserWarning: Mask padded from (16, 16) to (np.int64(26), np.int64(26)) (parity preserved) to support kernel footprint (11, 11).\n  warnings.warn(\nTraceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/imaging/model_fit.py\", line 256, in <module>\n    aplt.corner_cornerpy(samples=result.samples)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/non_linear/plot/plot_util.py\", line 18, in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/non_linear/plot/samples_plotters.py\", line 35, in corner_cornerpy\n    data = np.asarray(samples.parameter_lists)\n                      ^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'parameter_lists'",
+      "classification": "source_code_bug",
+      "project": "autolens_test",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_grad/imaging_pixelization.py",
+      "status": "timeout",
+      "duration_seconds": 300.17,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens_test",
+      "directory": "scripts/jax_grad"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/latent/latent_nan_robustness.py",
+      "status": "failed",
+      "duration_seconds": 6.5,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/latent/latent_nan_robustness.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/latent/latent_nan_robustness.py\", line 80, in <module>\n    assert len(result.samples.sample_list) > LATENT_BATCH_SIZE, (\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'sample_list'",
+      "classification": "workspace_issue",
+      "project": "autolens_test",
+      "directory": "scripts/latent"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/latent/latent_variables_smoke.py",
+      "status": "failed",
+      "duration_seconds": 5.47,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/latent/latent_variables_smoke.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/latent/latent_variables_smoke.py\", line 66, in <module>\n    latent_samples = analysis.compute_latent_samples(result.samples)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/non_linear/analysis/analysis.py\", line 144, in compute_latent_samples\n    return latent_samples_from(self, samples, batch_size=batch_size)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoFit/autofit/non_linear/analysis/latent.py\", line 113, in latent_samples_from\n    latent.variables, analysis, model=samples.model\n                                      ^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'model'",
+      "classification": "source_code_bug",
+      "project": "autolens_test",
+      "directory": "scripts/latent"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/potential_correction/subhalo_recovery.py",
+      "status": "timeout",
+      "duration_seconds": 300.26,
+      "error_message": "Timed out after 300s",
+      "classification": "timeout",
+      "project": "autolens_test",
+      "directory": "scripts/potential_correction"
+    }
+  ],
+  "failure_pr_correlations": {
+    "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/features/potential_correction/likelihood_function.py": [
+      {
+        "pr_url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/141",
+        "pr_title": "fix: un-park pixelization/MGE scripts (stale NEEDS_FIX, now green)",
+        "repo": "PyAutoLabs/autogalaxy_workspace"
+      }
+    ],
+    "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/double_einstein_ring/slam.py": [
+      {
+        "pr_url": "https://github.com/PyAutoLabs/autolens_workspace/pull/312",
+        "pr_title": "chore: un-park group/slam (stale NEEDS_FIX, bug fixed)",
+        "repo": "PyAutoLabs/autolens_workspace"
+      },
+      {
+        "pr_url": "https://github.com/PyAutoLabs/autolens_workspace/pull/302",
+        "pr_title": "fix: SLaM advanced-pipeline inversion + adapt-image cascade (#300)",
+        "repo": "PyAutoLabs/autolens_workspace"
+      }
+    ],
+    "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/double_einstein_ring/slam.py": [
+      {
+        "pr_url": "https://github.com/PyAutoLabs/autolens_workspace/pull/312",
+        "pr_title": "chore: un-park group/slam (stale NEEDS_FIX, bug fixed)",
+        "repo": "PyAutoLabs/autolens_workspace"
+      },
+      {
+        "pr_url": "https://github.com/PyAutoLabs/autolens_workspace/pull/302",
+        "pr_title": "fix: SLaM advanced-pipeline inversion + adapt-image cascade (#300)",
+        "repo": "PyAutoLabs/autolens_workspace"
+      }
+    ],
+    "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py": [
+      {
+        "pr_url": "https://github.com/PyAutoLabs/autolens_workspace/pull/304",
+        "pr_title": "chore: un-park mask_irregular no_run marker (bug already fixed)",
+        "repo": "PyAutoLabs/autolens_workspace"
+      }
+    ],
+    "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/manual/mask_irregular.py": [
+      {
+        "pr_url": "https://github.com/PyAutoLabs/autolens_workspace/pull/304",
+        "pr_title": "chore: un-park mask_irregular no_run marker (bug already fixed)",
+        "repo": "PyAutoLabs/autolens_workspace"
+      }
+    ]
+  },
+  "skipped": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/features/interpolate.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - IndexError in InstanceInterpolator.__getitem__ when querying time == 1.5; value_map lookup falls through to empty instances list",
+      "project": "autofit",
+      "directory": "scripts/features"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/dynesty_plotter.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test Model Iniitalization no good.",
+      "project": "autofit",
+      "directory": "scripts/plot"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/get_dist.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Cant get it to install, even in optional requirements.",
+      "project": "autofit",
+      "directory": "scripts/plot"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/plot/zeus_plotter.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test Model Iniitalization no good.",
+      "project": "autofit",
+      "directory": "scripts/plot"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/searches/mcmc.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Zeus section in merged mcmc.py fails Test Model Initialization.",
+      "project": "autofit",
+      "directory": "scripts/searches"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace/scripts/searches/start_point.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "bug https://github.com/rhayes777/PyAutoFit/issues/1017",
+      "project": "autofit",
+      "directory": "scripts/searches"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/database/session/general.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Session mostly works but not maintaining currently.",
+      "project": "autofit_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/database/session/multi_analysis.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Session mostly works but not maintaining currently.",
+      "project": "autofit_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/guides/results/database/start_here.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - previously failed fast on a broken aggregator query; now runs the real aggregator and exceeds 60s",
+      "project": "autogalaxy",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/guides/plot/examples/searches.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode breaks search visualization.",
+      "project": "autogalaxy",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/guides/results/workflow/csv_make.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s test timeout; unsets TEST_MODE for downstream examples",
+      "project": "autogalaxy",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/guides/results/workflow/fits_make.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not output .fits images.",
+      "project": "autogalaxy",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/guides/results/workflow/png_make.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not output .png images.",
+      "project": "autogalaxy",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/gui/extra_galaxies_centres.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autogalaxy",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/gui/light_centre.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autogalaxy",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/gui/mask.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autogalaxy",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/data_preparation/gui/mask_extra_galaxies.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autogalaxy",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/features/shapelets/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX shapelet fit exceeds the 1800s mode=release cap (>30min); speedup tracked by the Profiling Agent (PyAutoHeart#72). Not a bug.",
+      "project": "autogalaxy",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/imaging/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - KeyError on ('galaxies','galaxy','bulge','ell_comps'...) kwargs after API drift in top-level imaging/modeling.py",
+      "project": "autogalaxy",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/interferometer/mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - finite-difference JAX interferometer MGE gradient; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_grad"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_grad/multi/mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - finite-difference JAX multi-band MGE gradient; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_grad"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/imaging/delaunay_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX imaging Delaunay-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/delaunay.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer Delaunay likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/delaunay_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer Delaunay-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer MGE likelihood; flakes at the 1800s mode=release cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/mge_group.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer MGE-group likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/interferometer/rectangular_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer rectangular-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_likelihood_functions/multi/delaunay_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX Delaunay-MGE multi-band likelihood is borderline against the 1800s mode=release cap (its autolens_workspace_test sibling times out); skipped to keep release-validation deterministic. Speedup tracked by the Profiling Agent (PyAutoHeart#72). Not a bug.",
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/mass_stellar_dark/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Requires CSE to be JAX enabled.",
+      "project": "autolens",
+      "directory": "scripts/group"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/features/advanced/mass_stellar_dark/slam.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Requires CSE to be JAX enabled.",
+      "project": "autolens",
+      "directory": "scripts/group"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/group/slam.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - PriorException: upper limit must be greater than lower limit in group SLaM pipeline",
+      "project": "autolens",
+      "directory": "scripts/group"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/database/start_here.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - previously failed fast on a broken aggregator query; now runs the real aggregator and exceeds 60s",
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/hpc/example_cpu.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "HPC paths dont exist locally.",
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/examples/searches.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode breaks search visualization.",
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/workflow/fits_make.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not output .fits images.",
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/workflow/png_make.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not output .png images.",
+      "project": "autolens",
+      "directory": "scripts/guides"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/subhalo/sensitivity/start_here.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "All sensitivity scripts need updating when visualization refactored.",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/gui/extra_galaxies_centres.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/gui/lens_light_centre.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/gui/mask.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/gui/mask_extra_galaxies.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/data_preparation/gui/positions.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "GUI scripts cannot be run",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/mass_stellar_dark/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Requires CSE to be JAX enabled.",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/mass_stellar_dark/slam.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Requires CSE to be JAX enabled.",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/subhalo/detect/database.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Unsure but not a feature actively used currently.",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/subhalo/sensitivity/slam_source_parametric.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "All sensitivity scripts need updating when visualization refactored.",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/imaging/features/advanced/subhalo/sensitivity/slam_source_pixelized.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "All sensitivity scripts need updating when visualization refactored.",
+      "project": "autolens",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/interferometer/casa_reduction.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Requires CASA MeasurementSet output, not runnable standalone",
+      "project": "autolens",
+      "directory": "scripts/interferometer"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/multiple_sources/simulator.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Blocked by PyAutoLens #480: solver finds 0 positions for intermediate-plane source",
+      "project": "autolens",
+      "directory": "scripts/point_source"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/multiple_sources/modeling.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Blocked by PyAutoLens #480: same root cause as simulator above",
+      "project": "autolens",
+      "directory": "scripts/point_source"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/point_source/features/time_delays.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not support cosmology ift",
+      "project": "autolens",
+      "directory": "scripts/point_source"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/cluster/visualization.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-21 - per-plane critical-curve + caustic computation on the required full-extent 250x250 viz_grid (multi-plane marching squares) totals ~580s, over the 300s cap; same perf family as the modeling_visualization_jit scripts. Curves DO recover (plane-1 7 CC, plane-2 1 CC at full data) and the per-plane physics assertion passes \u2014 this is NOT the mislabelled \"#1280 zero_contour algorithmic regression\", which does not reproduce. env_vars.yaml unsets FAST_PLOTS/SMALL_DATASETS so it runs green in manual/full runs.",
+      "project": "autolens_test",
+      "directory": "scripts/cluster"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/general.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-27 - PyAutoGalaxy abstract_fit.linear_light_profile_intensity_dict raises \"TypeError: __hash__ method should return an integer\" during subplot_fit_imaging after the search completes (a light-profile object's __hash__ returns a non-int). Surfaced once the dataset_label=\"build\" path fix let the script progress past Imaging.from_fits.",
+      "project": "autolens_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/multi_analysis.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "project": "autolens_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/slam_general.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "project": "autolens_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/slam_multi_one_by_one.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "project": "autolens_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/database/scrape/slam_pix.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "project": "autolens_test",
+      "directory": "scripts/database"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/imaging/modeling_visualization_jit.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-05-07 - JIT + full visualization pipeline exceeds 300s cap (autogalaxy variant ~90s); unblocked by PR #70 from prior `expected jax.Array, got numpy.float64` AssertionError, now hits perf wall",
+      "project": "autolens_test",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_delaunay.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-05-07 - JIT + full visualization pipeline exceeds 300s cap (autogalaxy variant ~90s); unblocked by PR #70 from prior `expected jax.Array, got numpy.float64` AssertionError, now hits perf wall",
+      "project": "autolens_test",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/imaging/modeling_visualization_jit_rectangular.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-05-07 - JIT + full visualization pipeline exceeds 300s cap (autogalaxy variant ~90s); unblocked by PR #70 from prior `expected jax.Array, got numpy.float64` AssertionError, now hits perf wall",
+      "project": "autolens_test",
+      "directory": "scripts/imaging"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/modeling_visualization_jit.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-05-20 - JIT + full visualization pipeline exceeds 300s cap; same root cause as imaging/modeling_visualization_jit family",
+      "project": "autolens_test",
+      "directory": "scripts/interferometer"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_grad/interferometer.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - finite-difference JAX interferometer gradient; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_grad"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/datacube/delaunay.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX datacube Delaunay likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/datacube/shared_preloads.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX datacube shared-preloads likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/imaging/delaunay_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - timeout in JAX likelihood function benchmark",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/imaging/mge_group.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - timeout in JAX likelihood function benchmark",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/interferometer/delaunay.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer Delaunay likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/interferometer/delaunay_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer Delaunay-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/interferometer/mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/interferometer/mge_group.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer MGE-group likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/interferometer/rectangular_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX interferometer rectangular-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/multi/delaunay_mge.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX Delaunay-MGE multi-band likelihood exceeds the 1800s mode=release cap; speedup tracked by the Profiling Agent (PyAutoHeart#72). Not a bug.",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/jax_likelihood_functions/multi/shared_preloads.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-14 - real-search JAX multi-band shared-preloads likelihood; flakes at the 1800s mode=release cap (PyAutoHeart#74)",
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/point_source/modeling_visualization_jit.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-07-08 - JIT + Part-2 live Nautilus fit exceeds 300s cap; same family as imaging/interferometer modeling_visualization_jit (the zero_contour perf-assert false-positive was separately fixed to a cold/warm ratio, which now lets the script run past it into the slow fit)",
+      "project": "autolens_test",
+      "directory": "scripts/point_source"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToFit/scripts/chapter_1_introduction/tutorial_5_results_and_samples.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "NEEDS_FIX 2026-04-10 - IndexError in samples access, likely related to InstanceInterpolator bug in autofit features/interpolate",
+      "project": "howtofit",
+      "directory": "scripts/chapter_1_introduction"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToGalaxy/scripts/chapter_optional/tutorial_searches.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "No reason documented",
+      "project": "howtogalaxy",
+      "directory": "scripts/chapter_optional"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_4_pixelizations/tutorial_5_borders.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Cant get right masks, need proper update.",
+      "project": "howtolens",
+      "directory": "scripts/chapter_4_pixelizations"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/HowToLens/scripts/chapter_optional/tutorial_searches.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "No reason documented",
+      "project": "howtolens",
+      "directory": "scripts/chapter_optional"
+    }
+  ],
+  "pr_changes": [
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "feat(autofit): multi-start gradient convergence results contract (phase 2)",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1410",
+      "api_changes": "Additive, plus one shared-`Samples` correctness fix. **Added:** `converged` / `stop_reason` / `convergence` / `fom_history` to the multi-start gradient `samples_info`; a `figure_of_merit_vs_iteration` MLE plotter (+ `plots_search.yaml` toggle) drawing the global-best figure-of-merit trace so the plateau is visible. **Fixed:** `Samples.max_log_likelihood_index` / `max_log_posterior_index` used `np.argmax`, which *selects* a `NaN` sample (`argmax([2.5, nan, nan]) == 1`) \u2014 the multi-start searches write their non-best starts as zero-weight `NaN`-log-likelihood diagnostic rows, so these returned the wrong index (inconsistent with `max_log_likelihood_sample`). Now `np.nanargmax`; only changes results where a `NaN` was present. No migration.\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "fix: test-mode bypass tolerates a single-eval FitException (resample-equivalent)",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1408",
+      "api_changes": "None. Behaviour change is confined to the `TEST_MODE=2` bypass path; public API, signatures, and normal-search behaviour are unchanged. No downstream workspace migration required.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "feat(autofit): multi-start gradient auto-convergence (phase 1)",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1407",
+      "api_changes": "Additive, plus one default-behaviour change. **Added:** `af.MultiStartGradientConvergence` settings object and a `convergence=` parameter on all four multi-start gradient searches (defaults to auto-convergence ON). **Changed behaviour:** the searches now stop early by default once the global-best figure-of-merit plateaus (parametric regime); `n_steps` remains a hard ceiling. No migration required \u2014 pass `convergence=af.MultiStartGradientConvergence(check_for_convergence=False)` to restore the previous always-run-to-`n_steps` behaviour. `resurrect=True` behaviour is unchanged (check skipped).\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "fix: Aggregator.from_directory test-mode-aware (interpolate tutorial IndexError)",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1402",
+      "api_changes": "None affecting real runs \u2014 internal test-mode recovery only. The `from_directory` signature is unchanged and non-test-mode behaviour is byte-for-byte identical. In test mode only, an empty first scan now retries once against the `test_mode` sibling directory.\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "feat(autofit): restart-on-death (resurrection) for multi-start gradient search",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1400",
+      "api_changes": "- **Added** a `resurrect: bool = False` constructor argument on `af.AbstractMultiStartGradient` (inherited by all `MultiStart*` searches). Default `False` \u2192 no behaviour change.\n- **Added** an `n_resurrections` diagnostic to `search_internal` and `samples_info`.\n\nNo migration required \u2014 the new argument is optional and off by default; existing `MultiStart*` behaviour is byte-for-byte unchanged.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoFit",
+      "title": "feat(autofit): MultiStartProdigy + optax.contrib + per-start vmapped state",
+      "url": "https://github.com/PyAutoLabs/PyAutoFit/pull/1398",
+      "api_changes": "- **Added** `af.MultiStartProdigy` \u2014 a learning-rate-free multi-start gradient MAP search (`optax.contrib.prodigy`).\n- **Added** a `max_consecutive_nan: int = 8` constructor argument on `af.AbstractMultiStartGradient` (inherited by all `MultiStart*` searches) \u2014 the `apply_if_finite` per-start rejected-step budget.\n- **Changed behaviour** (backward-compatible): the existing `MultiStartAdam` / `MultiStartADABelief` / `MultiStartLion` now use per-start vmapped optimizer state and an `apply_if_finite` guard. For these elementwise rules this is numerically identical on finite trajectories \u2014 results are unchanged.\n- **Dependency:** `optax` pin raised to `optax>=0.2.5` (for `apply_if_finite`'s `value=` forwarding).\n\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "feat: opt-in gradient-safe log-det via Settings (default unchanged)",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/392",
+      "api_changes": "Additive only. New optional `Settings(log_det_method=...)` field, default `None` \u2192 config `\"cholesky\"` \u2192 current behaviour. No removed/renamed/changed symbols; no downstream migration.\n\n<details>\n<summary>Detail</summary>\n\n- Added: `Settings.log_det_method` (optional kwarg + property); `AbstractInversion._log_det_symmetric_from` (private helper); `inversion.log_det_method: cholesky` in packaged `general.yaml`.\n- Removed / Renamed / Changed Signature: none.\n- Changed Behaviour: none at default \u2014 the two log-det properties produce the identical value; only an explicit `log_det_method=\"slogdet\"` opt-in differs.\n- Migration: n/a. No workspace config mirroring required \u2014 packaged-only keys layer through production config (verified against the existing packaged-only `nnls_target_kappa`).\n\n</details>",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "feat: masked-grid derivative operators + mask regularizations (potential correction phase 1)",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/390",
+      "api_changes": "Added only \u2014 nothing removed or changed. Two new regularization classes, `aa.reg.CurvatureMask` and `aa.reg.FourthOrderMask`, regularize linear objects defined on rectangular masked grids (the linear object must expose its `mask`). Two new util modules, `aa.util.derivative` (masked-grid sparse derivative operators + mask cleaning) and `aa.util.coarse_interp` (coarse-mesh binning + bilinear interpolation matrices), carry the underlying builders.\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoArray",
+      "title": "fix: pin tfp-nightly for JAX Matern-kernel path (tfp 0.25.0 \u00d7 jax 0.10.2 crash)",
+      "url": "https://github.com/PyAutoLabs/PyAutoArray/pull/386",
+      "api_changes": "None \u2014 public surface unchanged.\n\nFixes #385\n\n\ud83e\udd16 Generated with [Claude Code](https://claude.com/claude-code)\n\nhttps://claude.ai/code/session_01TDCsgNCXacXqiWAPTswWCt",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "fix: SersicCore.intensity_prime ZeroDivisionError on effective_radius=0 (#514)",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/515",
+      "api_changes": "No signature changes. One **behaviour** change:\n\n<details>\n<summary>Changed Behaviour</summary>\n\n- `SersicCore.intensity_prime()` (and hence `SersicCore` / `SersicCoreSph` image evaluation) with `effective_radius <= 0` now returns a **non-finite** value (`inf`/`nan`) instead of raising `ZeroDivisionError`. Callers that fit `SersicCore` get the standard non-finite \u2192 `FitException`/resample path rather than a hard crash. The return is now a numpy/jax scalar (was a Python `float`) for the affected term; numeric results for physical `effective_radius > 0` are unchanged (existing exact-value tests still pass).\n\n**Migration:** none required. Any downstream code that relied on the `ZeroDivisionError` (there is none in the stack) should instead check `np.isfinite`.\n</details>",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "feat: make Lenstool-native parameterization the default dPIE profile",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/509",
+      "api_changes": "Breaking rename-swap of the dPIE family (no numerical/physics changes):\n- `dPIEMass` / `dPIEMassSph` are now the Lenstool-native parameterized classes (formerly `dPIEMassLenstool` / `dPIEMassLenstoolSph`).\n- The internal `(ra, rs, b0)` classes are renamed `dPIEMassB0` / `dPIEMassB0Sph`; `from_lenstool` (general-cosmology converter) now lives there and returns them.\n- New `dPIEMass.from_b0(...)` / `dPIEMassSph.from_b0(...)` classmethods construct the non-standard variant from the default entry point.\n- Priors config re-keyed to match; `dPIEMassLenstool*` names no longer exist.\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "feat: zero-fill extrapolation for input pixelized mass profiles",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/508",
+      "api_changes": "Added only: the `fill` parameter on `ag.mp.LinearNDInterpolatorExt` and the `extrapolate` parameter on `ag.mp.InputPotential` / `ag.mp.InputDeflections` (defaults preserve existing behaviour).\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "refactor: use paths.preserve_in_zip for the galaxy-image cache (#1389 phase 2)",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/507",
+      "api_changes": "None public. Private `_append_to_search_zip` removed from `autogalaxy/analysis/adapt_images/adapt_images.py` (its one external consumer, PyAutoLens, switches in the companion PR).",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "feat: input pixelized mass profiles (potential correction phase 2)",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/505",
+      "api_changes": "Added only \u2014 nothing removed or changed. Three new mass profiles under `ag.mp`: `InputDeflections`, `InputPotential` and `GaussianRandomField` (data-holding profiles constructed from arrays/masks, not free-parameter model components), plus the `LinearNDInterpolatorExt` interpolation helper.\nSee full details below.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoGalaxy",
+      "title": "feat: cache per-galaxy result images for SLaM resume fast-path (#502)",
+      "url": "https://github.com/PyAutoLabs/PyAutoGalaxy/pull/504",
+      "api_changes": "None \u2014 no public API changes. Behaviour of `galaxy_name_image_dict_via_result_from` is identical on first computation; later calls return equal values from disk. New side effect: two FITS cache files written into a result's `files/` folder (and its zip) when the result has on-disk output.\n\n<details>\n<summary>Details</summary>\n\n### Added\n- `autogalaxy/analysis/adapt_images/adapt_images.py`: private helpers `_galaxy_images_cache_path`, `_galaxy_image_dict_from_cache`, `_galaxy_image_dict_to_cache`, `_append_to_search_zip` (the last is imported by the PyAutoLens leg).\n\n### Changed Behaviour\n- `galaxy_name_image_dict_via_result_from`: cache-aside on the result's `paths`; compute-and-write on first arrival, load thereafter.\n\n### Migration\n- None required.\n\n</details>",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "fix: analysis log_likelihood_function preserves the cause behind FitException",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/639",
+      "api_changes": "**Changed Behaviour**\n- `AnalysisImaging` / `AnalysisInterferometer` / `AnalysisPoint`\n  `log_likelihood_function` (numpy path): a fit failure is still re-raised as\n  `af.exc.FitException`, but now with the original exception preserved as\n  `__cause__` (`raise ... from e`). No change to when/whether `FitException` is\n  raised; searches resample exactly as before.\n\n**Added**\n- Env var `PYAUTO_RAISE_ANALYSIS_EXCEPTIONS=1` (default off / `\"0\"`): re-raises\n  the original exception unwrapped instead of wrapping it \u2014 a debug aid for\n  surfacing masked failures (e.g. under `PYAUTO_TEST_MODE`, where a single\n  evaluation is not absorbed by a sampler).\n- `autolens.analysis.exceptions.raise_fit_exception(exception)` \u2014 internal\n  helper implementing the above (not part of the user-facing modelling API).\n\n**Removed / Renamed / Changed Signature**\n- None.\n\n**Migration**\n- None required. Existing code and configs are unaffected; the only observable\n  difference is a richer traceback (`__cause__`) on an already-raised\n  `FitException`.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/PyAutoLens",
+      "title": "fix: interferometer LM objective double-counting + warm start (mid-tier certified)",
+      "url": "https://github.com/PyAutoLabs/PyAutoLens/pull/629",
+      "api_changes": "Added `x0=` on `solve_joint_optimization`; behaviour fix in the LM objective (cold-start results change slightly \u2014 they were computed under the inconsistent objective).\nSee commit for detail.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "chore: un-park features/interpolate (stale NEEDS_FIX, bug fixed)",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/103",
+      "api_changes": "",
+      "scripts_changed": "None (config-only edit to config/build/no_run.yaml). The following previously-skipped script returns to validation:\n- `scripts/features/interpolate.py`"
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "config: adopt version.minimum_library_version floor (2026.7.9.1)",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/97",
+      "api_changes": "None \u2014 workspace config only.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/autofit_workspace",
+      "title": "docs: note PYAUTO_TEST_MODE_SAMPLES in AGENTS.md",
+      "url": "https://github.com/PyAutoLabs/autofit_workspace/pull/96",
+      "api_changes": "",
+      "scripts_changed": "None \u2014 AGENTS.md only.\n\nGenerated by the PyAutoLabs agent workflow."
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "chore: un-park imaging/modeling (stale NEEDS_FIX, bug fixed)",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/142",
+      "api_changes": "",
+      "scripts_changed": "None (config-only edit to config/build/no_run.yaml). The following previously-skipped script returns to validation:\n- `scripts/imaging/modeling.py`"
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "fix: un-park pixelization/MGE scripts (stale NEEDS_FIX, now green)",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/141",
+      "api_changes": "",
+      "scripts_changed": "No script edits -- `config/build/no_run.yaml` only. Markers removed (scripts now un-parked and verified green):\n- `imaging/features/pixelization/modeling` -- was `LinAlgError: matrix not positive definite`\n- `interferometer/features/pixelization/modeling` -- was `LinAlgError: matrix not positive definite`\n- `interferometer/features/multi_gaussian_expansion/likelihood_function` -- was `LinAlgError: matrix singular -> InversionException`\n\nUnrelated `NEEDS_FIX`/`SLOW` markers (imaging/modeling KeyError, shapelets SLOW) left intact."
+    },
+    {
+      "repo": "PyAutoLabs/autogalaxy_workspace",
+      "title": "config: adopt version.minimum_library_version floor (2026.7.9.1)",
+      "url": "https://github.com/PyAutoLabs/autogalaxy_workspace/pull/134",
+      "api_changes": "None \u2014 workspace config only.",
+      "scripts_changed": ""
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "chore: un-park group/slam (stale NEEDS_FIX, bug fixed)",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/312",
+      "api_changes": "",
+      "scripts_changed": "None (config-only edit to config/build/no_run.yaml). The following previously-skipped script returns to validation:\n- `scripts/group/slam.py`"
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "fix: multi-wavelength modeling green (auto-simulate + SersicCore effective_radius=0)",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/306",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/multi/features/wavelength_dependence/modeling.py` \u2014 add dataset auto-simulate block (mirrors `multi/modeling.py`)\n- `config/build/no_run.yaml` \u2014 drop the `multi/features/wavelength_dependence/modeling` NEEDS_FIX marker\n- `notebooks/multi/features/wavelength_dependence/modeling.ipynb` \u2014 regenerated"
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "chore: un-park mask_irregular no_run marker (bug already fixed)",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/304",
+      "api_changes": "",
+      "scripts_changed": "No script edits -- `config/build/no_run.yaml` only. Marker removed:\n- `imaging/data_preparation/manual/mask_irregular` -- was `NEEDS_FIX 2026-04-10 silent failure` (verified green)"
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "fix: SLaM advanced-pipeline inversion + adapt-image cascade (#300)",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/302",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/imaging/features/advanced/double_einstein_ring/slam.py` \u2014 seed `source_1` adapt image in `source_pix_1_source_1` (+ docstring)\n- `scripts/group/features/advanced/double_einstein_ring/slam.py` \u2014 same seed (+ docstring)\n- `scripts/imaging/features/pixelization/slam.py` \u2014 `AdaptSplit` -> `Adapt` (rectangular mesh) + docstrings\n- `config/build/no_run.yaml` \u2014 drop 4 now-green markers; correct interferometer-delaunay reason\n- `notebooks/**` + `workspace_index.json` \u2014 regenerated from the above"
+    },
+    {
+      "repo": "PyAutoLabs/autolens_workspace",
+      "title": "fix(smoke): cap RXJ1131 data to 16x16 so modeling runs under SMALL_DATASETS",
+      "url": "https://github.com/PyAutoLabs/autolens_workspace/pull/297",
+      "api_changes": "",
+      "scripts_changed": "- `scripts/multi/features/imaging_and_point_source/modeling.py` \u2014 cap the downloaded data under `SMALL_DATASETS`.\n\n_(Notebook regeneration will run in ship; config unchanged.)_"
+    }
+  ],
+  "runs": [
+    {
+      "project": "autofit",
+      "directory": "scripts/cookbooks",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:05:22.737773",
+      "completed_at": "2026-07-21T20:05:44.790302",
+      "summary": {
+        "passed": 10
+      },
+      "total_duration_seconds": 22.04
+    },
+    {
+      "project": "autofit",
+      "directory": "scripts/dataset",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:05:44.940809",
+      "completed_at": "2026-07-21T20:05:44.957297",
+      "summary": {},
+      "total_duration_seconds": 0
+    },
+    {
+      "project": "autofit",
+      "directory": "scripts/features",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:05:45.111230",
+      "completed_at": "2026-07-21T20:06:07.611186",
+      "summary": {
+        "passed": 7,
+        "skipped": 1
+      },
+      "total_duration_seconds": 22.49
+    },
+    {
+      "project": "autofit",
+      "directory": "scripts/model",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:06:07.771971",
+      "completed_at": "2026-07-21T20:06:07.775838",
+      "summary": {},
+      "total_duration_seconds": 0
+    },
+    {
+      "project": "autofit",
+      "directory": "scripts/overview",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:06:07.935584",
+      "completed_at": "2026-07-21T20:06:13.321565",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 5.38
+    },
+    {
+      "project": "autofit",
+      "directory": "scripts/plot",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:06:13.461642",
+      "completed_at": "2026-07-21T20:06:22.564426",
+      "summary": {
+        "skipped": 3,
+        "passed": 2
+      },
+      "total_duration_seconds": 9.1
+    },
+    {
+      "project": "autofit",
+      "directory": "scripts/searches",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:06:22.726762",
+      "completed_at": "2026-07-21T20:06:30.674116",
+      "summary": {
+        "skipped": 2,
+        "passed": 2
+      },
+      "total_duration_seconds": 7.94
+    },
+    {
+      "project": "autofit",
+      "directory": "scripts/simulators",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:06:30.813781",
+      "completed_at": "2026-07-21T20:06:51.064066",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 20.24
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/database",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:29:44.373886",
+      "completed_at": "2026-07-21T21:30:04.943101",
+      "summary": {
+        "passed": 6,
+        "skipped": 2
+      },
+      "total_duration_seconds": 20.56
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/features",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:30:05.067338",
+      "completed_at": "2026-07-21T21:30:22.585749",
+      "summary": {
+        "passed": 5
+      },
+      "total_duration_seconds": 17.51
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/graphical",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:30:22.716443",
+      "completed_at": "2026-07-21T21:30:45.379290",
+      "summary": {
+        "passed": 7
+      },
+      "total_duration_seconds": 22.65
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/jax_assertions",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:30:45.508932",
+      "completed_at": "2026-07-21T21:31:18.443445",
+      "summary": {
+        "passed": 8,
+        "failed": 1
+      },
+      "total_duration_seconds": 32.92
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/model_composition",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:31:18.730504",
+      "completed_at": "2026-07-21T21:31:21.305625",
+      "summary": {
+        "passed": 1
+      },
+      "total_duration_seconds": 2.56
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/prior_correctness",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:31:21.482977",
+      "completed_at": "2026-07-21T21:32:22.815555",
+      "summary": {
+        "passed": 2
+      },
+      "total_duration_seconds": 61.32
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/profiling",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:32:22.942676",
+      "completed_at": "2026-07-21T21:32:35.788178",
+      "summary": {
+        "passed": 2,
+        "failed": 1
+      },
+      "total_duration_seconds": 12.84
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/searches",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:32:35.960940",
+      "completed_at": "2026-07-21T21:33:47.554445",
+      "summary": {
+        "passed": 10,
+        "failed": 2
+      },
+      "total_duration_seconds": 71.58
+    },
+    {
+      "project": "autofit_test",
+      "directory": "scripts/simulators",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:33:47.667809",
+      "completed_at": "2026-07-21T21:33:51.935745",
+      "summary": {
+        "passed": 2
+      },
+      "total_duration_seconds": 4.26
+    },
+    {
+      "project": "autogalaxy",
+      "directory": "scripts/ellipse",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:06:51.213845",
+      "completed_at": "2026-07-21T20:07:26.929163",
+      "summary": {
+        "passed": 5
+      },
+      "total_duration_seconds": 35.71
+    },
+    {
+      "project": "autogalaxy",
+      "directory": "scripts/guides",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:07:27.058852",
+      "completed_at": "2026-07-21T20:10:51.437523",
+      "summary": {
+        "passed": 31,
+        "skipped": 5
+      },
+      "total_duration_seconds": 204.36
+    },
+    {
+      "project": "autogalaxy",
+      "directory": "scripts/imaging",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:10:51.551271",
+      "completed_at": "2026-07-21T20:15:54.702936",
+      "summary": {
+        "passed": 37,
+        "skipped": 6,
+        "failed": 1
+      },
+      "total_duration_seconds": 303.13
+    },
+    {
+      "project": "autogalaxy",
+      "directory": "scripts/interferometer",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:15:54.846097",
+      "completed_at": "2026-07-21T20:19:28.859366",
+      "summary": {
+        "passed": 23
+      },
+      "total_duration_seconds": 214.0
+    },
+    {
+      "project": "autogalaxy",
+      "directory": "scripts/multi",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:19:29.008685",
+      "completed_at": "2026-07-21T20:21:41.548776",
+      "summary": {
+        "passed": 14
+      },
+      "total_duration_seconds": 132.53
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/aggregator",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:33:52.076178",
+      "completed_at": "2026-07-21T21:34:42.891681",
+      "summary": {
+        "passed": 4
+      },
+      "total_duration_seconds": 50.8
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/ellipse",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:34:43.121955",
+      "completed_at": "2026-07-21T21:35:31.815662",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 48.68
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/imaging",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:35:31.930424",
+      "completed_at": "2026-07-21T21:37:06.915075",
+      "summary": {
+        "passed": 4
+      },
+      "total_duration_seconds": 94.98
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/interferometer",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:37:07.092162",
+      "completed_at": "2026-07-21T21:38:18.558454",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 71.45
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_assertions",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:38:18.669073",
+      "completed_at": "2026-07-21T21:38:46.801218",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 28.12
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_grad",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:38:46.909858",
+      "completed_at": "2026-07-21T21:39:50.956319",
+      "summary": {
+        "passed": 4,
+        "skipped": 2
+      },
+      "total_duration_seconds": 64.04
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/jax_likelihood_functions",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:39:51.067106",
+      "completed_at": "2026-07-21T21:46:46.859036",
+      "summary": {
+        "passed": 23,
+        "skipped": 7
+      },
+      "total_duration_seconds": 415.77
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/latent",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:46:46.975892",
+      "completed_at": "2026-07-21T21:46:52.344057",
+      "summary": {
+        "passed": 1
+      },
+      "total_duration_seconds": 5.36
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/model_composition",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:46:52.453662",
+      "completed_at": "2026-07-21T21:47:02.945855",
+      "summary": {
+        "passed": 1
+      },
+      "total_duration_seconds": 10.48
+    },
+    {
+      "project": "autogalaxy_test",
+      "directory": "scripts/quantity",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:47:03.064511",
+      "completed_at": "2026-07-21T21:47:03.072491",
+      "summary": {},
+      "total_duration_seconds": 0
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/cluster",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:21:41.677607",
+      "completed_at": "2026-07-21T20:29:47.846065",
+      "summary": {
+        "passed": 9,
+        "timeout": 1
+      },
+      "total_duration_seconds": 486.16
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/group",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:29:47.967506",
+      "completed_at": "2026-07-21T20:38:21.700318",
+      "summary": {
+        "passed": 51,
+        "failed": 1,
+        "skipped": 3
+      },
+      "total_duration_seconds": 513.7
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/guides",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:38:21.816821",
+      "completed_at": "2026-07-21T20:53:24.427968",
+      "summary": {
+        "passed": 43,
+        "skipped": 5,
+        "timeout": 1
+      },
+      "total_duration_seconds": 902.58
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/imaging",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T20:53:24.897325",
+      "completed_at": "2026-07-21T21:08:57.363993",
+      "summary": {
+        "passed": 67,
+        "skipped": 11,
+        "failed": 2
+      },
+      "total_duration_seconds": 932.41
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/interferometer",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:08:57.527207",
+      "completed_at": "2026-07-21T21:17:44.197007",
+      "summary": {
+        "passed": 37,
+        "failed": 2,
+        "skipped": 1
+      },
+      "total_duration_seconds": 526.65
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/multi",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:17:44.354679",
+      "completed_at": "2026-07-21T21:22:13.332205",
+      "summary": {
+        "passed": 18
+      },
+      "total_duration_seconds": 268.96
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/point_source",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:22:13.460665",
+      "completed_at": "2026-07-21T21:23:13.677598",
+      "summary": {
+        "passed": 8,
+        "skipped": 3
+      },
+      "total_duration_seconds": 60.21
+    },
+    {
+      "project": "autolens",
+      "directory": "scripts/weak",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:23:13.821633",
+      "completed_at": "2026-07-21T21:29:44.171731",
+      "summary": {
+        "passed": 9,
+        "timeout": 1
+      },
+      "total_duration_seconds": 390.34
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/aggregator",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:47:03.205734",
+      "completed_at": "2026-07-21T21:47:36.029458",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 32.81
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/cluster",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:47:36.164407",
+      "completed_at": "2026-07-21T21:48:03.027329",
+      "summary": {
+        "passed": 4,
+        "skipped": 1
+      },
+      "total_duration_seconds": 26.85
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/database",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:48:03.163137",
+      "completed_at": "2026-07-21T21:49:07.481382",
+      "summary": {
+        "skipped": 5,
+        "passed": 1
+      },
+      "total_duration_seconds": 64.31
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/gallery",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:49:07.601221",
+      "completed_at": "2026-07-21T21:49:07.762491",
+      "summary": {
+        "passed": 1
+      },
+      "total_duration_seconds": 0.15
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/imaging",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:49:07.889516",
+      "completed_at": "2026-07-21T21:51:51.311449",
+      "summary": {
+        "passed": 7,
+        "failed": 1,
+        "skipped": 3
+      },
+      "total_duration_seconds": 163.41
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/interferometer",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:51:51.424947",
+      "completed_at": "2026-07-21T21:54:18.117547",
+      "summary": {
+        "passed": 7,
+        "skipped": 1
+      },
+      "total_duration_seconds": 146.68
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/jax_assertions",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:54:18.216941",
+      "completed_at": "2026-07-21T21:54:46.296705",
+      "summary": {
+        "passed": 7
+      },
+      "total_duration_seconds": 28.07
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/jax_grad",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T21:54:46.410733",
+      "completed_at": "2026-07-21T22:02:23.027721",
+      "summary": {
+        "passed": 5,
+        "timeout": 1,
+        "skipped": 1
+      },
+      "total_duration_seconds": 456.61
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/jax_likelihood_functions",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:02:23.138116",
+      "completed_at": "2026-07-21T22:19:38.317512",
+      "summary": {
+        "passed": 34,
+        "skipped": 11
+      },
+      "total_duration_seconds": 1035.14
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/jax_substructure",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:19:38.715834",
+      "completed_at": "2026-07-21T22:20:24.849016",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 46.12
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/latent",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:20:24.962396",
+      "completed_at": "2026-07-21T22:20:36.942873",
+      "summary": {
+        "failed": 2
+      },
+      "total_duration_seconds": 11.97
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/mass",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:20:37.056383",
+      "completed_at": "2026-07-21T22:21:40.412379",
+      "summary": {
+        "passed": 6
+      },
+      "total_duration_seconds": 63.34
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/mass_via_integral",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:21:40.527562",
+      "completed_at": "2026-07-21T22:22:05.129838",
+      "summary": {
+        "passed": 6
+      },
+      "total_duration_seconds": 24.59
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/model_composition",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:22:05.248554",
+      "completed_at": "2026-07-21T22:22:16.143561",
+      "summary": {
+        "passed": 1
+      },
+      "total_duration_seconds": 10.88
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/multi",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:22:16.267094",
+      "completed_at": "2026-07-21T22:23:06.639222",
+      "summary": {
+        "passed": 4
+      },
+      "total_duration_seconds": 50.36
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/point_source",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:23:06.753005",
+      "completed_at": "2026-07-21T22:23:57.434936",
+      "summary": {
+        "passed": 3,
+        "skipped": 1
+      },
+      "total_duration_seconds": 50.67
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/potential_correction",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:23:57.713913",
+      "completed_at": "2026-07-21T22:29:31.700233",
+      "summary": {
+        "timeout": 1,
+        "passed": 1
+      },
+      "total_duration_seconds": 333.94
+    },
+    {
+      "project": "autolens_test",
+      "directory": "scripts/profiling",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:29:32.235108",
+      "completed_at": "2026-07-21T22:29:49.117526",
+      "summary": {
+        "passed": 2
+      },
+      "total_duration_seconds": 16.87
+    },
+    {
+      "project": "euclid",
+      "directory": "scripts",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:45:22.451557",
+      "completed_at": "2026-07-21T22:48:09.967054",
+      "summary": {
+        "passed": 5
+      },
+      "total_duration_seconds": 167.51
+    },
+    {
+      "project": "howtofit",
+      "directory": "scripts/chapter_1_introduction",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:29:49.253144",
+      "completed_at": "2026-07-21T22:30:00.173484",
+      "summary": {
+        "passed": 5,
+        "skipped": 1
+      },
+      "total_duration_seconds": 10.92
+    },
+    {
+      "project": "howtofit",
+      "directory": "scripts/chapter_2_scientific_workflow",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:30:00.329009",
+      "completed_at": "2026-07-21T22:30:00.333198",
+      "summary": {},
+      "total_duration_seconds": 0
+    },
+    {
+      "project": "howtofit",
+      "directory": "scripts/chapter_3_graphical_models",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:30:00.470106",
+      "completed_at": "2026-07-21T22:30:21.615875",
+      "summary": {
+        "passed": 7
+      },
+      "total_duration_seconds": 21.14
+    },
+    {
+      "project": "howtofit",
+      "directory": "scripts/simulators",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:30:21.746557",
+      "completed_at": "2026-07-21T22:30:48.492403",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 26.74
+    },
+    {
+      "project": "howtogalaxy",
+      "directory": "scripts/chapter_1_introduction",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:30:48.588686",
+      "completed_at": "2026-07-21T22:31:27.143155",
+      "summary": {
+        "passed": 6
+      },
+      "total_duration_seconds": 38.55
+    },
+    {
+      "project": "howtogalaxy",
+      "directory": "scripts/chapter_2_modeling",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:31:27.348622",
+      "completed_at": "2026-07-21T22:32:59.672361",
+      "summary": {
+        "passed": 8
+      },
+      "total_duration_seconds": 92.32
+    },
+    {
+      "project": "howtogalaxy",
+      "directory": "scripts/chapter_3_search_chaining",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:32:59.823984",
+      "completed_at": "2026-07-21T22:33:34.725536",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 34.89
+    },
+    {
+      "project": "howtogalaxy",
+      "directory": "scripts/chapter_4_pixelizations",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:33:34.829178",
+      "completed_at": "2026-07-21T22:35:48.817177",
+      "summary": {
+        "passed": 5
+      },
+      "total_duration_seconds": 133.98
+    },
+    {
+      "project": "howtogalaxy",
+      "directory": "scripts/chapter_optional",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:35:48.940105",
+      "completed_at": "2026-07-21T22:35:48.943702",
+      "summary": {
+        "skipped": 1
+      },
+      "total_duration_seconds": 0.0
+    },
+    {
+      "project": "howtogalaxy",
+      "directory": "scripts/simulators",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:35:49.075110",
+      "completed_at": "2026-07-21T22:36:04.406655",
+      "summary": {
+        "passed": 3
+      },
+      "total_duration_seconds": 15.33
+    },
+    {
+      "project": "howtolens",
+      "directory": "scripts/chapter_1_introduction",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:36:04.524258",
+      "completed_at": "2026-07-21T22:37:04.626114",
+      "summary": {
+        "passed": 9
+      },
+      "total_duration_seconds": 60.09
+    },
+    {
+      "project": "howtolens",
+      "directory": "scripts/chapter_2_lens_modeling",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:37:04.747667",
+      "completed_at": "2026-07-21T22:38:44.936350",
+      "summary": {
+        "passed": 8
+      },
+      "total_duration_seconds": 100.18
+    },
+    {
+      "project": "howtolens",
+      "directory": "scripts/chapter_3_search_chaining",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:38:45.082339",
+      "completed_at": "2026-07-21T22:39:54.571342",
+      "summary": {
+        "passed": 6
+      },
+      "total_duration_seconds": 69.48
+    },
+    {
+      "project": "howtolens",
+      "directory": "scripts/chapter_4_pixelizations",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:39:54.734095",
+      "completed_at": "2026-07-21T22:44:43.036501",
+      "summary": {
+        "passed": 10,
+        "skipped": 1
+      },
+      "total_duration_seconds": 288.29
+    },
+    {
+      "project": "howtolens",
+      "directory": "scripts/chapter_optional",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:44:43.288328",
+      "completed_at": "2026-07-21T22:44:43.296776",
+      "summary": {
+        "skipped": 1
+      },
+      "total_duration_seconds": 0.0
+    },
+    {
+      "project": "howtolens",
+      "directory": "scripts/simulator",
+      "run_type": "script",
+      "env_profile": "env_vars.yaml",
+      "started_at": "2026-07-21T22:44:43.491961",
+      "completed_at": "2026-07-21T22:45:22.345910",
+      "summary": {
+        "passed": 5
+      },
+      "total_duration_seconds": 38.84
+    }
+  ],
+  "slow_skips": [
+    {
+      "workspace": "autogalaxy_workspace",
+      "pattern": "guides/results/workflow/csv_make",
+      "reason": "exceeds 60s test timeout; unsets TEST_MODE for downstream examples",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace",
+      "pattern": "guides/results/database/start_here",
+      "reason": "previously failed fast on a broken aggregator query; now runs the real aggregator and exceeds 60s",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace",
+      "pattern": "imaging/features/shapelets/modeling",
+      "reason": "real-search JAX shapelet fit exceeds the 1800s mode=release cap (>30min); speedup tracked by the Profiling Agent (PyAutoHeart#72). Not a bug.",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace",
+      "pattern": "guides/results/database/start_here",
+      "reason": "previously failed fast on a broken aggregator query; now runs the real aggregator and exceeds 60s",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_likelihood_functions/multi/delaunay_mge",
+      "reason": "real-search JAX Delaunay-MGE multi-band likelihood is borderline against the 1800s mode=release cap (its autolens_workspace_test sibling times out); skipped to keep release-validation deterministic. Speedup tracked by the Profiling Agent (PyAutoHeart#72). Not a bug.",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/mge.py",
+      "reason": "real-search JAX interferometer MGE likelihood; flakes at the 1800s mode=release cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/mge_group.py",
+      "reason": "real-search JAX interferometer MGE-group likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/delaunay.py",
+      "reason": "real-search JAX interferometer Delaunay likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/delaunay_mge.py",
+      "reason": "real-search JAX interferometer Delaunay-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/rectangular_mge.py",
+      "reason": "real-search JAX interferometer rectangular-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_likelihood_functions/imaging/delaunay_mge.py",
+      "reason": "real-search JAX imaging Delaunay-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_grad/interferometer/mge.py",
+      "reason": "finite-difference JAX interferometer MGE gradient; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autogalaxy_workspace_test",
+      "pattern": "jax_grad/multi/mge.py",
+      "reason": "finite-difference JAX multi-band MGE gradient; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "database/scrape/multi_analysis",
+      "reason": "exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "database/scrape/slam_general",
+      "reason": "exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "database/scrape/slam_multi_one_by_one",
+      "reason": "exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "database/scrape/slam_pix",
+      "reason": "exceeds 60s timeout; _test workspaces run full searches without test mode",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "imaging/modeling_visualization_jit",
+      "reason": "JIT + full visualization pipeline exceeds 300s cap (autogalaxy variant ~90s); unblocked by PR #70 from prior `expected jax.Array, got numpy.float64` AssertionError, now hits perf wall",
+      "marked_date": "2026-05-07",
+      "age_days": 75,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "imaging/modeling_visualization_jit_delaunay",
+      "reason": "JIT + full visualization pipeline exceeds 300s cap; same root cause as modeling_visualization_jit",
+      "marked_date": "2026-05-07",
+      "age_days": 75,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "imaging/modeling_visualization_jit_rectangular",
+      "reason": "JIT + full visualization pipeline exceeds 301s cap; same root cause as modeling_visualization_jit",
+      "marked_date": "2026-05-07",
+      "age_days": 75,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "interferometer/modeling_visualization_jit",
+      "reason": "JIT + full visualization pipeline exceeds 300s cap; same root cause as imaging/modeling_visualization_jit family",
+      "marked_date": "2026-05-20",
+      "age_days": 62,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "point_source/modeling_visualization_jit",
+      "reason": "JIT + Part-2 live Nautilus fit exceeds 300s cap; same family as imaging/interferometer modeling_visualization_jit (the zero_contour perf-assert false-positive was separately fixed to a cold/warm ratio, which now lets the script run past it into the slow fit)",
+      "marked_date": "2026-07-08",
+      "age_days": 13,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "cluster/visualization",
+      "reason": "per-plane critical-curve + caustic computation on the required full-extent 250x250 viz_grid (multi-plane marching squares) totals ~580s, over the 300s cap; same perf family as the modeling_visualization_jit scripts. Curves DO recover (plane-1 7 CC, plane-2 1 CC at full data) and the per-plane physics assertion passes \u2014 this is NOT the mislabelled \"#1280 zero_contour algorithmic regression\", which does not reproduce. env_vars.yaml unsets FAST_PLOTS/SMALL_DATASETS so it runs green in manual/full runs.",
+      "marked_date": "2026-07-21",
+      "age_days": 0,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/multi/delaunay_mge",
+      "reason": "real-search JAX Delaunay-MGE multi-band likelihood exceeds the 1800s mode=release cap; speedup tracked by the Profiling Agent (PyAutoHeart#72). Not a bug.",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/multi/shared_preloads.py",
+      "reason": "real-search JAX multi-band shared-preloads likelihood; flakes at the 1800s mode=release cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/datacube/delaunay.py",
+      "reason": "real-search JAX datacube Delaunay likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/datacube/shared_preloads.py",
+      "reason": "real-search JAX datacube shared-preloads likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/mge.py",
+      "reason": "real-search JAX interferometer MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/mge_group.py",
+      "reason": "real-search JAX interferometer MGE-group likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/delaunay.py",
+      "reason": "real-search JAX interferometer Delaunay likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/delaunay_mge.py",
+      "reason": "real-search JAX interferometer Delaunay-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/interferometer/rectangular_mge.py",
+      "reason": "real-search JAX interferometer rectangular-MGE likelihood; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_grad/interferometer.py",
+      "reason": "finite-difference JAX interferometer gradient; flakes at the 1800s cap (PyAutoHeart#74)",
+      "marked_date": "2026-07-14",
+      "age_days": 7,
+      "is_stale": false,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "guides/results/start_here",
+      "reason": "exceeds 60s test timeout; unsets TEST_MODE to produce real samples for downstream examples",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "guides/results/examples/galaxies_fit",
+      "reason": "exceeds 60s test timeout; unsets TEST_MODE for downstream examples",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "guides/results/examples/samples",
+      "reason": "exceeds 60s test timeout; unsets TEST_MODE for downstream examples",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "guides/results/examples/models",
+      "reason": "cascade from SLOW-skipped results/start_here.py; aggregator returns NoneType so instance.galaxies is None",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "guides/results/workflow/csv_make",
+      "reason": "exceeds 60s test timeout; unsets TEST_MODE for downstream examples",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "guides/results/database/start_here",
+      "reason": "previously failed fast on a broken aggregator query; now runs the real aggregator and exceeds 60s",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToLens",
+      "pattern": "guides/results/examples/samples",
+      "reason": "exceeds 60s test timeout; unsets TEST_MODE for downstream examples",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToLens",
+      "pattern": "guides/results/examples/samples_via_aggregator",
+      "reason": "exceeds 60s test timeout; unsets TEST_MODE for downstream examples",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToLens",
+      "pattern": "guides/results/examples/queries",
+      "reason": "cascade from SLOW-skipped results/start_here.py; stub Model lacks sersic_index attribute",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToLens",
+      "pattern": "guides/results/database/start_here",
+      "reason": "previously failed fast on a broken aggregator query; now runs the real aggregator and exceeds 60s",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    },
+    {
+      "workspace": "HowToLens",
+      "pattern": "howtolens/chapter_4_pixelizations/tutorial_10_brightness_adaption",
+      "reason": "pixelization tutorial exceeds 60s test timeout",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "slow"
+    }
+  ],
+  "needs_fix_skips": [
+    {
+      "workspace": "autofit_workspace",
+      "pattern": "features/interpolate",
+      "reason": "IndexError in InstanceInterpolator.__getitem__ when querying time == 1.5; value_map lookup falls through to empty instances list",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "autogalaxy_workspace",
+      "pattern": "autogalaxy_workspace/scripts/imaging/modeling",
+      "reason": "KeyError on ('galaxies','galaxy','bulge','ell_comps'...) kwargs after API drift in top-level imaging/modeling.py",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "autolens_workspace",
+      "pattern": "group/slam",
+      "reason": "PriorException: upper limit must be greater than lower limit in group SLaM pipeline",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "database/scrape/general",
+      "reason": "PyAutoGalaxy abstract_fit.linear_light_profile_intensity_dict raises \"TypeError: __hash__ method should return an integer\" during subplot_fit_imaging after the search completes (a light-profile object's __hash__ returns a non-int). Surfaced once the dataset_label=\"build\" path fix let the script progress past Imaging.from_fits.",
+      "marked_date": "2026-04-27",
+      "age_days": 85,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/imaging/delaunay_mge",
+      "reason": "timeout in JAX likelihood function benchmark",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "autolens_workspace_test",
+      "pattern": "jax_likelihood_functions/imaging/mge_group",
+      "reason": "timeout in JAX likelihood function benchmark",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "HowToFit",
+      "pattern": "chapter_1_introduction/tutorial_5_results_and_samples",
+      "reason": "IndexError in samples access, likely related to InstanceInterpolator bug in autofit features/interpolate",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "ellipse/modeling",
+      "reason": "KeyError on 'ellipses.0.centre_0' kwargs after API drift in ellipse model",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "guides/advanced/over_sampling",
+      "reason": "plot_grid() got unexpected kwarg 'plot_grid_lines' after plotter API drift",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "HowToGalaxy",
+      "pattern": "autogalaxy_workspace/scripts/imaging/modeling",
+      "reason": "KeyError on ('galaxies','galaxy','bulge','ell_comps'...) kwargs after API drift in top-level imaging/modeling.py",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    },
+    {
+      "workspace": "HowToLens",
+      "pattern": "group/slam",
+      "reason": "PriorException: upper limit must be greater than lower limit in group SLaM pipeline",
+      "marked_date": "2026-04-10",
+      "age_days": 102,
+      "is_stale": true,
+      "category": "needs_fix"
+    }
+  ]
+}

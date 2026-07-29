@@ -1,0 +1,26 @@
+{
+  "project": "autogalaxy_test",
+  "directory": "scripts/jax_assertions",
+  "run_type": "script",
+  "started_at": "2026-05-20T13:25:32.571626",
+  "completed_at": "2026-05-20T13:25:43.892258",
+  "summary": {
+    "failed": 1,
+    "passed": 1
+  },
+  "total_duration_seconds": 11.31,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_assertions/convolver_mixed_precision.py",
+      "status": "failed",
+      "duration_seconds": 2.53,
+      "error_message": "Command '['/home/jammy/venv/PyAuto/bin/python3', '/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_assertions/convolver_mixed_precision.py']' returned non-zero exit status 1.",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_assertions/convolver_mixed_precision.py\", line 46, in <module>\n    masked_image = aa.Array2D(values=image_values, mask=mask)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/uniform_2d.py\", line 243, in __init__\n    values = array_2d_util.convert_array_2d(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/array_2d_util.py\", line 133, in convert_array_2d\n    check_array_2d_and_mask_2d(array_2d=array_2d, mask_2d=mask_2d)\n  File \"/home/jammy/Code/PyAutoLabs/PyAutoArray/autoarray/structures/arrays/array_2d_util.py\", line 87, in check_array_2d_and_mask_2d\n    raise exc.ArrayException(\nautoarray.exc.ArrayException: \n                The input array is 2D but not the same dimensions as the mask.\n\n                This indicates the mask's shape is different to the input array shape.\n\n                The shapes of the two arrays (which this exception is raised because they are different) are as follows:\n\n                Input array_2d shape = (80, 80)\n                Input mask_2d shape_native = (15, 15)\n                "
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace_test/scripts/jax_assertions/hessian_parity.py",
+      "status": "passed",
+      "duration_seconds": 8.77
+    }
+  ]
+}

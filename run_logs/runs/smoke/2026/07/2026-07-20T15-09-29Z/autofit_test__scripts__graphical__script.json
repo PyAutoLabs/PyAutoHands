@@ -1,0 +1,49 @@
+{
+  "project": "autofit_test",
+  "directory": "scripts/graphical",
+  "run_type": "script",
+  "env_profile": "env_vars.yaml",
+  "started_at": "2026-07-20T17:20:25.851444",
+  "completed_at": "2026-07-20T17:20:48.617434",
+  "summary": {
+    "passed": 7
+  },
+  "total_duration_seconds": 22.75,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/graphical/ep.py",
+      "status": "passed",
+      "duration_seconds": 4.64
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/graphical/ep_deterministic.py",
+      "status": "passed",
+      "duration_seconds": 1.52
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/graphical/ep_exact.py",
+      "status": "passed",
+      "duration_seconds": 1.74
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/graphical/ep_parity.py",
+      "status": "passed",
+      "duration_seconds": 4.89
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/graphical/hierarchical.py",
+      "status": "passed",
+      "duration_seconds": 4.34
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/graphical/shared_state.py",
+      "status": "passed",
+      "duration_seconds": 2.9
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autofit_workspace_test/scripts/graphical/simultaneous.py",
+      "status": "passed",
+      "duration_seconds": 2.71
+    }
+  ]
+}

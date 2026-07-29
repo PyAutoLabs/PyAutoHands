@@ -1,0 +1,249 @@
+{
+  "project": "autolens",
+  "directory": "scripts/guides",
+  "run_type": "script",
+  "started_at": "2026-07-08T20:52:18.924954",
+  "completed_at": "2026-07-08T21:01:28.961271",
+  "summary": {
+    "passed": 41,
+    "skipped": 5
+  },
+  "total_duration_seconds": 550.0,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/start_here.py",
+      "status": "passed",
+      "duration_seconds": 12.0
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/database/start_here.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-04-10 - previously failed fast on a broken aggregator query; now runs the real aggregator and exceeds 60s"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/start_here.py",
+      "status": "passed",
+      "duration_seconds": 13.99
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/advanced/add_a_profile.py",
+      "status": "passed",
+      "duration_seconds": 5.16
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/advanced/custom_analysis.py",
+      "status": "passed",
+      "duration_seconds": 8.44
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/advanced/multi_plane.py",
+      "status": "passed",
+      "duration_seconds": 3.73
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/advanced/over_sampling.py",
+      "status": "passed",
+      "duration_seconds": 9.16
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/advanced/over_sampling_chaining.py",
+      "status": "passed",
+      "duration_seconds": 9.48
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/data_structures.py",
+      "status": "passed",
+      "duration_seconds": 7.55
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/galaxies.py",
+      "status": "passed",
+      "duration_seconds": 7.45
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/hpc/example_cpu.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "HPC paths dont exist locally."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/lens_calc.py",
+      "status": "passed",
+      "duration_seconds": 9.8
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/advanced/expectation_propagation.py",
+      "status": "passed",
+      "duration_seconds": 15.67
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/advanced/graphical.py",
+      "status": "passed",
+      "duration_seconds": 39.71
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/advanced/hierarchical.py",
+      "status": "passed",
+      "duration_seconds": 6.87
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/bug_fix.py",
+      "status": "passed",
+      "duration_seconds": 14.2
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/chaining.py",
+      "status": "passed",
+      "duration_seconds": 14.82
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/cookbook.py",
+      "status": "passed",
+      "duration_seconds": 10.11
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/customize.py",
+      "status": "passed",
+      "duration_seconds": 6.81
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/searches.py",
+      "status": "passed",
+      "duration_seconds": 6.4
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/modeling/slam_start_here.py",
+      "status": "passed",
+      "duration_seconds": 28.86
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/advanced/plotters_double_einstein_ring.py",
+      "status": "passed",
+      "duration_seconds": 7.43
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/advanced/plotters_pixelization.py",
+      "status": "passed",
+      "duration_seconds": 17.37
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/examples/mat_plot.py",
+      "status": "passed",
+      "duration_seconds": 5.12
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/examples/plotters.py",
+      "status": "passed",
+      "duration_seconds": 19.6
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/examples/searches.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode breaks search visualization."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/plot/examples/visuals.py",
+      "status": "passed",
+      "duration_seconds": 6.23
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/profiles/light.py",
+      "status": "passed",
+      "duration_seconds": 8.15
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/profiles/light_and_mass_profiles.py",
+      "status": "passed",
+      "duration_seconds": 72.33
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/profiles/mass.py",
+      "status": "passed",
+      "duration_seconds": 7.38
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/_quick_fit.py",
+      "status": "passed",
+      "duration_seconds": 0.08
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/aggregator/data_fitting.py",
+      "status": "passed",
+      "duration_seconds": 20.48
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/aggregator/galaxies_fits.py",
+      "status": "passed",
+      "duration_seconds": 9.22
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/aggregator/interferometer.py",
+      "status": "passed",
+      "duration_seconds": 0.06
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/aggregator/models.py",
+      "status": "passed",
+      "duration_seconds": 12.17
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/aggregator/queries.py",
+      "status": "passed",
+      "duration_seconds": 7.39
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/aggregator/samples.py",
+      "status": "passed",
+      "duration_seconds": 9.76
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/aggregator/samples_via_aggregator.py",
+      "status": "passed",
+      "duration_seconds": 12.09
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/latent_variables.py",
+      "status": "passed",
+      "duration_seconds": 12.84
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/workflow/csv_make.py",
+      "status": "passed",
+      "duration_seconds": 7.01
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/workflow/fits_make.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not output .fits images."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/results/workflow/png_make.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "Test mode does not output .png images."
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/tracer.py",
+      "status": "passed",
+      "duration_seconds": 12.21
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/units/cosmology.py",
+      "status": "passed",
+      "duration_seconds": 7.42
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/units/flux.py",
+      "status": "passed",
+      "duration_seconds": 58.61
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace/scripts/guides/units/mass_to_light_ratio_units.py",
+      "status": "passed",
+      "duration_seconds": 6.84
+    }
+  ]
+}

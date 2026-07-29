@@ -1,0 +1,38 @@
+{
+  "project": "autogalaxy",
+  "directory": "scripts/ellipse",
+  "run_type": "script",
+  "started_at": "2026-07-08T20:04:06.247042",
+  "completed_at": "2026-07-08T20:05:19.758818",
+  "summary": {
+    "passed": 5
+  },
+  "total_duration_seconds": 73.5,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/ellipse/simulator.py",
+      "status": "passed",
+      "duration_seconds": 14.83
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/ellipse/database.py",
+      "status": "passed",
+      "duration_seconds": 7.03
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/ellipse/fit.py",
+      "status": "passed",
+      "duration_seconds": 8.53
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/ellipse/modeling.py",
+      "status": "passed",
+      "duration_seconds": 18.57
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autogalaxy_workspace/scripts/ellipse/multipoles.py",
+      "status": "passed",
+      "duration_seconds": 24.54
+    }
+  ]
+}

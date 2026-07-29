@@ -1,0 +1,43 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/mass_via_integral",
+  "run_type": "script",
+  "started_at": "2026-07-09T13:04:42.076507",
+  "completed_at": "2026-07-09T13:05:04.240456",
+  "summary": {
+    "passed": 6
+  },
+  "total_duration_seconds": 22.15,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/mass_via_integral/gaussian.py",
+      "status": "passed",
+      "duration_seconds": 2.89
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/mass_via_integral/gnfw.py",
+      "status": "passed",
+      "duration_seconds": 7.79
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/mass_via_integral/gnfw_virial_mass_conc.py",
+      "status": "passed",
+      "duration_seconds": 2.95
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/mass_via_integral/nfw.py",
+      "status": "passed",
+      "duration_seconds": 2.85
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/mass_via_integral/sersic.py",
+      "status": "passed",
+      "duration_seconds": 2.82
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/mass_via_integral/sersic_gradient.py",
+      "status": "passed",
+      "duration_seconds": 2.87
+    }
+  ]
+}

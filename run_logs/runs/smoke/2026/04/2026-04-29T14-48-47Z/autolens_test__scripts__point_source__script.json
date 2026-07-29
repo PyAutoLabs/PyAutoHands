@@ -1,0 +1,18 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/point_source",
+  "run_type": "script",
+  "started_at": "2026-04-29T17:24:10.575933",
+  "completed_at": "2026-04-29T17:24:17.121878",
+  "summary": {
+    "passed": 1
+  },
+  "total_duration_seconds": 6.54,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs-wt/autobuild-release-prep/autolens_workspace_test/scripts/point_source/simulators/point_source.py",
+      "status": "passed",
+      "duration_seconds": 6.54
+    }
+  ]
+}

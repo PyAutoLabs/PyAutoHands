@@ -1,0 +1,50 @@
+{
+  "project": "autolens_test",
+  "directory": "scripts/interferometer",
+  "run_type": "script",
+  "started_at": "2026-05-21T11:07:44.443323",
+  "completed_at": "2026-05-21T11:11:01.160878",
+  "summary": {
+    "passed": 6,
+    "skipped": 1
+  },
+  "total_duration_seconds": 196.7,
+  "results": [
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/simulator/no_lens_light.py",
+      "status": "passed",
+      "duration_seconds": 5.45
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/simulator/with_lens_light.py",
+      "status": "passed",
+      "duration_seconds": 5.05
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/model_fit.py",
+      "status": "passed",
+      "duration_seconds": 8.37
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/modeling_visualization_jit.py",
+      "status": "skipped",
+      "duration_seconds": 0.0,
+      "skip_reason": "SLOW 2026-05-20 - JIT + full visualization pipeline exceeds 300s cap; same root cause as imaging/modeling_visualization_jit family"
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/nufft.py",
+      "status": "passed",
+      "duration_seconds": 15.63
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/visualization.py",
+      "status": "passed",
+      "duration_seconds": 88.28
+    },
+    {
+      "file": "/home/jammy/Code/PyAutoLabs/autolens_workspace_test/scripts/interferometer/visualization_jax.py",
+      "status": "passed",
+      "duration_seconds": 73.92
+    }
+  ]
+}
