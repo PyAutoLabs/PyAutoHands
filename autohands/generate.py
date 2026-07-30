@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # clears the whole `notebooks/` tree, while `inject_colab_setup` only
     # rejects an unknown project deep inside the per-script loop that follows
     # it — so running this on an unregistered project deleted 113 tracked
-    # notebooks in autocti_workspace and *then* aborted. A workspace with a
+    # notebooks in an unregistered workspace and *then* aborted. A workspace with a
     # root `start_here.py` happened to fail safely (that loop injects before
     # the rmtree); one without it did not. `build_util.COLAB_PROJECTS` stays
     # the single source of truth, and `inject_colab_setup`'s own raise remains
