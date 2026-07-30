@@ -59,6 +59,23 @@ def copy_to_notebooks(source):
 
 
 if __name__ == "__main__":
+    # Validate the project BEFORE anything destructive runs. The rmtree below
+    # clears the whole `notebooks/` tree, while `inject_colab_setup` only
+    # rejects an unknown project deep inside the per-script loop that follows
+    # it — so running this on an unregistered project deleted 113 tracked
+    # notebooks in autocti_workspace and *then* aborted. A workspace with a
+    # root `start_here.py` happened to fail safely (that loop injects before
+    # the rmtree); one without it did not. `build_util.COLAB_PROJECTS` stays
+    # the single source of truth, and `inject_colab_setup`'s own raise remains
+    # the backstop for direct callers.
+    if project not in build_util.COLAB_PROJECTS:
+        sys.exit(
+            f"generate.py: unknown project '{project}' — add it to "
+            f"COLAB_PROJECTS in build_util.py and to the _PROJECTS registry in "
+            f"PyAutoNerves's autonerves/setup_colab.py. Known: "
+            f"{sorted(build_util.COLAB_PROJECTS)}. Nothing was modified."
+        )
+
     report = None
     if args.report_dir:
         from result_collector import RunReport
@@ -115,11 +132,17 @@ if __name__ == "__main__":
 
     for script_path in iter_script_paths(scripts_path):
         start = time.time()
+        # `py_to_notebook` writes its intermediate .ipynb beside the source
+        # script, and it is only removed after a successful copy — so any
+        # exception in between strands one inside `scripts/`, where it is not
+        # tracked and not obviously debris. Cleaned up in `finally` below.
+        source_path = None
         try:
             source_path = build_util.py_to_notebook(script_path)
             build_util.inject_colab_setup(source_path, project)
             copy_to_notebooks(source_path)
             os.remove(source_path)
+            source_path = None
             if report is not None:
                 from result_collector import ScriptResult, Status
                 report.results.append(ScriptResult(
@@ -138,6 +161,9 @@ if __name__ == "__main__":
                 ))
             else:
                 raise
+        finally:
+            if source_path is not None and os.path.exists(source_path):
+                os.remove(source_path)
 
     for read_me_path in scripts_path.rglob("*.rst"):
         copy_to_notebooks(read_me_path)
