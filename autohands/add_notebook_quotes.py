@@ -103,6 +103,19 @@ def add_notebook_quotes(lines: Iterable[str]):
     producing an empty code segment whose duplicate ``# %%`` markers are
     interpreted as literal code by ``ipynb-py-convert``.
 
+    ``ipynb-py-convert``'s ``py2nb`` splits cells on the literal
+    ``"\n\n# %%\n"`` — the marker must be preceded by a *blank* line. A
+    docstring opened on the line immediately after code has only a single
+    newline before it, so the split never fires and the marker plus both
+    ``'''`` delimiters end up inside the preceding code cell as literal text
+    (a ``SyntaxError`` for anyone who runs it). The separator is therefore
+    emitted here when it is missing, subject to two constraints: never when
+    ``out`` is empty, because ``py2nb`` strips a *leading* ``# %%\n`` header
+    and a leading blank line would defeat that strip and yield a spurious
+    empty first code cell; and never when the output already ends blank,
+    because emitting it unconditionally would append a trailing blank line to
+    every code cell in every generated notebook.
+
     Used for conversion to ipynb notebooks
 
     Parameters
@@ -115,6 +128,21 @@ def add_notebook_quotes(lines: Iterable[str]):
     Lines with %% inserted before and after docs
     """
     lines = strip_env_declarations(list(lines))
+
+    # A column-0 `# %%` in a *source* script is always a defect: this function
+    # is what inserts the cell markers, so a hand-written one collides with the
+    # generated marker and `py2nb` silently folds the following docstring into
+    # the preceding code cell. Two workspace scripts carried these for years,
+    # shipping notebooks whose first code cell was a SyntaxError. Fail loudly
+    # rather than laundering it into a broken artefact.
+    stray = [n + 1 for n, line in enumerate(lines) if line.rstrip("\r\n") == "# %%"]
+    if stray:
+        raise ValueError(
+            f"source script contains hand-written '# %%' cell marker(s) at "
+            f"line(s) {stray} — notebook cell markers are generated, not "
+            f"authored. Delete them; the docstring blocks alone define the cells."
+        )
+
     out = list()
     is_in_quotes = False
     pending_code_boundary = False
@@ -130,6 +158,8 @@ def add_notebook_quotes(lines: Iterable[str]):
                     out.extend(pending_lines)
                     pending_lines = []
                     pending_code_boundary = False
+                if out and not "".join(out[-3:]).endswith("\n\n"):
+                    out.append("\n")
                 out.extend(["# %%", "\n", "'''\n"])
 
             is_in_quotes = not is_in_quotes
