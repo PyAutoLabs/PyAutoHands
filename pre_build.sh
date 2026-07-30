@@ -1,7 +1,7 @@
 #!/bin/bash
-# Pre-build script: run black + generate notebooks + git commit & push
-# for all workspace repos, then commit & push PyAutoHands, then trigger
-# the GitHub Actions release workflow.
+# Pre-build script: validate a clean PyAutoHands main, then run black + generate
+# notebooks + git commit & push for all workspace repos before triggering the
+# GitHub Actions release workflow.
 #
 # Usage: bash pre_build.sh [minor_version]
 #   minor_version  Minor version suffix (default: 1)
@@ -20,6 +20,21 @@ SELF="$(readlink -f "$0")"
 PYAUTOBASE="$(cd "$(dirname "$SELF")/.." && pwd)"
 AUTOHANDS="$PYAUTOBASE/PyAutoHands/autohands"
 PYTHONPATH_EXTRA="$AUTOHANDS"
+
+# pre_build produces no files in PyAutoHands itself. Require a clean main before
+# any labels, workspace formatting, commits, pushes, or release dispatch so a
+# release can never sweep unrelated local files into a misleading commit.
+HANDS_REPO="$PYAUTOBASE/PyAutoHands"
+HANDS_BRANCH="$(git -C "$HANDS_REPO" branch --show-current)"
+HANDS_STATUS="$(git -C "$HANDS_REPO" status --porcelain --untracked-files=all)"
+if [ "$HANDS_BRANCH" != "main" ] || [ -n "$HANDS_STATUS" ]; then
+    echo "ABORT: PyAutoHands must be on clean main before pre_build." >&2
+    echo "  branch: ${HANDS_BRANCH:-<detached>}" >&2
+    if [ -n "$HANDS_STATUS" ]; then
+        printf '%s\n' "$HANDS_STATUS" >&2
+    fi
+    exit 1
+fi
 
 # (A `VERSION="$(date …).$MINOR_VERSION"` string used to be computed here for the
 # README version-pin sed. That sed was deleted with the pin bump, and the pins
@@ -120,18 +135,6 @@ run_workspace "autolens_workspace_developer"         ""             false  false
 # release_workspaces job stamps its workspace version and regenerates
 # wiki/core/api_audit_baseline.json against the released wheels.
 run_workspace "autolens_assistant"                   "autolens"     false  false
-
-# Commit and push PyAutoHands itself
-echo ""
-echo "=== PyAutoHands ==="
-cd "$PYAUTOBASE/PyAutoHands"
-git add -A
-if git diff --cached --quiet; then
-    echo "  No changes to commit."
-else
-    git commit -m "pre build"
-    git push
-fi
 
 # Release readiness (version skew, including the version.txt-ahead crash that
 # used to be checked here) is now Heart's job, not Build's: PyAutoHands is a

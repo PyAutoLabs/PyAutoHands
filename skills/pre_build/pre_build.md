@@ -54,10 +54,10 @@ bash $HOME/Code/PyAutoLabs/PyAutoHands/bin/autohands pre_build <minor_version>
 
 The script handles every mechanical step of the pre-build flow:
 
-1. Ensures the canonical `pending-release` label exists on each release-window repo.
-2. For every workspace, runs black on the staged dirs (`scripts/`, `slam_pipeline/`), runs `generate.py` for projects with a notebook target, and stages only what the run itself produced (`notebooks/`, `scripts/`, plus `slam_pipeline/` for `autolens_workspace`). It does not stage `dataset/` or `config/` — nothing in the run modifies them, and sweeping pre-existing human work into release commits was the #126 leak mechanism. Root-level artifacts and README Colab URLs are committed by `release.yml` on the runner, not here.
-3. Commits and pushes each workspace (skipping if no changes are staged).
-4. Commits and pushes PyAutoHands itself.
+1. Fails before any side effects unless PyAutoHands is on clean `main`; the run produces no PyAutoHands files and never stages or commits that repository.
+2. Ensures the canonical `pending-release` label exists on each release-window repo.
+3. For every workspace, runs black on the staged dirs (`scripts/`, `slam_pipeline/`), runs `generate.py` for projects with a notebook target, and stages only what the run itself produced (`notebooks/`, `scripts/`, plus `slam_pipeline/` for `autolens_workspace`). It does not stage `dataset/` or `config/` — nothing in the run modifies them, and sweeping pre-existing human work into release commits was the #126 leak mechanism. Root-level artifacts and README Colab URLs are committed by `release.yml` on the runner, not here.
+4. Commits and pushes each workspace (skipping if no changes are staged).
 5. Dispatches `gh workflow run release.yml --repo PyAutoLabs/PyAutoHands --field minor_version=<N>`.
 
 Release-readiness — including the version-skew check that used to run here

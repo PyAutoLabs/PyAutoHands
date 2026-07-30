@@ -91,21 +91,16 @@ _python_in_autohands() {
 
 help_pre_build() {
   cat <<'EOF'
-autohands pre_build [minor_version] [skip_release]
+autohands pre_build [minor_version]
 
-Run black + generate notebooks + commit & push for every workspace repo,
-then commit & push PyAutoHands itself, then dispatch the GitHub Actions
-release.yml workflow.
-
-For each workspace with a README package mapping (PyAutoFit / PyAutoGalaxy
-/ PyAutoLens), the README is also bumped to the new release version
-(YYYY.M.D.<minor>) before commit.
+Require a clean PyAutoHands main, then run black + generate notebooks + commit
+and push for every workspace repo before dispatching release.yml. PyAutoHands
+itself is never staged or committed by this command.
 
 Arguments:
   minor_version  Minor version suffix appended to YYYY.M.D (default: 1)
-  skip_release   "true" to skip the release stage (default: false)
 
-This is the bash entry point that the /pre_build Claude skill wraps.
+This is the bash entry point wrapped by the pre_build skill.
 EOF
 }
 cmd_pre_build() {
