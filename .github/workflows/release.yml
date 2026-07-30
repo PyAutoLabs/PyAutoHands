@@ -108,17 +108,17 @@ jobs:
                 ref: main
                 path: PyAutoLens
         steps:
-        - uses: actions/checkout@v2
+        - uses: actions/checkout@v4
           with:
               path: PyAutoHands
         - name: Checkout
-          uses: actions/checkout@v2
+          uses: actions/checkout@v4
           with:
             repository: "${{ matrix.project.repository }}"
             ref: "${{ matrix.project.ref }}"
             path: "${{ matrix.project.path }}"
         - name: Set up Python ${{ matrix.python-version }}
-          uses: actions/setup-python@v2
+          uses: actions/setup-python@v5
           with:
             python-version: ${{ matrix.python-version }}
         - name: Build
@@ -390,7 +390,7 @@ jobs:
           path: PyAutoLens
           pat: PAT_PYAUTOLABS
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
           path: PyAutoHands
     - name: Checkout
@@ -398,7 +398,7 @@ jobs:
         PAT="${{ secrets[matrix.project.pat] }}"
         git clone -b "${{ matrix.project.ref }}" "https://$PAT@github.com/${{ matrix.project.repository }}.git" "${{ matrix.project.path }}"
     - name: Set up Python 3.12
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: "3.12"
     - name: Configure Git
@@ -498,11 +498,11 @@ jobs:
       - publish_release_notes
     if: "${{ always() && needs.resolve_mode.outputs.rehearsal != 'true' }}"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           path: PyAutoHands
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Announce release outcome in Slack
@@ -552,11 +552,11 @@ jobs:
           - repo: PyAutoLabs/PyAutoLens
             pat: PAT_PYAUTOLABS
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         path: PyAutoHands
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
     - name: Publish release notes
@@ -636,7 +636,7 @@ jobs:
             bump_colab_urls: false
             write_api_baseline: true
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
           path: PyAutoHands
     - name: Checkout
@@ -647,7 +647,7 @@ jobs:
         git config --global user.email "richard@rghsoftware.co.uk"
         git config --global user.name "GitHub Actions bot"
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Jupyter dependency
@@ -772,7 +772,7 @@ jobs:
           - PyAutoLabs/PyAutoGalaxy
           - PyAutoLabs/PyAutoLens
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         path: PyAutoHands
     - name: Checkout library

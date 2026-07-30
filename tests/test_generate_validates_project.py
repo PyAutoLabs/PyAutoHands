@@ -3,7 +3,7 @@
 `generate.py` clears the whole ``notebooks/`` tree, and until this was fixed the
 only rejection of an unknown project happened inside the per-script loop that
 runs *after* that rmtree — so running it on an unregistered project deleted 113
-tracked notebooks in `autocti_workspace` and then aborted. These tests pin the
+tracked notebooks in an unregistered workspace and then aborted. These tests pin the
 ordering, since the failure is invisible in a passing run.
 
 Driven as a subprocess: `generate.py` parses argv and does all its work at
