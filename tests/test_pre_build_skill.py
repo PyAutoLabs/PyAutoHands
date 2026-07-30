@@ -17,3 +17,13 @@ def test_pre_build_skill_checks_every_executor_repo():
     documented_repos = set(re.findall(r"^- `([^`]+)`", preflight, re.MULTILINE))
 
     assert documented_repos == executor_repos | fixed_dependencies
+
+
+def test_pre_build_guards_pyautohands_instead_of_staging_it():
+    script = (ROOT / "pre_build.sh").read_text()
+
+    guard = 'HANDS_STATUS="$(git -C "$HANDS_REPO" status --porcelain --untracked-files=all)"'
+    assert guard in script
+    assert 'if [ "$HANDS_BRANCH" != "main" ] || [ -n "$HANDS_STATUS" ]' in script
+    assert script.index(guard) < script.index("=== Ensuring pending-release labels ===")
+    assert "git add -A" not in script
