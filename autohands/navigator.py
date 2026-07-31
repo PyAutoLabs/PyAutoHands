@@ -50,7 +50,9 @@ GROUP_ORDER = [
     "interferometer",
     "point_source",
     "cluster",
-    "multi",
+    "multi_galaxy",
+    "multi_dataset",
+    "ellipse",
     "weak",
     "guides",
 ]
