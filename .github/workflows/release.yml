@@ -125,6 +125,14 @@ jobs:
           run: |
             pushd "${{ matrix.project.path }}"
             export VERSION="${{ needs.version_number.outputs.version_number }}"
+            # Never build without an explicit version. Each setup.py falls back
+            # to a 9999 dev stamp so local source installs satisfy the
+            # intra-family `>=` floors; publishing that to PyPI would be
+            # recoverable only by yanking, since nothing sorts above it.
+            if [ -z "$VERSION" ]; then
+              echo "::error::VERSION is empty — refusing to build (would stamp the source-install fallback)."
+              exit 1
+            fi
             sed -i "s/__version__ = [\.\"\'0-9]*/__version__ = \"$VERSION\"/g" */__init__.py
             python3 -m pip install --upgrade build
             python3 -m build
