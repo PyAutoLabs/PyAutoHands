@@ -406,18 +406,6 @@ def execute_script(f, report=None, env=None, extra_args=None):
     except subprocess.CalledProcessError as e:
         duration = time.time() - start
 
-        if "inversion" in f:
-            if report is not None:
-                from result_collector import ScriptResult, Status
-                print(f"  PASS (inversion, {duration:.1f}s)")
-                report.results.append(ScriptResult(
-                    file=str(f),
-                    status=Status.PASSED,
-                    duration_seconds=duration,
-                    error_message="Inversion script failure (ignored)",
-                ))
-            return
-
         if report is not None:
             from result_collector import ScriptResult, Status
             stderr = getattr(e, 'stderr', '') or ''
