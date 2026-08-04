@@ -19,7 +19,17 @@ SLOW entries indicate scripts that exceed the per-script timeout cap and need
 a performance fix. The cap is `build_util.TIMEOUT_SECS` — 300s by default,
 raised to 1800s for `mode=release` runs via BUILD_SCRIPT_TIMEOUT — and is
 never hardcoded here, so the reported figure cannot drift away from the
-enforced one. NEEDS_FIX entries indicate scripts that are broken and parked
+enforced one.
+
+That figure is the run-wide DEFAULT, not necessarily the cap a given script
+ran under: an env profile may set `BUILD_SCRIPT_TIMEOUT` on an `overrides`
+pattern, which `build_util.timeout_for` resolves per script. The banner
+therefore says "default" rather than asserting one cap for every script.
+Understating a cap is not cosmetic — a quoted figure below the enforced one
+biases every "is this script too slow to un-skip?" call toward parking
+scripts that would in fact pass (the 60s-cap myth, PyAutoHands#172).
+
+NEEDS_FIX entries indicate scripts that are broken and parked
 for later investigation — a to-do list surfaced on every mega-run so fixes
 don't get forgotten.
 """
@@ -142,8 +152,9 @@ _BANNER_CONFIG = {
     "slow": {
         "header": "WARNING: {n} SLOW-SKIPPED SCRIPT(S) - needs performance fix",
         "footer": [
-            "  These scripts are skipped because they exceed the {t}s per-script",
-            "  cap. Fix the performance issue and remove the SLOW marker from",
+            "  These scripts are skipped because they exceed the {t}s default",
+            "  per-script cap (an env profile may raise it for some scripts).",
+            "  Fix the performance issue and remove the SLOW marker from",
             "  the workspace's config/build/no_run.yaml.",
         ],
     },
@@ -162,7 +173,8 @@ _REPORT_CONFIG = {
         "title": "## Slow-Skipped Scripts (needs performance fix)",
         "intro": (
             "**{n} script(s)** are being skipped because they exceed the {t}s "
-            "per-script timeout cap. These are NOT permanent skips — they need "
+            "default per-script timeout cap (an env profile may raise it for "
+            "some scripts). These are NOT permanent skips — they need "
             "the underlying performance issue fixed and the `SLOW` marker "
             "removed from the workspace's `config/build/no_run.yaml`."
         ),
