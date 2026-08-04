@@ -714,6 +714,18 @@ jobs:
         pushd workspace
         python3 autoassistant/audit_skill_apis.py --write-baseline
         git add wiki/core/api_audit_baseline.json
+        # The chat bundle pins its stack version FROM the baseline
+        # (chat_bundle.py:pinned_stack reads api_audit_baseline.json), and
+        # `chat_bundle.py --check` compares the committed artifacts byte-for-byte.
+        # So regenerating the baseline alone leaves every version-headed artifact
+        # stale the instant this commit lands, and the wiki-currency leg goes red
+        # at every release — stale-by-construction, not a one-off
+        # (autolens_assistant#108, and #93 before it under a different check).
+        # The two must move in the SAME commit; splitting them recreates the bug.
+        if [[ -f autoassistant/chat_bundle.py ]]; then
+          python3 autoassistant/chat_bundle.py
+          git add -- llms-chat.txt chat_pack/
+        fi
         git commit -m "Release $VERSION: regenerate API audit baseline" || true
         popd
     - name: Bump Colab URL tag refs
