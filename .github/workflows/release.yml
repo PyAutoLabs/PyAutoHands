@@ -643,6 +643,12 @@ jobs:
             generate_notebooks: false
             bump_colab_urls: false
             write_api_baseline: true
+          - repository: PyAutoLabs/autogalaxy_assistant
+            name: autogalaxy
+            package: PyAutoGalaxy
+            generate_notebooks: false
+            bump_colab_urls: false
+            write_api_baseline: true
     steps:
     - uses: actions/checkout@v4
       with:
@@ -908,6 +914,57 @@ jobs:
           fi
           gh issue create \
             --repo PyAutoLabs/autofit_assistant \
+            --title "wiki drift detected at release $VERSION" \
+            --body-file "$BODY" \
+          || echo "::warning::could not open wiki-drift issue (non-fatal)"
+
+  # ---------------------------------------------------------------------------
+  # Wiki-currency check (autogalaxy_assistant) — same contract as the autolens and
+  # autofit pairs above. Its artifact is wiki-drift-report-autogalaxy, already
+  # unique per run (upload-artifact@v4 names must not collide with the autolens
+  # check's wiki-drift-report or the autofit check's -autofit in the same run).
+  #
+  # autocti_assistant is deliberately NOT wired here: `autocti` on PyPI is
+  # 2024.11.13.2, so the `autocti==$VERSION` install this contract implies cannot
+  # resolve, and the baseline step below installs only the five release-train
+  # packages (autocti is not one). Its own wiki-currency.yml records the same
+  # constraint — "the CTI release train is not yet wired". Wire the CTI release
+  # train first; this comment is the pointer for whoever does.
+  # ---------------------------------------------------------------------------
+  wiki_currency_check_autogalaxy:
+    needs:
+      - resolve_mode
+      - version_number
+      - release_workspaces
+    if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
+    uses: PyAutoLabs/autogalaxy_assistant/.github/workflows/wiki-currency.yml@main
+    with:
+      stack_version: ${{ needs.version_number.outputs.version_number }}
+      assistant_ref: main
+
+  wiki_drift_issue_autogalaxy:
+    needs:
+      - version_number
+      - wiki_currency_check_autogalaxy
+    if: "${{ always() && needs.wiki_currency_check_autogalaxy.result == 'failure' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download drift report
+        uses: actions/download-artifact@v4
+        with:
+          name: wiki-drift-report-autogalaxy
+          path: drift
+      - name: Open wiki-drift issue against autogalaxy_assistant
+        env:
+          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+        run: |
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          BODY=drift/drift-report.md
+          if [ ! -f "$BODY" ]; then
+            printf '# Wiki-currency drift at release %s\n\nThe check failed but no drift-report artifact was found; see the run logs.\n' "$VERSION" > "$BODY"
+          fi
+          gh issue create \
+            --repo PyAutoLabs/autogalaxy_assistant \
             --title "wiki drift detected at release $VERSION" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
