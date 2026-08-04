@@ -14,6 +14,78 @@ BUILD_PATH = Path(__file__).parent
 
 BUILD_PYTHON_INTERPRETER = os.environ.get("BUILD_PYTHON_INTERPRETER", "python3")
 
+# Characters of captured child output kept from each stream when a run times
+# out. A timed-out script is killed mid-flight, so its tail is the only clue to
+# which block was executing — enough to name the block, not so much that a
+# chatty script floods the report.
+TIMEOUT_OUTPUT_TAIL_CHARS = 2000
+
+
+def timeout_for(env=None) -> int:
+    """Return the per-run timeout in seconds for a script or notebook.
+
+    ``TIMEOUT_SECS`` is read once at import from the parent's own environment,
+    so on its own it can only ever express ONE cap for a whole run. The
+    per-script environment built by ``env_config.build_env_for_script`` is
+    handed to the child, and a profile may set ``BUILD_SCRIPT_TIMEOUT`` on it
+    for a matching pattern — but the ``subprocess.run(timeout=...)`` kill timer
+    lives in the PARENT, so that value has no effect unless the parent reads it
+    back out. This resolves it.
+
+    Precedence (highest first):
+
+    1. ``BUILD_SCRIPT_TIMEOUT`` on the per-script ``env`` (a profile override),
+    2. ``TIMEOUT_SECS`` — the ambient/global value at import.
+
+    A profile value deliberately wins over the ambient global. The alternative
+    ("an explicitly supplied global always wins") is unimplementable here:
+    ``run_all`` exports ``BUILD_SCRIPT_TIMEOUT`` unconditionally, even when 300
+    was merely its CLI default, so the parent cannot tell an operator's
+    deliberate cap from the default. Under that rule per-script budgets would
+    work in CI (which does not go through ``run_all``) and be silently ignored
+    locally — the exact silent-divergence class this function exists to remove.
+
+    Malformed, zero or negative values fall back to ``TIMEOUT_SECS``: a bad
+    profile entry must not disable the cap altogether.
+    """
+    if not env:
+        return TIMEOUT_SECS
+    raw = env.get("BUILD_SCRIPT_TIMEOUT")
+    if raw is None:
+        return TIMEOUT_SECS
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return TIMEOUT_SECS
+    return value if value > 0 else TIMEOUT_SECS
+
+
+def _timeout_output(e: subprocess.TimeoutExpired) -> str:
+    """Render the tail of a timed-out child's captured output.
+
+    ``subprocess.TimeoutExpired`` carries whatever was captured before the kill,
+    but only when the call captured it (``capture_output``/``stdout=PIPE``);
+    otherwise both attributes are None and the child wrote straight to the
+    console. Streams may be bytes or str depending on ``text=``.
+    """
+
+    def tail(stream) -> str:
+        if not stream:
+            return ""
+        if isinstance(stream, bytes):
+            stream = stream.decode("utf-8", errors="replace")
+        stream = stream.strip()
+        if len(stream) > TIMEOUT_OUTPUT_TAIL_CHARS:
+            return "...[truncated]...\n" + stream[-TIMEOUT_OUTPUT_TAIL_CHARS:]
+        return stream
+
+    parts = []
+    for label, stream in (("stdout", e.stdout), ("stderr", e.stderr)):
+        text = tail(stream)
+        if text:
+            parts.append(f"--- last {label} before timeout ---\n{text}")
+    return "\n".join(parts)
+
 
 def py_to_notebook(filename: Path):
     subprocess.run(
@@ -220,6 +292,8 @@ def is_clean_skip_exit(output: str) -> bool:
 def execute_notebook(f, report=None, env=None):
     print(f"Running <{f}> at {datetime.datetime.now().isoformat()}")
 
+    timeout_secs = timeout_for(env)
+
     start = time.time()
     try:
         # stderr is always captured so a clean `sys.exit(0)` skip guard can be
@@ -239,7 +313,7 @@ def execute_notebook(f, report=None, env=None):
                 str(Path.cwd()),
             ],
             check=True,
-            timeout=TIMEOUT_SECS,
+            timeout=timeout_secs,
             stdout=subprocess.PIPE if report is not None else None,
             stderr=subprocess.PIPE,
             text=True,
@@ -250,11 +324,17 @@ def execute_notebook(f, report=None, env=None):
         if report is not None:
             from result_collector import ScriptResult, Status
             print(f"  TIMEOUT ({duration:.0f}s)")
+            # Same reasoning as execute_script: stderr is always piped here, so
+            # the failing cell's tail survives the kill and reaches the report.
+            message = "Timed out after {:.0f}s (cap {}s)".format(duration, timeout_secs)
+            captured = _timeout_output(e)
+            if captured:
+                message = f"{message}\n{captured}"
             report.results.append(ScriptResult(
                 file=str(f),
                 status=Status.TIMEOUT,
                 duration_seconds=duration,
-                error_message="Timed out after {:.0f}s".format(duration),
+                error_message=message,
             ))
             return
         logging.exception(e)
@@ -371,13 +451,15 @@ def execute_script(f, report=None, env=None, extra_args=None):
     script_name = Path(f).relative_to(Path.cwd()) if Path(f).is_relative_to(Path.cwd()) else Path(f).name
     print(f"  {script_name} ...", end=" ", flush=True)
 
+    timeout_secs = timeout_for(env)
+
     start = time.time()
     try:
         if report is not None:
             result = subprocess.run(
                 args,
                 check=True,
-                timeout=TIMEOUT_SECS,
+                timeout=timeout_secs,
                 capture_output=True,
                 text=True,
                 env=env,
@@ -386,7 +468,7 @@ def execute_script(f, report=None, env=None, extra_args=None):
             subprocess.run(
                 args,
                 check=True,
-                timeout=TIMEOUT_SECS,
+                timeout=timeout_secs,
                 env=env,
             )
     except subprocess.TimeoutExpired as e:
@@ -394,11 +476,18 @@ def execute_script(f, report=None, env=None, extra_args=None):
         if report is not None:
             from result_collector import ScriptResult, Status
             print(f"  TIMEOUT ({duration:.0f}s)")
+            # Keep the child's captured tail: a killed script never reports its
+            # own progress, so without this a TIMEOUT cannot say WHICH block was
+            # running and every diagnosis restarts from zero.
+            message = "Timed out after {:.0f}s (cap {}s)".format(duration, timeout_secs)
+            captured = _timeout_output(e)
+            if captured:
+                message = f"{message}\n{captured}"
             report.results.append(ScriptResult(
                 file=str(f),
                 status=Status.TIMEOUT,
                 duration_seconds=duration,
-                error_message="Timed out after {:.0f}s".format(duration),
+                error_message=message,
             ))
             return
         logging.exception(e)
