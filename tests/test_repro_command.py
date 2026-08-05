@@ -140,6 +140,32 @@ def test_no_workspace_root_raises(tmp_path):
         repro_command.repro_command(str(orphan))
 
 
+def test_repro_carries_the_jax_traceback_diagnostic(tmp_path):
+    # The runner layers DIAGNOSTIC_ENV_DEFAULTS in build_env_for_script, so a
+    # repro that omitted them would run with JAX's traceback filter back ON and
+    # hide the very frames the failure being reproduced needs
+    # (PyAutoLabs/PyAutoFit#1452).
+    ws = _make_fake_workspace(
+        tmp_path, "fake_ws", 'defaults:\n  PYAUTO_TEST_MODE: "2"\n'
+    )
+    script = ws / "scripts" / "imaging" / "modeling.py"
+    script.write_text("# placeholder\n")
+
+    assert "JAX_TRACEBACK_FILTERING=off" in repro_command.repro_command(str(script))
+
+
+def test_repro_lets_a_profile_override_the_diagnostic(tmp_path):
+    ws = _make_fake_workspace(
+        tmp_path, "fake_ws", 'defaults:\n  JAX_TRACEBACK_FILTERING: "on"\n'
+    )
+    script = ws / "scripts" / "imaging" / "modeling.py"
+    script.write_text("# placeholder\n")
+
+    cmd = repro_command.repro_command(str(script))
+    assert "JAX_TRACEBACK_FILTERING=on" in cmd
+    assert "JAX_TRACEBACK_FILTERING=off" not in cmd
+
+
 def test_empty_env_config_emits_no_env_prefix(tmp_path):
     ws = tmp_path / "fake_ws"
     (ws / "config" / "build").mkdir(parents=True)

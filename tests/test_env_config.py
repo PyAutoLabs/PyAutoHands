@@ -85,6 +85,50 @@ def test_none_config_inherits_unchanged(monkeypatch):
     assert build_env_for_script(Path("scripts/x.py"), None) is None
 
 
+# --- Diagnostics defaults (PyAutoLabs/PyAutoFit#1452) -------------------------
+
+
+def test_jax_traceback_filtering_off_by_default(monkeypatch):
+    # A JAX failure inside the runner must show its real frames: on 2026-07-30
+    # the filter ate an OOM's exception and the failure read as unrelated.
+    monkeypatch.delenv("JAX_TRACEBACK_FILTERING", raising=False)
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_TEST_MODE": "2"}})
+    assert env["JAX_TRACEBACK_FILTERING"] == "off"
+
+
+def test_diagnostic_default_overrides_ambient(monkeypatch):
+    # An ambient value must not silently re-enable filtering for a profiled run.
+    monkeypatch.setenv("JAX_TRACEBACK_FILTERING", "on")
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_TEST_MODE": "2"}})
+    assert env["JAX_TRACEBACK_FILTERING"] == "off"
+
+
+def test_profile_can_still_override_diagnostic_default(monkeypatch):
+    # Layered BEFORE apply_profile, so an explicit profile value still wins.
+    monkeypatch.delenv("JAX_TRACEBACK_FILTERING", raising=False)
+    env = build_env_for_script(
+        Path("scripts/x.py"), {"defaults": {"JAX_TRACEBACK_FILTERING": "on"}}
+    )
+    assert env["JAX_TRACEBACK_FILTERING"] == "on"
+
+
+def test_profile_override_pattern_can_set_diagnostic_default(monkeypatch):
+    monkeypatch.delenv("JAX_TRACEBACK_FILTERING", raising=False)
+    cfg = {
+        "defaults": {"PYAUTO_TEST_MODE": "2"},
+        "overrides": [
+            {"pattern": "scripts/x.py", "set": {"JAX_TRACEBACK_FILTERING": "on"}}
+        ],
+    }
+    assert build_env_for_script(Path("scripts/x.py"), cfg)["JAX_TRACEBACK_FILTERING"] == "on"
+    assert build_env_for_script(Path("scripts/y.py"), cfg)["JAX_TRACEBACK_FILTERING"] == "off"
+
+
+def test_diagnostic_default_absent_from_profileless_run(monkeypatch):
+    # The None path's contract is unchanged: parent env inherited verbatim.
+    assert build_env_for_script(Path("scripts/x.py"), None) is None
+
+
 # --- JAX-marker derivation (docs/env_profile_redesign.md §3, #161 step 4) -----
 from env_config import is_jax_marked  # noqa: E402
 
