@@ -29,6 +29,22 @@ import yaml
 MANAGED_ENV_PREFIXES = ("PYAUTO_",)
 
 
+# Diagnostics defaults layered onto the base env BEFORE the profile, so a
+# profile that genuinely wants a different value can still override them.
+#
+# JAX_TRACEBACK_FILTERING=off: JAX strips its own internal frames from a
+# traceback by default, which for a failure raised *inside* JAX leaves only
+# the "For simplicity, JAX has removed its internal frames..." notice and no
+# exception. A gate whose error messages are filtered away costs a night to
+# diagnose — that is exactly what happened on 2026-07-30, when two release
+# shards failed on an OOM whose message was eaten and read as an unrelated
+# failure (PyAutoLabs/PyAutoFit#1452). The runner is non-interactive and its
+# output is the only diagnostic artifact, so full frames always beat tidy ones
+# here. This is an infrastructure/diagnostics var, not a PYAUTO_ workspace-
+# behaviour var, so it is not part of the scrubbed managed family above.
+DIAGNOSTIC_ENV_DEFAULTS = {"JAX_TRACEBACK_FILTERING": "off"}
+
+
 # --- In-file env declarations (docs/env_profile_redesign.md §10) --------------
 #
 # A script declares the workspace-behaviour vars it wants RELEASED (unset) via a
@@ -312,6 +328,12 @@ def build_env_for_script(
     (see ``MANAGED_ENV_PREFIXES``), which is stripped before defaults/overrides
     are applied — so an ambient ``PYAUTO_DISABLE_JAX`` / ``PYAUTO_SKIP_*`` the
     profile is silent on cannot leak into the script run.
+
+    ``DIAGNOSTIC_ENV_DEFAULTS`` is then layered on BEFORE ``apply_profile``, so
+    every profiled run gets full JAX tracebacks while a profile that sets the
+    same key still wins. Returning ``None`` for a profile-less run is
+    deliberate and unchanged: that path's contract is "inherit the parent
+    environment unchanged", so the developer's own shell governs there.
     """
     if env_config is None:
         return None
@@ -320,6 +342,8 @@ def build_env_for_script(
     for key in list(env):
         if key.startswith(MANAGED_ENV_PREFIXES):
             del env[key]
+
+    env.update(DIAGNOSTIC_ENV_DEFAULTS)
 
     return apply_profile(env, file, env_config)
 

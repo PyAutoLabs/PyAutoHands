@@ -28,7 +28,12 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional
 
-from env_config import apply_profile, find_profile, load_env_config
+from env_config import (
+    DIAGNOSTIC_ENV_DEFAULTS,
+    apply_profile,
+    find_profile,
+    load_env_config,
+)
 
 
 def _find_workspace_root(script: Path) -> Optional[Path]:
@@ -48,11 +53,16 @@ def canonical_env_for_script(file: Path, env_config: Optional[dict]) -> Dict[str
     developer's local shell. This is the right form for a portable reproduction
     command — the chat-side reader inherits their shell's env and just gets the
     autohands-specific overrides prepended.
+
+    ``DIAGNOSTIC_ENV_DEFAULTS`` is part of what autohands adds (the runner
+    layers it in ``build_env_for_script``), so it belongs here too — otherwise
+    the repro command would run with JAX's traceback filter back ON and hide
+    the very frames the failure it is reproducing needs.
     """
     if env_config is None:
         return {}
 
-    return apply_profile({}, file, env_config)
+    return apply_profile(dict(DIAGNOSTIC_ENV_DEFAULTS), file, env_config)
 
 
 def repro_command(script_path: str) -> str:
