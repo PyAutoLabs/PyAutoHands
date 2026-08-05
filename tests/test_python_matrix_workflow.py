@@ -6,11 +6,33 @@ import yaml
 WORKFLOW = (
     Path(__file__).resolve().parents[1] / ".github" / "workflows" / "python_matrix.yml"
 )
+SELF_TEST_WORKFLOW = (
+    Path(__file__).resolve().parents[1] / ".github" / "workflows" / "tests.yml"
+)
 AUTOHANDS = Path(__file__).resolve().parents[1] / "bin" / "autohands"
 
 
 def load_workflow():
     return yaml.safe_load(WORKFLOW.read_text())
+
+
+def test_self_test_gate_tracks_the_supported_python_set():
+    """Hands's own gate (tests.yml) must run the same Python set python_matrix.yml
+    declares required.
+
+    Drift between a version policy and the file guarding it is exactly how this
+    module went stale: b038fdc promoted 3.14 in python_matrix.yml and nothing
+    reported that the guard still asserted the old shape. Tying the two lists
+    together means promoting or dropping a version has to touch both.
+    """
+    required = load_workflow()["jobs"]["unit_tests"]["strategy"]["matrix"][
+        "python-version"
+    ]
+    gate = yaml.safe_load(SELF_TEST_WORKFLOW.read_text())["jobs"]["pytest"][
+        "strategy"
+    ]["matrix"]["python-version"]
+
+    assert gate == required
 
 
 def test_required_matrices_cover_only_supported_python_versions():
