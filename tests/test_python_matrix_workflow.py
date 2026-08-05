@@ -19,31 +19,30 @@ def test_required_matrices_cover_only_supported_python_versions():
     assert jobs["unit_tests"]["strategy"]["matrix"]["python-version"] == [
         "3.12",
         "3.13",
+        "3.14",
     ]
     assert jobs["smoke_tests"]["strategy"]["matrix"]["python-version"] == [
         "3.12",
         "3.13",
+        "3.14",
     ]
 
 
-def test_python_314_is_isolated_and_non_required():
+def test_python_314_is_a_required_leg_not_an_isolated_experiment():
+    """3.14 was promoted to a required leg of both matrices (b038fdc, following
+    the PyAutoFit#1439 forkserver fix), which retired the soft
+    `experimental_python_314` job. Guard the promoted shape: 3.14 must sit in
+    the required matrices above, and must not quietly regrow a
+    `continue-on-error` home where its failures stop counting."""
     jobs = load_workflow()["jobs"]
-    experimental = jobs["experimental_python_314"]
 
-    assert experimental["continue-on-error"] is True
-    assert experimental["strategy"]["matrix"]["python-version"] == ["3.14"]
-    assert len(experimental["strategy"]["matrix"]["project"]) == 5
-    assert "experimental_python_314" in jobs["summary"]["needs"]
-    assert "continue-on-error" not in jobs["unit_tests"]
-    assert "continue-on-error" not in jobs["smoke_tests"]
+    assert "experimental_python_314" not in jobs
 
-    record_step = next(
-        step for step in experimental["steps"]
-        if step.get("name") == "Record experimental cell result"
-    )
-    assert record_step["if"] == "always()"
-    assert "job.status" in record_step["run"]
-    assert "does not cover workspace scripts" in record_step["run"]
+    for name in ("unit_tests", "smoke_tests"):
+        assert "3.14" in jobs[name]["strategy"]["matrix"]["python-version"]
+        assert "continue-on-error" not in jobs[name]
+
+    assert sorted(jobs["summary"]["needs"]) == ["smoke_tests", "unit_tests"]
 
 
 def test_no_below_floor_success_or_banner_contract_remains():

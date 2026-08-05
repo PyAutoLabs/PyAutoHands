@@ -1,0 +1,68 @@
+name: Hands Tests
+
+# PyAutoHands's own unit suite — the executor's self-test. Until this existed,
+# PyAutoHands PRs carried ZERO check runs: `python_matrix.yml` is a weekly cron
+# over the five *libraries'* suites, `navigator_check.yml` is `workflow_call`
+# only (invoked by the workspaces), and `release.yml`'s pytest step runs inside
+# `${{ matrix.project.path }}` — a matrix of the five libraries, with
+# PyAutoHands checked out beside them only as a helper. So the ~300 tests
+# covering build_util (script/notebook execution, per-script timeouts,
+# clean-skip exits), env_config (profile discovery, per-script env, JAX
+# marking, workspace precedence), result_collector, check_navigator,
+# clone_seed, the release/Slack notes and the workflow parsers ran in no CI at
+# all, and a Hands PR's only gate was whatever the authoring session ran
+# locally.
+#
+# That gap had already bitten: b038fdc promoted Python 3.14 to a required
+# matrix leg and retired the experimental_python_314 job, but left
+# test_python_matrix_workflow.py asserting the pre-promotion contract. The
+# guard test sat failing with nothing to report it.
+#
+# Deliberately ONLY pytest. It must not invoke `autohands generate` / `run_all`
+# / `pre_build` against live workspaces, and must not reach the network — those
+# need sibling workspace checkouts and belong to release.yml and the scheduled
+# drivers, not to a PR gate. What runs here is stdlib plus four small packages,
+# so it stays fast (~6s) and flake-free.
+#
+# Dependencies are named explicitly rather than `-r requirements.txt`, which
+# would drag in jupyterlab + ipykernel and turn a 6s gate into a slow one:
+#   pytest            the runner
+#   PyYAML            env_config / validate_env_profiles / the workflow parsers
+#   ipynb-py-convert  a CLI binary build_util shells out to (not an import)
+#   Pillow            generate_markdown's PNG optimisation path
+# Three tests self-skip on absent nbformat/jupyter; that is intentional — those
+# belong to the notebook-execution path the release workflow covers.
+
+# One run per commit: PR events carry the CI; pushes only build main.
+# Superseded runs are cancelled on PR refs only — a cancelled main run would
+# read as red CI (cancelled is in Heart's FAILURE_CONCLUSIONS).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: hands-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install (the whole dependency set — see header)
+        run: pip install pytest PyYAML ipynb-py-convert Pillow
+      - name: Run tests
+        run: pytest tests/ -q
