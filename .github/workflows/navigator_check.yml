@@ -42,6 +42,34 @@ jobs:
       - name: Run navigator checker (paths hard, banners fail)
         run: python PyAutoHands/autohands/check_navigator.py --root workspace --banners=fail
 
+  search_memory:
+    # A MultiStart* search left on its default batch_size=None vmaps every
+    # start into one value_and_grad. For a memory-heavy likelihood that is
+    # tens of GB — it OOMed two nightly release runs in 2026-07 and nothing
+    # at authoring time flagged it (PyAutoLabs/PyAutoFit#1452). The runtime
+    # guard in autofit relies on XLA memory analysis, which reports 0 on the
+    # CPU-only builds CI uses, so this static check is what protects CI.
+    name: Unbatched multi-start search check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v4
+        with:
+          path: workspace
+      - name: Checkout PyAutoHands
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoHands
+          path: PyAutoHands
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # No pip install: the checker is stdlib-only (ast + pathlib) on purpose,
+      # so it cannot be broken by a dependency resolution problem.
+      - name: Check for unbatched multi-start searches
+        run: python PyAutoHands/autohands/check_search_memory.py --root workspace
+
   staleness:
     name: Catalogue staleness
     runs-on: ubuntu-latest
