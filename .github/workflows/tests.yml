@@ -30,8 +30,20 @@ name: Hands Tests
 #   PyYAML            env_config / validate_env_profiles / the workflow parsers
 #   ipynb-py-convert  a CLI binary build_util shells out to (not an import)
 #   Pillow            generate_markdown's PNG optimisation path
-# Three tests self-skip on absent nbformat/jupyter; that is intentional — those
-# belong to the notebook-execution path the release workflow covers.
+# FOUR tests self-skip here, and they are two different kinds:
+#   - 3 on absent nbformat/jupyter (test_run_notebook_cwd,
+#     test_notebook_skip_exit) — intentional, that is the notebook-execution
+#     path release.yml covers.
+#   - 1 because this checkout has no sibling workspaces:
+#     test_workspace_config_precedence.test_actual_workspace_files_exist walks
+#     `repo_root.parent / <workspace>` asserting each of the six workspaces owns
+#     its config/build/{no_run,profile_smoke,visualise_notebooks}.yaml, and
+#     skips at the first one absent. In a full local workspace it asserts all
+#     six; here it asserts nothing.
+# That second one is a real hole in this gate, accepted deliberately: closing it
+# means six extra checkouts for a repo-layout invariant, which would couple a 6s
+# gate to six other repos. It is a local/developer check, not a PR check. Local
+# baseline is therefore 301 passed / 3 skipped; CI is 300 passed / 4 skipped.
 
 # One run per commit: PR events carry the CI; pushes only build main.
 # Superseded runs are cancelled on PR refs only — a cancelled main run would
