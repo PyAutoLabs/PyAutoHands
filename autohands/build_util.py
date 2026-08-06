@@ -201,8 +201,8 @@ def uncomment_jupyter_magic(f):
     with open(f, "w") as sources:
         for line in lines:
             line = re.sub(
-                r"# from autonerves import setup_notebook; setup_notebook\(\)",
-                "from autonerves import setup_notebook; setup_notebook()",
+                r"# from (auto\w+) import setup_notebook; setup_notebook\(\)",
+                r"from \1 import setup_notebook; setup_notebook()",
                 line,
             )
             sources.write(line)
