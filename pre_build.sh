@@ -50,6 +50,89 @@ if command -v gh >/dev/null 2>&1; then
     bash "$PYAUTOBASE/PyAutoBrain/bin/ensure_workspace_labels.sh"
 fi
 
+# Positional fields: repo project [generate=true] [slam=false]
+# Declared as data, not as a call list, because TWO passes read it: the
+# uncommitted-work preflight below and the execution loop at the bottom. A
+# second hand-maintained list would drift out of step with this one, and the
+# preflight would then silently skip a repo it is meant to protect.
+# The repo names are checked against PyAutoMind/repos.yaml (the body map) by
+# `repos_sync.py --check`; the flags are Build policy and live only here.
+# (The former readme_pkg arg / README version bump was deleted per the audit in
+# docs/pre_build_failure_audit.md: its sed edit was never staged and the runner
+# side was removed under #120. Phase 4 task 4 of the build-chain campaign
+# (#155) then resolved the pins themselves: the three surviving `<pkg> vX` lines
+# were REMOVED from the READMEs in favour of "install the latest release" plus
+# the `version.minimum_library_version` floor, which Heart's version_skew check
+# actually verifies. Do not re-add a README version bump here or on the runner —
+# an unowned pin is what went 2 months stale.)
+# The last entry is the AI assistant repo. No notebook generation; release.yml's
+# release_workspaces job stamps its workspace version and regenerates
+# wiki/core/api_audit_baseline.json against the released wheels.
+WORKSPACE_SPECS=(
+    "autofit_workspace                    autofit      true   false"
+    "autogalaxy_workspace                 autogalaxy   true   false"
+    "autolens_workspace                   autolens     true   true"
+    "autofit_workspace_test               autofit      false  false"
+    "autogalaxy_workspace_test            autogalaxy   false  false"
+    "autolens_workspace_test              autolens     false  false"
+    "euclid_strong_lens_modeling_pipeline -            false  false"
+    "HowToGalaxy                          howtogalaxy  true   false"
+    "HowToLens                            howtolens    true   false"
+    "HowToFit                             howtofit     true   false"
+    "autofit_workspace_developer          -            false  false"
+    "autolens_workspace_developer         -            false  false"
+    "autolens_assistant                   autolens     false  false"
+)
+
+# The directories run_workspace reformats with black and stages. Anything
+# untracked under them BEFORE a run is human work, never run output.
+MUTATED_DIRS=(notebooks scripts slam_pipeline)
+
+# Preflight: no workspace may carry uncommitted work under MUTATED_DIRS.
+#
+# run_workspace both black-formats and `git add`s those directories, and both
+# operations reach untracked files — so a human's in-progress script would be
+# reformatted on disk and pushed inside the "pre build" commit. That is the
+# same leak class as the tracked-dataset leak (#126), which was fixed for
+# dataset/ and config/ by dropping their staging; the scripts/ path still had
+# the hole, and it was caught by hand during the 2026-08-07 release only
+# because the operator happened to notice.
+#
+# This runs over EVERY repo before the first one is touched, mirroring the
+# PyAutoHands gate above. run_workspace commits and pushes each repo before
+# moving to the next, so a per-repo check that aborted midway would leave the
+# earlier repos already published.
+echo ""
+echo "=== Checking workspaces for uncommitted work ==="
+WIP_REPORT=""
+for spec in "${WORKSPACE_SPECS[@]}"; do
+    # `read` rather than `set --`: this loop runs at top level, where `set --`
+    # would clobber the script's own positional parameters.
+    read -r wip_repo _ <<< "$spec"
+    wip_dir="$PYAUTOBASE/$wip_repo"
+    # Checked here so a missing checkout fails with a clear message during the
+    # preflight, rather than as a bare `cd` error partway through the run once
+    # earlier repos have already been committed and pushed.
+    if [ ! -d "$wip_dir/.git" ]; then
+        echo "ABORT: $wip_repo is missing or is not a git repo ($wip_dir)." >&2
+        exit 1
+    fi
+    # `ls-files --others` tolerates pathspecs that match nothing (unlike
+    # `git add`), so the dirs need no per-repo existence guard here.
+    # `--exclude-standard` honours .gitignore, keeping output/ and friends out.
+    wip="$(git -C "$wip_dir" ls-files --others --exclude-standard -- "${MUTATED_DIRS[@]}")"
+    if [ -n "$wip" ]; then
+        WIP_REPORT="${WIP_REPORT}  ${wip_repo}:"$'\n'"$(printf '%s\n' "$wip" | sed 's/^/    /')"$'\n'
+    fi
+done
+if [ -n "$WIP_REPORT" ]; then
+    echo "ABORT: uncommitted work under directories pre_build formats and commits." >&2
+    printf '%s' "$WIP_REPORT" >&2
+    echo "Commit, stash or move these before releasing — pre_build must not author them." >&2
+    exit 1
+fi
+echo "  Clean: no untracked files under ${MUTATED_DIRS[*]} in any workspace."
+
 run_workspace() {
     local repo="$1"
     local project="$2"
@@ -88,11 +171,24 @@ run_workspace() {
     # release commits, which is the mechanism that leaked simulated datasets
     # (#126). Releases require clean mains (Heart gates on it); human work is
     # committed by humans. See docs/pre_build_failure_audit.md §3/§6 (#156).
+    local stage_dirs=()
     for d in notebooks scripts; do
-        if [ -d "$d" ]; then git add "$d/"; fi
+        if [ -d "$d" ]; then stage_dirs+=("$d"); fi
     done
     if [ "$slam" = "true" ] && [ -d "slam_pipeline" ]; then
-        git add slam_pipeline/
+        stage_dirs+=("slam_pipeline")
+    fi
+    if [ ${#stage_dirs[@]} -gt 0 ]; then
+        # Tracked edits and deletions: black's reformatting, regenerated and
+        # retired notebooks.
+        git add -u -- "${stage_dirs[@]}"
+        # Plus what this run CREATED — a new notebook from generate.py. The
+        # preflight proved these directories held no untracked files before the
+        # run, so anything untracked now is run output. Added by explicit path
+        # rather than as `git add <dir>/`, which also sweeps in untracked files
+        # and would re-open the hole the preflight closes.
+        git ls-files --others --exclude-standard -z -- "${stage_dirs[@]}" \
+            | xargs -0 --no-run-if-empty git add --
     fi
     # Root-level artifacts (llms-full.txt, workspace_index.json, README Colab
     # URLs) are produced and committed by release.yml's release_workspaces job
@@ -108,33 +204,15 @@ run_workspace() {
     fi
 }
 
-# Positional args: repo project [generate=true] [slam=false]
-# The repo names are checked against PyAutoMind/repos.yaml (the body map) by
-# `repos_sync.py --check`; the flags are Build policy and live only here.
-# (The former readme_pkg arg / README version bump was deleted per the audit in
-# docs/pre_build_failure_audit.md: its sed edit was never staged and the runner
-# side was removed under #120. Phase 4 task 4 of the build-chain campaign
-# (#155) then resolved the pins themselves: the three surviving `<pkg> vX` lines
-# were REMOVED from the READMEs in favour of "install the latest release" plus
-# the `version.minimum_library_version` floor, which Heart's version_skew check
-# actually verifies. Do not re-add a README version bump here or on the runner —
-# an unowned pin is what went 2 months stale.)
-run_workspace "autofit_workspace"                    "autofit"      true   false
-run_workspace "autogalaxy_workspace"                 "autogalaxy"   true   false
-run_workspace "autolens_workspace"                   "autolens"     true   true
-run_workspace "autofit_workspace_test"               "autofit"      false  false
-run_workspace "autogalaxy_workspace_test"            "autogalaxy"   false  false
-run_workspace "autolens_workspace_test"              "autolens"     false  false
-run_workspace "euclid_strong_lens_modeling_pipeline" ""             false  false
-run_workspace "HowToGalaxy"                          "howtogalaxy"  true   false
-run_workspace "HowToLens"                            "howtolens"    true   false
-run_workspace "HowToFit"                             "howtofit"     true   false
-run_workspace "autofit_workspace_developer"          ""             false  false
-run_workspace "autolens_workspace_developer"         ""             false  false
-# The AI assistant repo. No notebook generation; release.yml's
-# release_workspaces job stamps its workspace version and regenerates
-# wiki/core/api_audit_baseline.json against the released wheels.
-run_workspace "autolens_assistant"                   "autolens"     false  false
+# Execute. Same list the preflight above walked — see WORKSPACE_SPECS for the
+# field meanings and the policy notes.
+for spec in "${WORKSPACE_SPECS[@]}"; do
+    # Unquoted on purpose, as in the preflight: the fields are
+    # whitespace-separated and none contains a space. A no-generate repo carries
+    # `-` in the project field — word splitting cannot express an empty field,
+    # and run_workspace never reads project when generate is false.
+    run_workspace $spec
+done
 
 # Release readiness (version skew, including the version.txt-ahead crash that
 # used to be checked here) is now Heart's job, not Build's: PyAutoHands is a

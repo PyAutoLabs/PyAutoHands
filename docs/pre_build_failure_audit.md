@@ -138,9 +138,27 @@ rejection reasoning, confirmed: the line stages nothing anyone needs).
   release" vestige should be deleted (recommended — it is #126's mechanism) or
   kept deliberately. Deleting it makes releases require clean mains, which
   Heart already checks.
-- **Open:** atomicity — a mid-sequence fatal leaves a half-pushed release
-  surface. Worth a fail-fast pre-pass (all repos validated before any push)?
-  Costed as a follow-up, not this PR.
+- **RESOLVED — atomicity.** Was: "a mid-sequence fatal leaves a half-pushed
+  release surface. Worth a fail-fast pre-pass (all repos validated before any
+  push)?" Answered yes and implemented: `pre_build.sh` now walks every repo in
+  `WORKSPACE_SPECS` before the first is touched, aborting if any checkout is
+  missing or carries untracked files under the directories the run reformats
+  and stages (`notebooks/`, `scripts/`, `slam_pipeline/`).
+
+  The trigger was a near-miss during the 2026-08-07 release: `git add <dir>/`
+  stages *untracked* files, so an uncommitted script in a workspace's
+  `scripts/` would be black-formatted and pushed inside the "pre build" commit
+  — the same leak class as #126, which §3 fixed for `dataset/` and `config/`
+  while leaving the `scripts/` path open. It was caught only because the
+  operator moved the file out by hand. Reproduced against the pre-fix script on
+  fixture repos: the private file was committed and pushed, exit 0, silently.
+
+  Staging was narrowed in the same change — `git add -u` for tracked edits and
+  deletions, plus newly created files added by explicit path — so the
+  directory-wide form that causes this cannot return. Both legs are covered by
+  `tests/test_pre_build_staging.py`, which runs the real script against
+  throwaway git fixtures. There is deliberately **no** `--allow-dirty`
+  override: an override is precisely the operator vigilance this replaces.
 
 ## Trust nothing here
 
