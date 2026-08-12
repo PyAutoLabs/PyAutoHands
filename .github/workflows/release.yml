@@ -265,7 +265,12 @@ jobs:
           run: |
             pushd "${{ matrix.project.path }}"
             export JAX_ENABLE_X64=True
-            pip install matplotlib==3.6.0
+            # NOT pinning matplotlib (same call as PyAutoHeart's
+            # workspace-validation.yml): 3.6.0 predates cp312 wheels, so the pin
+            # forces a slow source rebuild, and its errorbar/fill_between call
+            # np.row_stack — removed in NumPy 2.0. Against the numpy 2.x the
+            # install above resolves, that pin is an immediate AttributeError
+            # across the graphical/ and tools/ suites.
             pip install pynufft==2025.1.1
             pip install pytest
             pip install numba
@@ -324,7 +329,8 @@ jobs:
             fi
             sleep 10
           done
-          pip install matplotlib==3.6.0 pynufft==2025.1.1 numba
+          # matplotlib deliberately unpinned — see the Tests step above.
+          pip install pynufft==2025.1.1 numba
           # Belt-and-braces JAX install — the [optional] → [jax] chain
           # occasionally silently drops jax from test.pypi resolution.
           pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
@@ -714,7 +720,8 @@ jobs:
           fi
           sleep 10
         done
-        pip install matplotlib==3.6.0 pynufft==2025.1.1 numba
+        # matplotlib deliberately unpinned — see the Tests step above.
+        pip install pynufft==2025.1.1 numba
         # Belt-and-braces JAX install (same reason as the install steps above).
         pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
         pushd workspace
