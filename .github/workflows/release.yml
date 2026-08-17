@@ -134,6 +134,28 @@ jobs:
               exit 1
             fi
             sed -i "s/__version__ = [\.\"\'0-9]*/__version__ = \"$VERSION\"/g" */__init__.py
+            # The stamp sed is unanchored with a zero-or-more value class, so a
+            # reshaped assignment would be corrupted into a SyntaxError instead
+            # of left alone — verify every touched file still parses and the
+            # package stamp is exactly $VERSION before building the wheel.
+            STAMPED=0
+            for f in */__init__.py; do
+              python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read(), sys.argv[1])" "$f" || {
+                echo "::error::$f is not valid Python after version stamping."
+                exit 1
+              }
+              if grep -q "__version__ = " "$f"; then
+                grep -qxF "__version__ = \"$VERSION\"" "$f" || {
+                  echo "::error::$f __version__ line is not exactly \"$VERSION\" after stamping."
+                  exit 1
+                }
+                STAMPED=1
+              fi
+            done
+            if [ "$STAMPED" -eq 0 ]; then
+              echo "::error::No __init__.py carries a __version__ stamp — the sed matched nothing."
+              exit 1
+            fi
             python3 -m pip install --upgrade build
             python3 -m build
             popd
@@ -428,7 +450,35 @@ jobs:
       run: |
         pushd "${{ matrix.project.path }}"
         VERSION="${{ needs.version_number.outputs.version_number }}"
+        # Same refusal as the rehearsal Build job: an empty VERSION would stamp
+        # `__version__ = ""` and publish the source-install fallback semantics.
+        if [ -z "$VERSION" ]; then
+          echo "::error::VERSION is empty — refusing to stamp."
+          exit 1
+        fi
         sed -i "s/__version__ = [\.\"\'0-9]*/__version__ = \"$VERSION\"/g" */__init__.py
+        # The stamp sed is unanchored with a zero-or-more value class, so a
+        # reshaped assignment would be corrupted into a SyntaxError instead of
+        # left alone — verify every touched file still parses and the package
+        # stamp is exactly $VERSION before this tree is built and published.
+        STAMPED=0
+        for f in */__init__.py; do
+          python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read(), sys.argv[1])" "$f" || {
+            echo "::error::$f is not valid Python after version stamping."
+            exit 1
+          }
+          if grep -q "__version__ = " "$f"; then
+            grep -qxF "__version__ = \"$VERSION\"" "$f" || {
+              echo "::error::$f __version__ line is not exactly \"$VERSION\" after stamping."
+              exit 1
+            }
+            STAMPED=1
+          fi
+        done
+        if [ "$STAMPED" -eq 0 ]; then
+          echo "::error::No __init__.py carries a __version__ stamp — the sed matched nothing."
+          exit 1
+        fi
     - name: Tag
       # Idempotent so "Re-run failed jobs" can recover a partially-failed live
       # release. 2026-07-25: a transient upload.pypi.org connect timeout killed
