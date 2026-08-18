@@ -26,6 +26,12 @@ PRE_BUILD = ROOT / "pre_build.sh"
 
 # The repos pre_build walks, parsed from the script so this fixture cannot
 # drift away from the executor the way a second hand-written list would.
+#
+# CONVENTION (tenant firewall, PyAutoMind issue #198): every repo name below
+# this line is DERIVED from SPECS — never written out as a literal. A hardcoded
+# satellite name here is an instance fact in organ code, which
+# `PyAutoMind/scripts/repos_sync.py --check` flags as tenant-firewall drift, and
+# it would drift against pre_build.sh besides. Pick with SPECS[i][0].
 SPECS = re.findall(
     r'^\s+"(\S+)\s+(\S+)\s+(\S+)\s+(\S+)"', PRE_BUILD.read_text(), re.MULTILINE
 )
@@ -56,9 +62,11 @@ def _commit_all(repo, message):
 @pytest.fixture
 def base(tmp_path):
     """A throwaway PYAUTOBASE: PyAutoHands + every workspace pre_build walks."""
-    assert SPECS, "failed to parse WORKSPACE_SPECS out of pre_build.sh"
+    assert len(SPECS) > 1, "failed to parse WORKSPACE_SPECS out of pre_build.sh"
 
-    pyautobase = tmp_path / "PyAutoLabs"
+    # Any name does: pre_build.sh derives PYAUTOBASE from its own location, so
+    # the root is never matched by name.
+    pyautobase = tmp_path / "organism"
 
     # PyAutoHands itself, holding the script under test. pre_build requires it
     # on a clean main before it will do anything.
@@ -138,7 +146,8 @@ def _run(base, stub_bin):
 
 def test_untracked_wip_aborts_before_anything_is_touched(base, stub_bin):
     """A human's uncommitted script blocks the release and is left alone."""
-    victim = base / "autolens_assistant" / "scripts" / "wip_private.py"
+    victim_repo = SPECS[-1][0]
+    victim = base / victim_repo / "scripts" / "wip_private.py"
     victim.write_text("secret  =  1\n")
     original = victim.read_bytes()
 
@@ -147,7 +156,7 @@ def test_untracked_wip_aborts_before_anything_is_touched(base, stub_bin):
     assert result.returncode != 0, result.stdout
     assert "ABORT: uncommitted work" in result.stderr
     # Names the repo and the exact path, so one run surfaces the whole problem.
-    assert "autolens_assistant" in result.stderr
+    assert victim_repo in result.stderr
     assert "scripts/wip_private.py" in result.stderr
 
     # Untouched on disk: the abort precedes black.
@@ -173,7 +182,7 @@ def test_wip_in_any_repo_is_reported_together(base, stub_bin):
 
 def test_gitignored_files_do_not_block_a_release(base, stub_bin):
     """`--exclude-standard` keeps output/ and other ignored cruft out."""
-    work = base / "autolens_workspace"
+    work = base / SPECS[0][0]
     (work / ".gitignore").write_text("scripts/scratch/\n")
     _commit_all(work, "fixture gitignore")
     (work / "scripts" / "scratch").mkdir()
@@ -201,19 +210,20 @@ def test_generated_notebooks_are_still_staged(base, stub_bin):
 
 def test_missing_checkout_aborts_in_the_preflight(base, stub_bin):
     """A missing repo fails clearly up front, not as a bare `cd` error midway."""
-    shutil.rmtree(base / "HowToFit")
+    missing, survivor = SPECS[0][0], SPECS[-1][0]
+    shutil.rmtree(base / missing)
 
     result = _run(base, stub_bin)
 
     assert result.returncode != 0
-    assert "HowToFit is missing or is not a git repo" in result.stderr
+    assert f"{missing} is missing or is not a git repo" in result.stderr
     # Nothing was published before the failure was noticed.
-    assert "pre build" not in _git(base / "autofit_workspace", "log", "--oneline")
+    assert "pre build" not in _git(base / survivor, "log", "--oneline")
 
 
 def test_tracked_deletions_are_staged(base, stub_bin):
     """`git add -u` must carry a retired notebook's deletion into the commit."""
-    work = base / "autolens_workspace"
+    work = base / SPECS[0][0]
     (work / "notebooks" / "committed.ipynb").unlink()
 
     result = _run(base, stub_bin)
