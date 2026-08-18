@@ -18,11 +18,20 @@ name: Hands Tests
 # test_python_matrix_workflow.py asserting the pre-promotion contract. The
 # guard test sat failing with nothing to report it.
 #
-# Deliberately ONLY pytest. It must not invoke `autohands generate` / `run_all`
+# pytest plus ONE drift leg. It must not invoke `autohands generate` / `run_all`
 # / `pre_build` against live workspaces, and must not reach the network — those
 # need sibling workspace checkouts and belong to release.yml and the scheduled
 # drivers, not to a PR gate. What runs here is stdlib plus four small packages,
-# so it stays fast (~6s) and flake-free.
+# so it stays fast (~6s) and flake-free. The one non-pytest step is the
+# tenant-firewall gate (PyAutoMind#198): every firewall finding to date merged
+# through a green PR because no PR CI ran the check, so the leg a Hands PR can
+# cause is verified here, in the PR that authors it. `--only` keeps Mind-side
+# legs (map blocks, registries) from reddening Hands PRs on drift Hands cannot
+# cause; organs not checked out (Brain, Heart) are skipped by the check itself,
+# so this gates exactly Hands. PyAutoMind is checked out as a sibling purely to
+# supply the checker and the body map — it is pinned to main, so this gate
+# measures Hands against the CURRENT organism identity, the same pairing a local
+# workspace has. Both repos are public, so the default GITHUB_TOKEN suffices.
 #
 # Dependencies are named explicitly rather than `-r requirements.txt`, which
 # would drag in jupyterlab + ipykernel and turn a 6s gate into a slow one:
@@ -71,7 +80,17 @@ jobs:
         # stay equal, so this list cannot silently fall behind that policy.
         python-version: ["3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout PyAutoHands
+        uses: actions/checkout@v4
+        with:
+          path: PyAutoHands
+      # The checker + body map the firewall gate runs. Pinned to main: this
+      # gate measures Hands against the CURRENT organism identity.
+      - name: Checkout PyAutoMind (the firewall checker + body map)
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoMind
+          path: PyAutoMind
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -80,4 +99,10 @@ jobs:
       - name: Install (the whole dependency set — see header)
         run: pip install pytest PyYAML ipynb-py-convert Pillow
       - name: Run tests
+        working-directory: PyAutoHands
         run: pytest tests/ -q
+      - name: Tenant firewall (instance facts stay in declared config surfaces)
+        run: >
+          python3 PyAutoMind/scripts/repos_sync.py --check
+          --only "tenant firewall (organ code)"
+          --root "$GITHUB_WORKSPACE"
