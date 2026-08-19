@@ -35,6 +35,7 @@ SUBCOMMAND_ORDER=(
   run_python
   run_all
   "# Release support"
+  board
   script_matrix
   aggregate_results
   slow_skip_check
@@ -61,6 +62,7 @@ declare -A SHORT_DESC=(
   [run]="Execute notebooks in a workspace folder"
   [run_python]="Execute Python scripts in a workspace folder"
   [run_all]="Run scripts across one or more workspaces and produce summary reports"
+  [board]="The release board — what shipped (versions, train runs); --md/--md-brief/--html/--json/--badge"
   [script_matrix]="Output a JSON matrix of {name, directory} for GitHub Actions"
   [aggregate_results]="Aggregate per-job JSON results into a release-readiness report"
   [slow_skip_check]="Surface SLOW / NEEDS_FIX entries in workspace no_run.yaml files"
@@ -269,6 +271,36 @@ Used by release.yml to dynamically generate the run_scripts and
 run_notebooks job matrices.
 EOF
 }
+help_board() { cat <<EOF
+autohands board [--md|--md-brief|--html|--json|--badge]
+                [--collect OUT] [--snapshot F]
+
+The release board — a phone-readable record of WHAT THE HANDS SHIPPED:
+released library versions (from git tags, the authoritative record), their
+PyPI liveness, the release train's recent runs, and the nightly driver's
+outcomes. Past tense by design: whether it is SAFE to release lives with the
+Heart, whose board the page links.
+
+Formats (default --md):
+  --md        the full markdown board
+  --md-brief  the one-line README strip (between the hands:begin/end markers)
+  --html      the GitHub Pages page, with one-tap 📋 copy buttons holding the
+              Claude Code commands (/release, /release rehearse,
+              /release validate, /build; failed runs copy a /bug prompt)
+  --json      the machine surface
+  --badge     a shields.io endpoint-badge JSON (released version + age)
+
+  --collect OUT   gather a snapshot (GitHub + PyPI APIs) to OUT and exit
+  --snapshot F    render from a previously collected snapshot (no network)
+
+Published automatically by .github/workflows/release_board.yml after every
+"PyAuto Release" run and daily.
+EOF
+}
+cmd_board() {
+  _python_in_autohands board.py "$@"
+}
+
 cmd_script_matrix() {
   _python_in_autohands script_matrix.py "$@"
 }

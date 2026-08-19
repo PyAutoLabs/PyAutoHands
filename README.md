@@ -4,36 +4,61 @@
 
 # PyAutoHands
 
-> **Formerly PyAutoBuild.** The repository is being renamed PyAutoBuild →
-> PyAutoHands; see [MIGRATION.md](MIGRATION.md). The `autohands` command and
-> Python package keep their names for now — only the repository and its
-> branding change.
-
 [![PyAutoScientist GitHub](https://img.shields.io/badge/%F0%9F%A7%AA%20PyAutoScientist-GitHub-181717?style=flat-square)](https://github.com/PyAutoLabs/PyAutoScientist) [![PyAutoScientist ReadTheDocs](https://img.shields.io/badge/%F0%9F%93%96%20PyAutoScientist-ReadTheDocs-8CA1AF?style=flat-square)](https://pyautoscientist.readthedocs.io)
 
-PyAutoHands is the **Hands** of the PyAuto organism: the executor that packages,
-tags, builds notebooks, and releases the PyAuto libraries (PyAutoNerves, PyAutoFit,
-PyAutoArray, PyAutoGalaxy, PyAutoLens) and their workspaces to PyPI. **PyAutoHands
-executes work on behalf of PyAutoBrain** — the Brain decides, the Hands do. It
-runs no readiness checks and makes no gate decisions — those belong to
-[PyAutoHeart](https://github.com/PyAutoLabs/PyAutoHeart), whose verdict the
-[PyAutoBrain](https://github.com/PyAutoLabs/PyAutoBrain) release agent
-reads before dispatching a release here.
+[![released](https://img.shields.io/endpoint?url=https://pyautolabs.github.io/PyAutoHands/badge.json)](https://pyautolabs.github.io/PyAutoHands/)
 
-Every operation is reachable through one dispatcher:
+**PyAutoHands is the Hands of the PyAutoScientist** — the executor that ships
+the software. When a release is dispatched it packages, tags, regenerates
+notebooks, and publishes the PyAuto libraries and their workspaces to PyPI.
+It executes on behalf of the Brain and never decides for itself: no readiness
+checks, no gate decisions — those belong to the Heart.
+
+See the **[PyAutoHands Release Board](https://pyautolabs.github.io/PyAutoHands/)**
+(mobile phone dashboard) for what shipped: the released library versions and
+their PyPI status, the release train's recent runs, and the nightly cadence —
+each actionable item carrying a one-tap 📋 button that copies a ready-made
+Claude command (`/release`, `/release rehearse`, `/release validate`,
+`/build`; a failed train run copies a `/bug …` prompt with its run link).
+
+## Latest release
+
+<!-- The line below is auto-updated by .github/workflows/release_board.yml (everything -->
+<!-- between the hands:begin/hands:end markers is replaced with the rendered strip). -->
+<!-- hands:begin -->
+<!-- hands:end -->
+
+## How PyAutoHands works
+
+1. **The Brain decides, the Hands execute.** A release is dispatched by the
+   Brain's release conductor (`/release`, or the nightly driver when there is
+   new activity) — and only when the Heart's readiness verdict is GREEN.
+2. **Rehearse first.** `release.yml` builds the five libraries, publishes to
+   TestPyPI, installs the wheels, and runs the test + workspace validation
+   suites against them — a full dress rehearsal before anything is public.
+3. **Then ship.** On success the same workflow stamps the build tree, cuts
+   the `YYYY.M.D.minor` git tag on every library, and releases to PyPI.
+4. **The workspaces follow.** Notebooks are regenerated from the workspace
+   scripts, Colab URLs bumped to the new tag, and every workspace repo is
+   tagged to match.
+5. **The record is published.** Release notes land on the libraries' GitHub
+   Releases, Slack is told, and the [release board](https://pyautolabs.github.io/PyAutoHands/)
+   refreshes — a past-tense record of execution, never a verdict.
+
+## CLI examples
+
+Every operation is reachable through one dispatcher, run from this checkout
+(no pip install):
 
 ```bash
 bash bin/autohands help                # list every subcommand
-bash bin/autohands help <subcommand>   # full docstring for one
-bash bin/autohands pre_build [minor]   # format, generate notebooks, bump, push
+bash bin/autohands pre_build [minor]   # format, generate notebooks, push, dispatch release.yml
 bash bin/autohands run_all             # run the workspace validation scripts
+bash bin/autohands board --md          # the release board (also --html, --badge, --json)
 ```
 
-The release pipeline (`.github/workflows/release.yml`) packages to
-TestPyPI, verifies the install, runs the workspace scripts, and on success
-releases to PyPI and tags the workspaces — nightly, when there is new
-activity to ship.
-
-Boundary and agent guidance: [AGENTS.md](AGENTS.md). The organism:
-[PyAutoBrain/ORGANISM.md](https://github.com/PyAutoLabs/PyAutoBrain/blob/main/ORGANISM.md),
-documented in full at <https://pyautoscientist.readthedocs.io>.
+Boundary and agent guidance: [AGENTS.md](AGENTS.md); the pipeline internals:
+[docs/internals.md](docs/internals.md). The organism this repo is the Hands
+of is described once in
+[PyAutoBrain/ORGANISM.md](https://github.com/PyAutoLabs/PyAutoBrain/blob/main/ORGANISM.md)
+and documented in full at <https://pyautoscientist.readthedocs.io>.

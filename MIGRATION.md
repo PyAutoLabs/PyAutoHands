@@ -1,6 +1,6 @@
 # Migrating from PyAutoBuild to PyAutoHands
 
-The **Hands** organ of the PyAuto organism is being renamed at the repository
+The **Hands** organ of the PyAuto organism was renamed (2026-07) at the repository
 level: **PyAutoBuild → PyAutoHands**. The name change makes the architecture read
 as a living organism — *the Brain decides, the Hands do* — so this repo's brand
 matches its role: **PyAutoHands executes work on behalf of PyAutoBrain**.

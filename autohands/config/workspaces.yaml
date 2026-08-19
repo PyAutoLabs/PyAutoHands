@@ -17,6 +17,16 @@ run_all:
   howtolens: {repo: HowToLens, report: howtolens}
   euclid: {repo: euclid_strong_lens_modeling_pipeline, report: euclid}
 
+# libraries: the released library set (release.yml's matrix order). The
+# release board (autohands/board.py) reads this to render versions and PyPI
+# status; name = repo, package = the import/PyPI name.
+libraries:
+  - {name: PyAutoNerves, package: autonerves}
+  - {name: PyAutoFit, package: autofit}
+  - {name: PyAutoArray, package: autoarray}
+  - {name: PyAutoGalaxy, package: autogalaxy}
+  - {name: PyAutoLens, package: autolens}
+
 # slow_skip_check: the default audit targets when none are given on the CLI.
 slow_skip_default:
   - autofit_workspace
