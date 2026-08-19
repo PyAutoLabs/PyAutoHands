@@ -1,0 +1,95 @@
+# Publish the sub-floor tombstone releases (see autohands/tombstone.py).
+#
+# Manual dispatch only, and deliberately NOT part of release.yml: the tombstones
+# are a one-off. Future releases all declare `Requires-Python >=3.12`, so they
+# are invisible below the floor and the tombstone stays the top sub-floor
+# candidate indefinitely. Re-running this on every release would republish a
+# deliberately-broken artifact for no reason.
+#
+# It uploads distributions that CANNOT be installed — that is their entire
+# purpose. Rehearse on TestPyPI first; the `confirm` input is the speed bump
+# that stops a stray click from doing it on the real index.
+name: publish_tombstone
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: "Index to upload to"
+        required: true
+        default: testpypi
+        type: choice
+        options:
+          - testpypi
+          - pypi
+      confirm:
+        description: >-
+          Type `publish tombstones` to confirm. Required for pypi.
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  publish_tombstone:
+    runs-on: ubuntu-latest
+    env:
+      TWINE_USERNAME: __token__
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Guard the real index
+        if: ${{ inputs.repository == 'pypi' }}
+        run: |
+          if [ "${{ inputs.confirm }}" != "publish tombstones" ]; then
+            echo "Refusing to publish to PyPI without the exact confirmation phrase."
+            echo "These artifacts are deliberately uninstallable and cannot be deleted"
+            echo "once uploaded — a released filename is permanent. Re-run with"
+            echo "confirm: publish tombstones once you have rehearsed on TestPyPI."
+            exit 1
+          fi
+
+      - name: Build the tombstone sdists
+        run: |
+          python3 -m pip install --upgrade build twine==6.0.1
+          python3 -m autohands.tombstone --out dist-tombstone
+
+      - name: Check metadata
+        # twine check catches a malformed long_description before upload; the
+        # Requires-Python bound is verified by tombstone.build_all itself, which
+        # reads it back out of each built artifact rather than trusting input.
+        run: python3 -m twine check dist-tombstone/*.tar.gz
+
+      - name: Upload
+        env:
+          TWINE_REPOSITORY: ${{ inputs.repository }}
+          TWINE_PASSWORD: >-
+            ${{ inputs.repository == 'pypi' && secrets.PYPI || secrets.TEST_PYPI }}
+        # --skip-existing: a re-run after a partial upload steps over the
+        # filenames already published instead of hard-failing on the duplicate.
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if python3 -m twine upload --skip-existing --verbose dist-tombstone/*.tar.gz; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "twine upload failed after 3 attempts."
+              exit 1
+            fi
+            DELAY=$(( attempt * 30 ))
+            echo "twine upload failed (attempt $attempt) — retrying in ${DELAY}s"
+            sleep "$DELAY"
+          done
+
+      - name: Report
+        run: |
+          echo "Uploaded to ${{ inputs.repository }}:"
+          ls -1 dist-tombstone/*.tar.gz
+          echo
+          echo "Verify on an interpreter below the floor, e.g.:"
+          echo "  python3.10 -m venv /tmp/v && /tmp/v/bin/python -m pip install autolens"
+          echo "It must fail with the tombstone message, not install 2026.7.29.1."
