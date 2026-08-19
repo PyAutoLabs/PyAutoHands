@@ -1,0 +1,118 @@
+name: Release Board
+
+# Publishes the release board — WHAT THE HANDS SHIPPED — three ways from one
+# renderer (autohands/board.py, the Heart-dashboard pattern):
+#   * the GitHub Pages page (one-tap 📋 copy prompts for a phone),
+#   * badge.json (the shields endpoint the README badge reads),
+#   * the one-line README strip between the hands:begin/end markers.
+#
+# Past-tense record only: the board never renders a verdict or a gate —
+# readiness lives with the Heart's board, which the page links.
+#
+# Refreshes right after every release-train run (workflow_run), daily as a
+# backstop (tags/PyPI can change without a train run — e.g. a yank), and on
+# demand.
+
+on:
+  workflow_run:
+    workflows: ["PyAuto Release"]
+    types: [completed]
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+
+# contents: write → the README strip self-commit; pages/id-token → publish.
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: release-board-pages
+  cancel-in-progress: false
+
+jobs:
+  board:
+    name: Render + publish the release board
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyYAML
+        run: pip install --quiet pyyaml
+
+      - name: Collect the snapshot (GitHub + PyPI APIs)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PYTHONPATH="$PWD/autohands" python autohands/board.py --collect board_snapshot.json
+
+      - name: Render every surface
+        run: |
+          mkdir -p _site
+          render() { PYTHONPATH="$PWD/autohands" python autohands/board.py --snapshot board_snapshot.json "$@"; }
+          render --html     > _site/index.html
+          render --badge    > _site/badge.json
+          render --md       > board.md
+          render --md-brief > readme_strip.md
+
+      - name: Write the board to the job step summary
+        run: |
+          {
+            cat board.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update the README strip (own repo only, main only)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python - <<'PY'
+          import pathlib, re
+          readme = pathlib.Path("README.md")
+          text = readme.read_text()
+          strip = pathlib.Path("readme_strip.md").read_text().strip()
+          begin, end = "<!-- hands:begin -->", "<!-- hands:end -->"
+          block = f"{begin}\n{strip}\n{end}"
+          if begin in text and end in text:
+              text = re.sub(re.escape(begin) + r".*?" + re.escape(end), block,
+                            text, flags=re.DOTALL)
+              readme.write_text(text)
+          PY
+          if ! git diff --quiet README.md; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "docs(hands): auto-update release-board strip [skip ci]"
+            # Rebuild on the tip if a concurrent push landed; the strip is
+            # regenerated content, so retrying on the new tip is always safe.
+            for attempt in 1 2 3; do
+              if git push; then exit 0; fi
+              git pull --rebase origin main || exit 1
+            done
+            echo "::error::could not push the README strip after 3 attempts"
+            exit 1
+          else
+            echo "README strip unchanged — nothing to commit."
+          fi
+
+      # enablement: true creates the Pages site on first run (no manual
+      # Settings → Pages step) — same shape as the Mind's publisher.
+      - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        if: github.ref == 'refs/heads/main'

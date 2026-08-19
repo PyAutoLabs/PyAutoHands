@@ -1,11 +1,8 @@
 # PyAutoHands — Agent Guidance
 
-> **Formerly PyAutoBuild.** This repository is being renamed PyAutoBuild →
-> PyAutoHands (see [MIGRATION.md](MIGRATION.md)). The `autohands` CLI and Python
-> package keep their names for now; only the repository/branding changes. The
-> "Build" organ shorthand and the canonical `Brain → Heart (gate) → Build
-> (execute)` call chain are updated at their source (`PyAutoBrain/ORGANISM.md`)
-> in a later phase.
+(The repo was renamed PyAutoBuild → PyAutoHands in 2026-07; the `autohands`
+CLI/package name and the *Build* call-chain shorthand were kept — see
+[MIGRATION.md](MIGRATION.md) and `PyAutoBrain/ORGANISM.md`.)
 
 PyAutoHands is the **executor** (the Hands) of the PyAuto release ecosystem:
 packaging, tagging, notebook generation, and PyPI publication via `release.yml`.
@@ -27,12 +24,14 @@ deep `verify_install` suite, and URL hygiene all live in PyAutoHeart now;
 `autohands verify_install` / `autohands url_check` / `autohands watch|status|
 tick|fix` are thin shims that delegate to `pyauto-heart`. Build keeps only the
 executor primitives: the build/notebook pipeline (`pre_build`, `generate*`,
-`run_all` / `run*`), the navigator catalogue (`navigator` /
-`check_navigator` / `regenerate_navigator`), tagging + release
-(`tag_and_merge`, `bump_colab_urls`, `release.yml`), the release-notes and
-Slack tooling (`generate_release_notes`, `slack_release_notes`), assistant
-seeding (`clone_seed`), and `repro_command`. See `docs/internals.md` for the
-authoritative, current list.
+`run_all` / `run*`), the navigator catalogue (the `navigator.py` /
+`check_navigator.py` / `regenerate_navigator.py` modules — workflow-invoked,
+not CLI verbs), tagging + release (`tag_and_merge`, `bump_colab_urls`,
+`release.yml`), the release-notes and Slack tooling
+(`generate_release_notes`, `slack_release_notes`), the release board
+(`board`, published by `release_board.yml`), assistant seeding
+(`clone_seed`), and `repro_command`. `bin/autohands help` is the registry of
+what is a CLI verb; see `docs/internals.md` for the pipeline detail.
 
 See [`docs/internals.md`](docs/internals.md) for the build pipeline, workspace
 folder structure, config files, and `release.yml` details. Read it when
