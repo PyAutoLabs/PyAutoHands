@@ -163,6 +163,19 @@ requires_build = pytest.mark.skipif(
 )
 
 
+def test_missing_setuptools_is_reported_before_the_build(tmp_path, monkeypatch):
+    """`--no-isolation` means the backend must already be installed, and Python
+    3.12 dropped setuptools from the default environment. Left unchecked the
+    failure arrives as `BackendUnavailable: Cannot import
+    'setuptools.build_meta'` from inside pyproject_hooks, naming neither the
+    cause nor the fix — and a machine that happens to have setuptools will
+    never reproduce it (PyAutoHands run 32309423898)."""
+    monkeypatch.setattr(tombstone.importlib.util, "find_spec", lambda name: None)
+
+    with pytest.raises(RuntimeError, match="pip install setuptools"):
+        tombstone.build_sdist(tmp_path / "project", tmp_path / "dist", "autolens")
+
+
 @requires_build
 def test_built_sdist_declares_sub_floor_requires_python(tmp_path):
     project = tombstone.write_project("autolens", tmp_path)

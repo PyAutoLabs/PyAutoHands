@@ -54,7 +54,10 @@ jobs:
 
       - name: Build the tombstone sdists
         run: |
-          python3 -m pip install --upgrade build twine==6.0.1
+          # setuptools is explicit: the sdist builds with --no-isolation, and
+          # Python 3.12+ runners no longer ship setuptools, so the backend
+          # would otherwise be missing (BackendUnavailable, run 32309423898).
+          python3 -m pip install --upgrade build twine==6.0.1 setuptools
           python3 -m autohands.tombstone --out dist-tombstone
 
       - name: Check metadata
