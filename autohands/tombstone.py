@@ -67,6 +67,7 @@ All five packages need a tombstone. The libraries pin each other exactly
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -251,6 +252,27 @@ def write_project(
     return project_dir
 
 
+def require_setuptools() -> None:
+    """Fail early, and legibly, when the build backend is missing.
+
+    The sdist is built with `--no-isolation`, so setuptools has to be present in
+    this interpreter — and Python 3.12 dropped it from the default environment.
+    Without this check the failure surfaces as `BackendUnavailable: Cannot
+    import 'setuptools.build_meta'` from inside pyproject_hooks, which names
+    neither the cause nor the fix. A developer machine that happens to have
+    setuptools installed will not reproduce it, so the check has to be explicit
+    rather than left to whatever the environment happens to carry.
+    """
+    if importlib.util.find_spec("setuptools") is None:
+        raise RuntimeError(
+            "setuptools is not installed in this interpreter, so the sdist cannot "
+            "be built. The build deliberately runs with --no-isolation so it "
+            "cannot silently reach the network for a backend; Python 3.12 and "
+            "later no longer ship setuptools by default. Install it first: "
+            "python3 -m pip install setuptools"
+        )
+
+
 def build_sdist(
     project_dir: Path,
     out_dir: Path,
@@ -268,6 +290,7 @@ def build_sdist(
     so "the newest tarball here" would happily hand back a sibling package's
     sdist and verify *its* metadata instead.
     """
+    require_setuptools()
     out_dir.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [
