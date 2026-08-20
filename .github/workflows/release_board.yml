@@ -1,6 +1,6 @@
-name: Release Board
+name: Dashboard
 
-# Publishes the release board — WHAT THE HANDS SHIPPED — three ways from one
+# Publishes the PyAutoHands Dashboard — WHAT THE HANDS SHIPPED — three ways from one
 # renderer (autohands/board.py, the Heart-dashboard pattern):
 #   * the GitHub Pages page (one-tap 📋 copy prompts for a phone),
 #   * badge.json (the shields endpoint the README badge reads),
@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   board:
-    name: Render + publish the release board
+    name: Render + publish the dashboard
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -61,6 +61,7 @@ jobs:
           render --html     > _site/index.html
           render --badge    > _site/badge.json
           render --md       > board.md
+          cp board.md _site/dashboard.md
           render --md-brief > readme_strip.md
 
       - name: Write the board to the job step summary

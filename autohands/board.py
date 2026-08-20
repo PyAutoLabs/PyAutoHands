@@ -1,4 +1,4 @@
-"""autohands/board.py — the PyAutoHands release board.
+"""autohands/board.py — the PyAutoHands Dashboard.
 
 A phone-readable record of **what the Hands shipped**: the released library
 versions (from git tags — the authoritative record; version stamps are
@@ -289,7 +289,7 @@ def _bug_prompt(snapshot: dict, run: dict) -> str:
 
 # --- renderers ----------------------------------------------------------------
 def _render_md(snapshot: dict) -> str:
-    lines = ["# PyAutoHands release board", "",
+    lines = ["# PyAutoHands Dashboard", "",
              "_What the Hands shipped — a record of execution. Whether it is "
              "safe to release lives with the Heart._", ""]
     latest = _latest(snapshot)
@@ -318,7 +318,7 @@ def _render_md(snapshot: dict) -> str:
                   + "; ".join(snapshot["errors"]) + "_"]
     url = pages_url(snapshot)
     if url:
-        lines += ["", f"[Release board]({url}) · [Health board]({_heart_board_url(snapshot)})"]
+        lines += ["", f"[Dashboard]({url}) · [PyAutoHeart Dashboard]({_heart_board_url(snapshot)})"]
     return "\n".join(lines)
 
 
@@ -337,7 +337,7 @@ def _render_md_brief(snapshot: dict) -> str:
         bits.append(f"last train run {mark} [{_day(last.get('date'))}]({last.get('url')})")
     url = pages_url(snapshot)
     if url:
-        bits.append(f"[release board →]({url})")
+        bits.append(f"[dashboard →]({url})")
     return " · ".join(bits)
 
 
@@ -455,11 +455,11 @@ function ok(b){{b.textContent='✓';setTimeout(function(){{b.textContent='📋'}
 function fb(t){{window.prompt('Copy this:',t)}}
 </script></head>
 <body><div class="wrap">
-  <h1>PyAuto release board</h1>
-  <p><span class="version">{head}</span> <span class="meta">{head_age}</span></p>
+  <h1>PyAutoHands Dashboard</h1>
+  <p><span class="version">{head}</span> <span class="meta">{head_age}</span> <span class="meta"><a href="dashboard.md">markdown version</a></span></p>
   <p class="meta">What the Hands shipped — a record of execution, newest first.
   Whether it is <em>safe</em> to release lives with the
-  <a href="{heart}">Heart's health board</a>.</p>
+  <a href="{heart}">PyAutoHeart Dashboard</a>.</p>
   <p>{chips}</p>
   <p class="meta">📋 copies the command into your clipboard, ready to paste
   into a Claude Code chat.</p>

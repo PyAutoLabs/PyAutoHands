@@ -14,8 +14,8 @@ notebooks, and publishes the PyAuto libraries and their workspaces to PyPI.
 It executes on behalf of the Brain and never decides for itself: no readiness
 checks, no gate decisions — those belong to the Heart.
 
-See the **[PyAutoHands Release Board](https://pyautolabs.github.io/PyAutoHands/)**
-(mobile phone dashboard) for what shipped: the released library versions and
+See the **[PyAutoHands Dashboard](https://pyautolabs.github.io/PyAutoHands/)**
+for what shipped: the released library versions and
 their PyPI status, the release train's recent runs, and the nightly cadence —
 each actionable item carrying a one-tap 📋 button that copies a ready-made
 Claude command (`/release`, `/release rehearse`, `/release validate`,
@@ -26,7 +26,7 @@ Claude command (`/release`, `/release rehearse`, `/release validate`,
 <!-- The line below is auto-updated by .github/workflows/release_board.yml (everything -->
 <!-- between the hands:begin/hands:end markers is replaced with the rendered strip). -->
 <!-- hands:begin -->
-📦 **2026.8.20.1** · shipped 2026-08-20 (5h ago) · last train run ✗ [2026-08-20](https://github.com/PyAutoLabs/PyAutoHands/actions/runs/32331123177) · [release board →](https://pyautolabs.github.io/PyAutoHands/)
+📦 **2026.8.20.1** · shipped 2026-08-20 (5h ago) · last train run ✗ [2026-08-20](https://github.com/PyAutoLabs/PyAutoHands/actions/runs/32331123177) · [dashboard →](https://pyautolabs.github.io/PyAutoHands/)
 <!-- hands:end -->
 
 ## How PyAutoHands works

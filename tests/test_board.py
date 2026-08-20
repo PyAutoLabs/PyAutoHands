@@ -1,4 +1,4 @@
-"""tests/test_board.py — the release board renderer (autohands/board.py).
+"""tests/test_board.py — the PyAutoHands Dashboard renderer (autohands/board.py).
 
 Render is pure (snapshot in → string out), so everything here runs from
 fixtures — no network. Fixture names are deliberately fake (SomeOrg, RepoA):
