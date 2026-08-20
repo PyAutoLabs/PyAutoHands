@@ -191,9 +191,8 @@ STRING_LITERAL_SCRIPT = (
 )
 
 
-# The same shape as it actually occurs in the wild:
-# `autolens_workspace_test/gallery/gallery_build.py`, whose module-level `CSS`
-# block is closed at column 0 and followed by real code.
+# The same shape as it occurs in the wild: a gallery-build script whose
+# module-level `CSS` block is closed at column 0 and followed by real code.
 GALLERY_STYLE_SCRIPT = (
     '"""\n'
     "__Intro__\n"
