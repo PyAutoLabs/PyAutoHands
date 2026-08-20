@@ -5,10 +5,19 @@ Usage
 """
 
 import ast
+import re
 
 from typing import Iterable, List, Tuple
 
 from sys import argv
+
+
+# A column-0 triple-quote docstring opener, with the optional raw-string prefix.
+# The prefix is load-bearing for LaTeX-carrying tutorial prose: without ``r``,
+# ``\theta`` in a docstring is a TAB followed by ``heta``. A raw opener is the
+# same cell boundary as a plain one — the converter replaces this line with
+# ``'''`` when it emits the cell, so the prefix never reaches the notebook.
+_TRIPLE_DELIM_OPENER_RE = re.compile(r"^[rR]?(?:\"\"\"|''')")
 
 
 def _narrative_docstring_ranges(lines: List[str]) -> List[Tuple[int, int]]:
@@ -64,9 +73,13 @@ def _narrative_docstring_ranges(lines: List[str]) -> List[Tuple[int, int]]:
 
         start = node.lineno - 1
         end = node.end_lineno - 1
-        if not (lines[start].startswith('"""') or lines[start].startswith("'''")):
+        if not _TRIPLE_DELIM_OPENER_RE.match(lines[start]):
             # A column-0 string statement written with a single-quote delimiter
             # was never a cell boundary; leave it as code, as it always was.
+            # An ``r``/``R`` prefix does not change that: a raw narrative
+            # docstring is the same cell boundary as a plain one, and the
+            # converter replaces this opener line when it emits the cell,
+            # so the prefix never reaches the generated notebook.
             continue
         if start == end:
             raise ValueError(

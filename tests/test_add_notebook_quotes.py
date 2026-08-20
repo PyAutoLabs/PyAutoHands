@@ -318,3 +318,43 @@ def test_indented_closing_delimiter_still_closes_the_block(tmp_path, monkeypatch
 
     assert [cell["cell_type"] for cell in notebook["cells"]] == ["markdown", "code"]
     assert "x = 1" in "".join(notebook["cells"][1]["source"])
+
+
+def test_raw_string_docstring_is_a_cell_boundary():
+    r"""A raw narrative docstring converts identically to a plain one.
+
+    LaTeX-carrying tutorial prose has to be raw — in a plain docstring
+    ``\theta`` is a TAB followed by ``heta`` — but the opener test read
+    ``lines[start].startswith('\"\"\"')``, which an ``r\"\"\"`` line fails. The
+    block was then dropped as a boundary and the prose shipped as a *code* cell
+    containing a bare string literal.
+
+    Asserted on the converted source rather than the notebook: the converter
+    replaces the opener line outright when it emits the cell, so a
+    byte-identical conversion is the tighter statement of "the prefix does not
+    leak into the generated artefact".
+    """
+    plain = '"""\n' "__Intro__\n" "prose $\\theta_E$\n" '"""\n' "\n" "x = 1\n"
+    raw = "r" + plain
+
+    converted = "".join(add_notebook_quotes(_lines(raw)))
+
+    assert converted == "".join(add_notebook_quotes(_lines(plain)))
+    assert "# %%" in converted
+    assert 'r"""' not in converted and "r'''" not in converted
+
+
+def test_every_raw_prefix_and_delimiter_form_is_a_cell_boundary():
+    """``r``/``R`` against both triple-quote delimiters, all six forms."""
+    baseline = None
+
+    for prefix in ("", "r", "R"):
+        for delim in ('"""', "'''"):
+            script = f"{prefix}{delim}\n__Intro__\nprose\n{delim}\n\nx = 1\n"
+            converted = "".join(add_notebook_quotes(_lines(script)))
+
+            assert "# %%" in converted, (prefix, delim)
+            if baseline is None:
+                baseline = converted
+            else:
+                assert converted == baseline, (prefix, delim)

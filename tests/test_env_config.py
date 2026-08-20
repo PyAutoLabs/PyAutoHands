@@ -504,3 +504,75 @@ def test_unknown_token_raises_in_resolver(tmp_path):
     p = _write_script(tmp_path, "imaging/x.py", '"""\n__Env__\n\nENV: bogus\n"""\n')
     with pytest.raises(ValueError, match="unknown env declaration token"):
         apply_profile({}, p, {"defaults": {}})
+
+
+# --- Raw-string (`r"""`) docstring openers -------------------------------------
+# The workspace tutorial scripts carry LaTeX in their narrative docstrings, so
+# those docstrings have to be raw (in a plain docstring `\theta` is a TAB
+# followed by `heta`). `_DOCSTRING_DELIM_RE` matched a bare delimiter only, so
+# an `r"""` opener was walked past and the block's CLOSER matched as an opener
+# instead — parity inverted for the rest of the file and a later `__Env__`
+# section was read as if it sat outside a docstring. Silent: no raise, just a
+# lost `ENV:` declaration and a silently rerouted smoke profile.
+
+
+def test_read_declaration_survives_an_earlier_raw_docstring(tmp_path):
+    # The parity case a single-block test would miss: the RAW docstring is not
+    # the one carrying the declaration. Before the fix this returned None.
+    body = (
+        'r"""\n'
+        "Tutorial prose with LaTeX $\\theta_E$ and $\\frac{1}{2}$.\n"
+        '"""\n'
+        "\n"
+        "import autolens as al\n"
+        "code()\n"
+        "\n"
+        '"""\n'
+        "Wrap Up\n"
+        "-------\n"
+        "\n"
+        "__Env__\n"
+        "\n"
+        "ENV: full_datasets\n"
+        '"""\n'
+    )
+    p = _write_script(tmp_path, "imaging/x.py", body)
+    assert read_env_declaration(p) == ["full_datasets"]
+
+
+def test_read_declaration_in_a_raw_docstring_section(tmp_path):
+    # The declaration inside the raw block itself.
+    body = (
+        "import autolens as al\n"
+        "\n"
+        'r"""\n'
+        "Closing prose with $\\theta_E$.\n"
+        "\n"
+        "__Env__\n"
+        "\n"
+        "ENV: jax full_datasets\n"
+        '"""\n'
+    )
+    p = _write_script(tmp_path, "imaging/x.py", body)
+    assert read_env_declaration(p) == ["jax", "full_datasets"]
+
+
+def test_read_declaration_raw_prefix_forms_all_parse(tmp_path):
+    # `r`/`R` against both delimiters, each identical to the unprefixed form.
+    for index, prefix in enumerate(("", "r", "R")):
+        for delim in ('"""', "'''"):
+            body = (
+                f"{prefix}{delim}\n"
+                "Prose with $\\theta_E$.\n"
+                f"{delim}\n"
+                "\n"
+                "code()\n"
+                "\n"
+                f"{delim}\n"
+                "__Env__\n"
+                "\n"
+                "ENV: jax\n"
+                f"{delim}\n"
+            )
+            p = _write_script(tmp_path, f"imaging/x{index}{len(delim)}{delim[0]}.py", body)
+            assert read_env_declaration(p) == ["jax"], (prefix, delim)
