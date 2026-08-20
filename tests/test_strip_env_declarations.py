@@ -256,3 +256,47 @@ def test_navigator_ignores_env_section(tmp_path):
     title, summary, _ = navigator._parse_header(blocks[0])
     assert title == "Imaging Example"
     assert "one-line summary" in summary
+
+
+# An `__Env__` block followed by a triple-quoted string literal assigned in code.
+# The strip layer located docstring blocks by the same line-prefix test as the
+# notebook converter, so the literal's column-0 closer read as a block opener.
+# It was absorbed rather than acted on — every non-`__Env__` path emits the block
+# verbatim — but the misparse was real. Pin that the literal is untouched.
+ENV_THEN_STRING_LITERAL_SCRIPT = (
+    '"""\n'
+    "__Intro__\n"
+    "\n"
+    "__Env__\n"
+    "ENV: jax\n"
+    '"""\n'
+    "\n"
+    "x = 1\n"
+    's = """\n'
+    "literal\n"
+    '"""\n'
+    "print(s)\n"
+    "\n"
+    '"""\n'
+    "__Later__\n"
+    '"""\n'
+    "\n"
+    "y = 2\n"
+)
+
+
+def test_strip_leaves_a_code_string_literal_untouched():
+    stripped = "".join(
+        strip_env_declarations(_lines(ENV_THEN_STRING_LITERAL_SCRIPT))
+    )
+
+    # The `__Env__` section is gone, its docstring's prose kept.
+    assert "__Env__" not in stripped
+    assert "ENV: jax" not in stripped
+    assert "__Intro__" in stripped
+
+    # The literal and everything after it survive intact.
+    assert 's = """\nliteral\n"""\n' in stripped
+    assert "print(s)" in stripped
+    assert "__Later__" in stripped
+    assert "y = 2" in stripped
