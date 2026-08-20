@@ -106,8 +106,13 @@ DECLARABLE_ENV_VARS = frozenset(
 # raise on it (``add_notebook_quotes.strip_env_declarations`` also strips such
 # lines defensively when generating notebooks/markdown).
 _ENV_DECLARATION_RE = re.compile(r"^# ENV:(?P<tokens>.*)$")
-# A bare triple-quote delimiter alone on its line (opens/closes a docstring).
-_DOCSTRING_DELIM_RE = re.compile(r"^(?:\"\"\"|''')\s*$")
+# A bare triple-quote delimiter alone on its line (opens/closes a docstring),
+# with the optional raw-string prefix an opener may carry. Missing the ``r``
+# form would be silent and worse than a crash: the scan walks past the opener,
+# matches the block's CLOSER as an opener instead, and every docstring parity
+# after it inverts — so an ``__Env__`` section lower down is read as if it were
+# outside a docstring and its ``ENV:`` declaration is lost without a word.
+_DOCSTRING_DELIM_RE = re.compile(r"^[rR]?(?:\"\"\"|''')\s*$")
 # The ``__Env__`` docstring header — the section marker, optional trailing text
 # (e.g. a ``(Developer Only)`` note).
 _ENV_SECTION_HEADER_RE = re.compile(r"^__Env__\b")

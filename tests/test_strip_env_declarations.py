@@ -300,3 +300,49 @@ def test_strip_leaves_a_code_string_literal_untouched():
     assert "print(s)" in stripped
     assert "__Later__" in stripped
     assert "y = 2" in stripped
+
+
+RAW_MERGED_SCRIPT = (
+    'r"""\n'
+    "Imaging Example\n"
+    "===============\n"
+    "\n"
+    "The Einstein radius $\\theta_E$ and the term $\\frac{1}{2}$ need a raw\n"
+    "docstring: unprefixed, $\\theta$ is a TAB followed by `heta`.\n"
+    '"""\n'
+    "import autolens as al\n"
+    "\n"
+    "al.do_something()\n"
+    "\n"
+    'r"""\n'
+    "Wrap Up\n"
+    "-------\n"
+    "\n"
+    "Closing prose with $\\theta_E$.\n"
+    "\n"
+    "__Env__ (Developer Only)\n"
+    "\n"
+    "Not user documentation: this section configures the test harness.\n"
+    "\n"
+    "ENV: full_datasets\n"
+    '"""\n'
+)
+
+
+def test_strip_removes_env_section_from_a_raw_docstring():
+    r"""A raw (`r\"\"\"`) block strips exactly as a plain one does.
+
+    The workspace tutorial scripts carry LaTeX in their narrative docstrings, so
+    those docstrings must be raw. `_narrative_docstring_ranges` did not see an
+    `r\"\"\"` opener as a block boundary, so the section inside it was invisible
+    to the strip and the developer-only `ENV:` line leaked into the generated
+    notebook and markdown.
+    """
+    out = "".join(strip_env_declarations(_lines(RAW_MERGED_SCRIPT)))
+
+    _assert_no_env_leak(out)
+    # The user-facing prose and the LaTeX survive untouched.
+    assert "Imaging Example" in out
+    assert "Wrap Up" in out
+    assert "$\\theta_E$" in out
+    assert "al.do_something()" in out
