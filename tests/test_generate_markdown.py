@@ -238,7 +238,80 @@ class TestOptimizePngs:
         assert not list(files_dir.glob("*.opt"))
 
     def test_missing_dir_is_noop(self, tmp_path):
-        generate_markdown.optimize_pngs(tmp_path / "absent")
+        assert generate_markdown.optimize_pngs(tmp_path / "absent") == (0, 0)
+
+
+def _noisy_png(path: Path, seed: int = 0) -> None:
+    """A 128x128 image that quantizes well — the shape matplotlib figures have."""
+    from PIL import Image
+    import random
+
+    random.seed(seed)
+    image = Image.new("RGB", (128, 128))
+    image.putdata(
+        [
+            (random.randrange(50, 200), random.randrange(50, 200), 30)
+            for _ in range(128 * 128)
+        ]
+    )
+    image.save(path)
+
+
+class TestOptimizeExisting:
+    def test_walks_every_files_dir_and_shrinks(self, tmp_path):
+        pages = [
+            tmp_path / "markdown" / "start_here_files",
+            tmp_path / "markdown" / "imaging" / "modeling_files",
+        ]
+        pngs = []
+        for i, files_dir in enumerate(pages):
+            files_dir.mkdir(parents=True)
+            png = files_dir / "fig_0.png"
+            _noisy_png(png, seed=i)
+            pngs.append(png)
+        before_sizes = [png.stat().st_size for png in pngs]
+
+        total_before, total_after = generate_markdown.optimize_existing(tmp_path)
+
+        assert total_after < total_before
+        assert total_before == sum(before_sizes)
+        for png in pngs:
+            assert png.stat().st_size < before_sizes[pngs.index(png)]
+        assert not list(tmp_path.rglob("*.opt"))
+
+    def test_leaves_everything_outside_markdown_alone(self, tmp_path):
+        outside = tmp_path / "dataset" / "imaging_files"
+        outside.mkdir(parents=True)
+        untouched = outside / "fig_0.png"
+        _noisy_png(untouched)
+        before = untouched.stat().st_size
+
+        files_dir = tmp_path / "markdown" / "page_files"
+        files_dir.mkdir(parents=True)
+        _noisy_png(files_dir / "fig_0.png")
+
+        generate_markdown.optimize_existing(tmp_path)
+
+        assert untouched.stat().st_size == before
+
+    def test_is_idempotent(self, tmp_path):
+        files_dir = tmp_path / "markdown" / "page_files"
+        files_dir.mkdir(parents=True)
+        _noisy_png(files_dir / "fig_0.png")
+
+        generate_markdown.optimize_existing(tmp_path)
+        settled = (files_dir / "fig_0.png").read_bytes()
+        second_before, second_after = generate_markdown.optimize_existing(tmp_path)
+
+        assert (files_dir / "fig_0.png").read_bytes() == settled
+        assert second_after == second_before
+
+    def test_no_markdown_dir_is_noop(self, tmp_path):
+        assert generate_markdown.optimize_existing(tmp_path) == (0, 0)
+
+    def test_empty_markdown_dir_is_noop(self, tmp_path):
+        (tmp_path / "markdown").mkdir()
+        assert generate_markdown.optimize_existing(tmp_path) == (0, 0)
 
 
 class TestMarkdownHeader:

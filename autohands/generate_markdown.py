@@ -29,6 +29,17 @@ Rules this tool enforces:
   from script side-effects and will be reverted with them.
 - Regeneration is manual / at-release, only when a curated script changes —
   never per-commit.
+
+Extracted figures are optimized (256-colour quantize + optimized encode) as part
+of every render. That is forward-only — it never touches images committed by an
+earlier render — so pages built before the optimizer shipped keep their original
+PNGs. To bring those up to date, run the retro pass::
+
+    python ../PyAutoHands/autohands/generate_markdown.py autolens --optimize-only
+
+which walks ``markdown/**/<page>_files/`` through the same function, renders
+nothing, and reports the bytes reclaimed. It is idempotent — re-running it on an
+already-optimized workspace changes nothing.
 """
 
 import argparse
@@ -244,11 +255,15 @@ def optimize_pngs(files_dir: Path):
     corpus). Forward-only by construction: it touches the files of the render
     in progress, never previously committed images. Skips any image that does
     not get smaller.
+
+    Returns ``(bytes_before, bytes_after)`` over the PNGs it looked at, so
+    ``--optimize-only`` can report what a retro pass actually reclaimed.
     """
     if not files_dir.exists():
-        return
+        return 0, 0
     from PIL import Image
 
+    before = after = 0
     for png in sorted(files_dir.glob("*.png")):
         original_size = png.stat().st_size
         tmp = png.with_name(png.name + ".opt")
@@ -263,10 +278,57 @@ def optimize_pngs(files_dir: Path):
                 )
                 image = image.quantize(colors=256, method=method)
             image.save(tmp, format="PNG", optimize=True)
+        before += original_size
         if tmp.stat().st_size < original_size:
+            after += tmp.stat().st_size
             tmp.replace(png)
         else:
+            after += original_size
             tmp.unlink()
+    return before, after
+
+
+def optimize_existing(workspace_path: Path):
+    """
+    Retro-optimize the PNGs of pages rendered *before* ``optimize_pngs`` shipped.
+
+    ``optimize_pngs`` only ever sees the render in progress, so pages committed
+    earlier keep their unoptimized images forever. This walks every
+    ``markdown/**/<page>_files/`` directory in the workspace and puts them
+    through the same function, so a retro pass and a future re-render produce
+    identical bytes. Idempotent: already-optimized images do not shrink again
+    and are left alone.
+    """
+    markdown_path = workspace_path / MARKDOWN_DIR
+    if not markdown_path.is_dir():
+        print(f"No {MARKDOWN_DIR}/ directory in {workspace_path} — nothing to optimize.")
+        return 0, 0
+
+    total_before = total_after = 0
+    for files_dir in sorted(markdown_path.rglob("*_files")):
+        if not files_dir.is_dir():
+            continue
+        before, after = optimize_pngs(files_dir)
+        if not before:
+            continue
+        total_before += before
+        total_after += after
+        print(
+            f"  {files_dir.relative_to(workspace_path)}: "
+            f"{before / 1e6:.2f}MB -> {after / 1e6:.2f}MB "
+            f"({100 * after / before:.0f}%)"
+        )
+
+    if not total_before:
+        print(f"No PNGs found under {MARKDOWN_DIR}/.")
+    else:
+        print(
+            f"Optimized {MARKDOWN_DIR}/: {total_before / 1e6:.1f}MB -> "
+            f"{total_after / 1e6:.1f}MB "
+            f"({100 * total_after / total_before:.0f}%, "
+            f"{(total_before - total_after) / 1e6:.1f}MB reclaimed)"
+        )
+    return total_before, total_after
 
 
 def _markdown_header(script_rel: Path, md_dir: Path) -> str:
@@ -445,7 +507,21 @@ def main():
         default=None,
         help="Only render curated scripts whose path contains this substring",
     )
+    parser.add_argument(
+        "--optimize-only",
+        action="store_true",
+        help=(
+            "Skip rendering: re-encode the PNGs of pages already committed "
+            "under markdown/ through the same optimizer a fresh render uses"
+        ),
+    )
     args = parser.parse_args()
+
+    # Checked before the TEST_MODE guard on purpose: --optimize-only executes no
+    # script and runs no search, so a truncated-search build cannot corrupt it.
+    if args.optimize_only:
+        optimize_existing(Path.cwd())
+        return
 
     if os.environ.get("PYAUTO_TEST_MODE"):
         sys.exit(
