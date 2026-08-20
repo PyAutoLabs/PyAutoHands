@@ -4,9 +4,79 @@ Usage
 ./add_notebook_quotes.py /path/to/input /path/to/output
 """
 
-from typing import Iterable, List
+import ast
+
+from typing import Iterable, List, Tuple
 
 from sys import argv
+
+
+def _narrative_docstring_ranges(lines: List[str]) -> List[Tuple[int, int]]:
+    """Locate the narrative docstring blocks of a script, by parsing it.
+
+    Returns ``(start, end)`` 0-based line-index pairs, one per block, in source
+    order — ``start`` is the opening-delimiter line, ``end`` the closing one.
+
+    A narrative docstring is a **bare string expression statement at module
+    level, written at column 0 with a triple-quote delimiter**. That is the shape
+    the notebook generator turns into a markdown cell. Deriving it from the
+    parsed source is what separates it from a string *bound to a name*::
+
+        s = '''
+        literal
+        '''
+
+    whose closing delimiter also sits at column 0. A line-prefix test cannot see
+    that opener — it is indented behind ``s = `` — but does match the closer, so
+    it reads the literal's end as a docstring boundary and inverts every cell
+    boundary after it: the enclosing code cell becomes a ``SyntaxError`` and the
+    code that follows is emitted as prose. ``ast`` tells the two apart by node
+    type, so the confusion cannot arise.
+
+    Two shapes raise rather than convert, because a wrong guess here silently
+    ships a broken notebook — the same reasoning as the stray-``# %%`` guard in
+    ``add_notebook_quotes``:
+
+    * a script that does not parse, since there is then no parsed source to
+      derive cell boundaries from;
+    * a column-0 single-line docstring, whose opening and closing delimiters
+      share a line and so cannot bracket a cell. Write them on their own lines.
+    """
+    try:
+        module = ast.parse("".join(lines))
+    except SyntaxError as exc:
+        where = f"line {exc.lineno}" if exc.lineno else "unknown line"
+        raise ValueError(
+            f"source script does not parse as Python ({where}: {exc.msg}) — "
+            f"notebook cell boundaries are derived from the parsed source, so a "
+            f"script that does not compile cannot be converted."
+        ) from exc
+
+    ranges: List[Tuple[int, int]] = []
+    for node in module.body:
+        if not isinstance(node, ast.Expr):
+            continue
+        value = node.value
+        if not (isinstance(value, ast.Constant) and isinstance(value.value, str)):
+            continue
+        if node.col_offset != 0:
+            continue
+
+        start = node.lineno - 1
+        end = node.end_lineno - 1
+        if not (lines[start].startswith('"""') or lines[start].startswith("'''")):
+            # A column-0 string statement written with a single-quote delimiter
+            # was never a cell boundary; leave it as code, as it always was.
+            continue
+        if start == end:
+            raise ValueError(
+                f"line {start + 1} is a single-line docstring "
+                f"({lines[start].strip()!r}) — its opening and closing "
+                f"delimiters share a line, so it cannot bracket a notebook "
+                f"cell. Write the delimiters on their own lines."
+            )
+        ranges.append((start, end))
+    return ranges
 
 
 def strip_env_declarations(lines: List[str]) -> List[str]:
@@ -27,13 +97,20 @@ def strip_env_declarations(lines: List[str]) -> List[str]:
       removed at runtime (it now raises in ``read_env_declaration``), but a stray
       one is still stripped here defensively so it never reaches an artefact.
 
+    Docstring blocks are located by :func:`_narrative_docstring_ranges`, the
+    single shared segmentation this module exposes, so a code string literal can
+    never be mistaken for one.
+
     This is the single shared strip layer: ``build_util.py_to_notebook`` routes
     both notebook generation (``generate.py``) and markdown generation
     (``generate_markdown.py``) through ``add_notebook_quotes``, and
-    ``navigator.py`` reuses this same tokenizer to segment docstrings — so
-    stripping here drops the section from every generated artefact and keeps it
-    out of the catalogue.
+    ``navigator.py`` reuses this same segmentation — it calls
+    ``add_notebook_quotes`` and reads the delimiters back out — so stripping here
+    drops the section from every generated artefact and keeps it out of the
+    catalogue.
     """
+    blocks = dict(_narrative_docstring_ranges(lines))
+
     out: List[str] = []
     i = 0
     n = len(lines)
@@ -46,17 +123,15 @@ def strip_env_declarations(lines: List[str]) -> List[str]:
             i += 1
             continue
 
-        # Docstring block: a bare `"""`/`'''` opener. Scan to its closing
-        # delimiter for a column-0 `__Env__` header appended anywhere inside.
-        if stripped in ('"""', "'''"):
-            delim = stripped
-            k = i + 1
+        # Docstring block: scan it for a column-0 `__Env__` header appended
+        # anywhere inside.
+        if i in blocks:
+            close = blocks[i]  # closing-delimiter index
             header = None
-            while k < n and lines[k].strip() != delim:
-                if header is None and lines[k].startswith("__Env__"):
+            for k in range(i + 1, close):
+                if lines[k].startswith("__Env__"):
                     header = k
-                k += 1
-            close = k  # closing-delimiter index (== n if unterminated)
+                    break
 
             if header is not None:
                 # Prose kept before the `__Env__` section, with the blank /
@@ -70,16 +145,15 @@ def strip_env_declarations(lines: List[str]) -> List[str]:
                     # preceding line.
                     out.append(line)
                     out.extend(kept)
-                    if close < n:
-                        out.append(lines[close])
+                    out.append(lines[close])
                 # else: the block holds only the `__Env__` section (standalone
                 # fallback) or is emptied by the strip — drop it whole.
-                i = close + 1 if close < n else n
+                i = close + 1
                 continue
 
             # A non-`__Env__` docstring block: emit it unchanged, delimiters too.
-            out.extend(lines[i : close + 1] if close < n else lines[i:])
-            i = close + 1 if close < n else n
+            out.extend(lines[i : close + 1])
+            i = close + 1
             continue
 
         out.append(line)
@@ -97,6 +171,12 @@ def strip_env_declarations(lines: List[str]) -> List[str]:
 def add_notebook_quotes(lines: Iterable[str]):
     """
     Add %% above and below docs quotes with triple quotes.
+
+    Cell boundaries are the delimiter lines of the narrative docstring blocks
+    found by :func:`_narrative_docstring_ranges`, which parses the script rather
+    than testing line prefixes — so a triple-quoted string *assigned in code*,
+    whose closing delimiter also sits at column 0, is never mistaken for a
+    docstring boundary.
 
     A closing docstring does not emit its following code-cell marker until a
     non-blank code line is seen. This prevents adjacent docstrings from
@@ -143,13 +223,20 @@ def add_notebook_quotes(lines: Iterable[str]):
             f"authored. Delete them; the docstring blocks alone define the cells."
         )
 
+    # Re-derived on the stripped lines: dropping an `__Env__` block shifts every
+    # line number after it.
+    boundaries = set()
+    for start, end in _narrative_docstring_ranges(lines):
+        boundaries.add(start)
+        boundaries.add(end)
+
     out = list()
     is_in_quotes = False
     pending_code_boundary = False
     pending_lines: List[str] = []
 
-    for line in lines:
-        if line.startswith('"""') or line.startswith("'''"):
+    for index, line in enumerate(lines):
+        if index in boundaries:
             if is_in_quotes:
                 out.extend(["'''", "\n\n"])
                 pending_code_boundary = True
