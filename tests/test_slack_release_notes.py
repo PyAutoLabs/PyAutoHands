@@ -13,8 +13,10 @@ from slack_release_notes import (
 )
 
 
-# A representative PyAutoLens release body, matching what
-# generate_release_notes.py produces (banner + headings + links + upstream).
+# A representative PyAutoLens release body: the headings, links and upstream
+# section generate_release_notes.py produces, plus a leading blockquote (the
+# only `>` -> mrkdwn case in this file — release notes carried one until the
+# expired announcement banner was removed).
 LENS_BODY = """# PyAutoLens v2026.7.9.1
 
 > 📣 **Major Milestones Announcement** — PyAutoLens now ships an AI assistant. \
