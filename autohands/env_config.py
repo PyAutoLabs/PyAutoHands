@@ -56,6 +56,13 @@ DIAGNOSTIC_ENV_DEFAULTS = {"JAX_TRACEBACK_FILTERING": "off"}
 # exactly the semantics of today's profile `unset:` lists, which is what makes
 # the later profile->declaration migration a provable no-op (empty resolved-env
 # diff). The token map (a token may release more than one var):
+# NOTE `real_output` is a SUPERSET token -- it releases all four managed vars at
+# once. When auditing "which scripts still run capped / on NumPy / in test mode",
+# a script declaring `real_output` is already released on every one of them.
+# Treating the map as four single-var tokens under-counts the released set and
+# reports such a script as an offender; that mis-read cost real time during the
+# PyAutoArray#470 sweep. Derive membership from this map rather than hardcoding
+# a token list -- see `check_dataset_allowlist._releasing_tokens`.
 ENV_DECLARATION_TOKENS: Dict[str, tuple] = {
     "jax": ("PYAUTO_DISABLE_JAX",),
     "full_datasets": ("PYAUTO_SMALL_DATASETS",),
