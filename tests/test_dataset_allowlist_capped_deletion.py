@@ -1,4 +1,4 @@
-"""Regression tests for leg 2 of the dataset-allowlist guard (PyAutoArray#470).
+"""Regression tests for leg 2 of the dataset-allowlist guard.
 
 Leg 1 asserts nothing *generated* got committed. Leg 2 asserts nothing
 *committed* gets deleted: ``should_simulate`` ends in ``shutil.rmtree``, so a
@@ -10,7 +10,7 @@ Two properties matter more than coverage, and both are locked in here:
 - **No false positives.** This runs in ``pre_build``; a spurious failure blocks a
   release. The predicate is "rmtree would delete tracked files", NOT "the path
   sits under an allowlist prefix" — those differ, and the prefix form flagged six
-  safe autocti_workspace call sites.
+  safe call sites in a real workspace (see the regression test below).
 - **No silent under-reporting.** An argument the resolver cannot evaluate is
   reported and skipped, never guessed.
 """
@@ -45,8 +45,8 @@ def _resolve_call_arg(src: str):
 def test_resolves_multi_argument_path():
     """`Path("dataset", "multi_galaxy", name)` is the dominant workspace idiom.
 
-    Handling only the single-argument form left ~31% of autolens_workspace call
-    sites unresolved.
+    Handling only the single-argument form left ~31% of the call sites in the
+    largest workspace unresolved.
     """
     src = (
         'from pathlib import Path\n'
@@ -146,9 +146,9 @@ def _run_check(tmp_path, monkeypatch, script_src, tracked, capsys):
 def test_sibling_dir_holding_no_tracked_files_is_not_a_violation(
     tmp_path, monkeypatch, capsys
 ):
-    """The autocti_workspace shape: five doc images committed directly in
-    `dataset/overview/`, while the overview scripts regenerate
-    `dataset/overview/imaging_ci/uniform` — which holds nothing tracked.
+    """The real shape that exposed the bad predicate: a workspace commits doc
+    images directly in `dataset/<section>/`, while its scripts regenerate a
+    sibling `dataset/<section>/<generated>/` that holds nothing tracked.
 
     Deleting that destroys nothing. Prefix matching against the allowlist called
     all six such call sites release-blocking failures; containment does not.
@@ -169,7 +169,7 @@ def test_sibling_dir_holding_no_tracked_files_is_not_a_violation(
 def test_path_holding_tracked_files_without_a_releasing_token_fails(
     tmp_path, monkeypatch, capsys
 ):
-    """The PyAutoArray#470 shape itself."""
+    """The originating bug's shape: the resolved path itself holds tracked files."""
     src = (
         '"""\n__Env__\n\nENV: real_plots\n"""\n'
         'from pathlib import Path\n'
@@ -188,7 +188,7 @@ def test_path_holding_tracked_files_without_a_releasing_token_fails(
 def test_releasing_token_exempts_an_otherwise_failing_call_site(
     tmp_path, monkeypatch, capsys
 ):
-    """Same script, plus `full_datasets` — the fix shipped for #470."""
+    """Same script, plus `full_datasets` — the shape of the shipped fix."""
     src = (
         '"""\n__Env__\n\nENV: full_datasets real_plots\n"""\n'
         'from pathlib import Path\n'

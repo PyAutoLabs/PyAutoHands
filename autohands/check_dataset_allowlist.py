@@ -17,7 +17,7 @@ rule with no `!dataset/...` re-includes has not yet adopted the allowlist regime
 (Group B, PyAutoBuild#126) — the guard skips it with a notice rather than
 failing, until that repo opts in.
 
-Leg 2 (PyAutoArray#470) — the mirror-image failure. The check above asserts that
+Leg 2 — the mirror-image failure. The check above asserts that
 nothing *generated* got committed. This one asserts that nothing *committed* gets
 deleted: `should_simulate()` ends in `shutil.rmtree`, so a script that reaches an
 allowlisted dataset directory while `PYAUTO_SMALL_DATASETS=1` is still in force
@@ -247,11 +247,12 @@ def check_capped_deletion(prefixes, tracked) -> int:
 
     # The invariant is NOT "the path sits under an allowlist prefix" -- it is
     # "rmtree(path) would delete committed files". Those differ, and the prefix
-    # form over-reports: autocti_workspace commits five doc images directly in
-    # `dataset/overview/` while its overview scripts regenerate
-    # `dataset/overview/imaging_ci/uniform` and `dataset/overview/dataset_1d`,
-    # which hold nothing tracked. Deleting those destroys nothing. Prefix
-    # matching flagged all six as release-blocking failures.
+    # form over-reports. The shape that exposed it: a workspace commits a handful
+    # of documentation images directly in `dataset/<section>/`, while its scripts
+    # regenerate sibling subdirectories `dataset/<section>/<generated>/` that hold
+    # nothing tracked. Deleting those destroys nothing, but every one of them sits
+    # under the allowlist prefix, so prefix matching reported them all as
+    # release-blocking failures.
     def deletes_tracked(resolved: str) -> bool:
         return any(f == resolved or f.startswith(resolved + "/") for f in tracked)
 
@@ -293,7 +294,7 @@ def check_capped_deletion(prefixes, tracked) -> int:
             "git-tracked files kept by design (they carry an `!dataset/...` allowlist "
             "line). Under PYAUTO_SMALL_DATASETS=1 those files are deleted and replaced "
             "with capped-simulator output. Add a releasing token to the script's "
-            "`__Env__` section (`ENV: full_datasets ...`) — see PyAutoArray#470.",
+            "`__Env__` section (`ENV: full_datasets ...`).",
             file=sys.stderr,
         )
         return 1
