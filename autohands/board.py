@@ -266,6 +266,22 @@ def _heart_board_url(snapshot: dict) -> str:
     return f"https://{owner}.github.io/PyAutoHeart/" if owner else ""
 
 
+# The one-tap board family — the cross-board footer nav every board carries,
+# each board skipping its own entry. Owner comes from the snapshot, so no
+# instance name lives here beyond the family's repo identities.
+BOARD_FAMILY = (("mind", "PyAutoMind"), ("brain", "PyAutoBrain"),
+                ("heart", "PyAutoHeart"), ("memory", "PyAutoMemory"),
+                ("organism", "PyAutoScientist"))
+
+
+def _boards_nav(snapshot: dict) -> str:
+    owner = str(snapshot.get("owner") or "").lower()
+    if not owner:
+        return ""
+    return " · ".join(f'<a href="https://{owner}.github.io/{repo}/">{name}</a>'
+                      for name, repo in BOARD_FAMILY)
+
+
 def _latest(snapshot: dict) -> dict | None:
     """The headline: the newest released version across the library set."""
     libs = [(k, i, l) for i, l in enumerate(snapshot.get("libraries") or [])
@@ -472,6 +488,7 @@ function fb(t){{window.prompt('Copy this:',t)}}
   <footer>Rendered by <code>autohands/board.py</code> from the GitHub + PyPI
   APIs · generated {_html.escape(str(snapshot.get('generated') or '?'))} ·
   Hands executes, never gates.</footer>
+  <p class="meta">Boards: {_boards_nav(snapshot)}</p>
 </div></body></html>
 """
 
