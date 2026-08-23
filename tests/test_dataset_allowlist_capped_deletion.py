@@ -219,3 +219,39 @@ def test_unresolvable_call_site_is_reported_and_skipped(
     assert code == 0
     assert "skipped" in captured.out
     assert "script.py:3" in captured.out
+
+
+# --- dual invocation context ------------------------------------------------
+
+
+def test_env_config_resolves_when_only_the_package_dir_is_importable(monkeypatch):
+    """The CLI context: `bin/autohands` puts `autohands/` ITSELF on PYTHONPATH,
+    so `autohands.env_config` does NOT resolve and the flat name does.
+
+    Supporting only the package-qualified form silently broke the CLI verb the
+    moment it was registered — and `_releasing_tokens` swallowed the ImportError
+    and returned its hardcoded fallback, so the breakage still looked green.
+    """
+    import builtins
+
+    from autohands import check_dataset_allowlist as guard
+    from autohands import env_config as real_env_config
+
+    real_import = builtins.__import__
+
+    def no_package(name, *args, **kwargs):
+        if name == "autohands" or name.startswith("autohands."):
+            raise ImportError("simulated CLI context: autohands/ is on the path")
+        if name == "env_config":
+            return real_env_config
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_package)
+
+    assert guard._env_config() is real_env_config
+    # Derived from the map, NOT the hardcoded fallback.
+    assert guard._releasing_tokens() == {
+        tok
+        for tok, vars_ in real_env_config.ENV_DECLARATION_TOKENS.items()
+        if "PYAUTO_SMALL_DATASETS" in vars_
+    }
