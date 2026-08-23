@@ -18,11 +18,19 @@ The timeout report also has to preserve the child's captured output. A killed
 script cannot report its own progress, so without that tail a TIMEOUT cannot
 say which block was executing — the reason the three jax_grad timeouts could
 not be diagnosed from CI artefacts at all (PyAutoHands#226).
+
+A third property, covered by ``TestTimeoutKillsProcessGroup``: the kill must
+reach the child's whole process GROUP. ``subprocess.run(timeout=...)`` kills
+only the direct child, so a grandchild outlives the cap and keeps running --
+over a long mega-run those leak, each holding whatever memory and GPU it had.
+``build_util.run_capped`` puts the child in its own session and SIGKILLs the
+group instead.
 """
 
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -207,3 +215,59 @@ class TestExecuteScriptTimeout:
         message = report.results[0].error_message
         assert report.results[0].status == Status.TIMEOUT
         assert "=== variant 3 ===" in message
+
+
+class TestTimeoutKillsProcessGroup:
+    """The cap must reap the child's descendants, not just the child."""
+
+    # A script that finishes its own work immediately but leaves a grandchild
+    # running and holding the inherited stdout pipe. Under a plain
+    # `subprocess.run(timeout=...)` the grandchild survives the cap.
+    _SPAWNS_GRANDCHILD = (
+        "import subprocess, sys\n"
+        "subprocess.Popen([sys.executable, '-c',\n"
+        "                  'import time; MARKER_{marker}=1; time.sleep(120)'])\n"
+        "print('work done', flush=True)\n"
+        "import time; time.sleep(120)\n"
+    )
+
+    @staticmethod
+    def _alive(marker: str) -> int:
+        found = subprocess.run(
+            ["pgrep", "-f", f"MARKER_{marker}"], capture_output=True, text=True
+        ).stdout
+        return len([line for line in found.split() if line.strip()])
+
+    def test_grandchild_is_reaped_at_the_cap(self, tmp_path, monkeypatch, real_interpreter):
+        marker = "pyautohands_groupkill"
+        monkeypatch.setattr(build_util, "TIMEOUT_SECS", 600)
+        script = _write_script(tmp_path, self._SPAWNS_GRANDCHILD.format(marker=marker))
+
+        report = RunReport(project="t", directory="d", run_type="script")
+        try:
+            execute_script(
+                str(script),
+                report=report,
+                env={**dict(PATH=os.environ.get("PATH", "")), "BUILD_SCRIPT_TIMEOUT": "2"},
+            )
+            assert report.results[0].status == Status.TIMEOUT
+            # The point of the group kill. Without it this is 1: the direct
+            # child is dead but its descendant runs on for its full 120s.
+            time.sleep(1)
+            assert self._alive(marker) == 0
+        finally:
+            subprocess.run(["pkill", "-f", f"MARKER_{marker}"], capture_output=True)
+
+    def test_run_capped_reports_the_output_captured_before_the_kill(self, tmp_path):
+        # The drain after the group kill still has to yield what the child
+        # printed -- killing the group is what lets that read reach EOF at all.
+        script = _write_script(tmp_path, "print('before the hang', flush=True)\nimport time\ntime.sleep(60)\n")
+        with pytest.raises(subprocess.TimeoutExpired) as excinfo:
+            build_util.run_capped(
+                [sys.executable, str(script)],
+                timeout=2,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        assert "before the hang" in (excinfo.value.output or "")
