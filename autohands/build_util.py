@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -28,7 +29,7 @@ def timeout_for(env=None) -> int:
     so on its own it can only ever express ONE cap for a whole run. The
     per-script environment built by ``env_config.build_env_for_script`` is
     handed to the child, and a profile may set ``BUILD_SCRIPT_TIMEOUT`` on it
-    for a matching pattern — but the ``subprocess.run(timeout=...)`` kill timer
+    for a matching pattern — but the ``run_capped(timeout=...)`` kill timer
     lives in the PARENT, so that value has no effect unless the parent reads it
     back out. This resolves it.
 
@@ -85,6 +86,68 @@ def _timeout_output(e: subprocess.TimeoutExpired) -> str:
         if text:
             parts.append(f"--- last {label} before timeout ---\n{text}")
     return "\n".join(parts)
+
+
+
+def kill_group(proc: subprocess.Popen) -> None:
+    """SIGKILL the child's whole process group, tolerating an already-dead one.
+
+    Public (unprefixed) because the workspace `run_smoke.py` runners import it
+    rather than each growing a copy.
+    """
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):  # pragma: no cover - race
+        proc.kill()
+
+
+def run_capped(args, timeout, check=False, stdout=None, stderr=None,
+               text=False, env=None, cwd=None) -> subprocess.CompletedProcess:
+    """`subprocess.run`, but a timeout kills the child's whole process GROUP.
+
+    A drop-in for the `subprocess.run(..., timeout=...)` calls this module used
+    to make: same `TimeoutExpired` and `CalledProcessError`, carrying the same
+    captured `output`/`stderr`, so every caller's handling is unchanged.
+
+    The group is the point. `subprocess.run` kills only the direct child and
+    then reads the pipes to EOF -- but any grandchild that inherited stdout
+    holds that pipe open after the child dies, so the read blocks and the
+    timeout does not actually stop anything. A script whose work has finished
+    can therefore hang the runner indefinitely, which is how smoke CI came to
+    sit at the 6-hour GitHub Actions ceiling reporting nothing since the last
+    completed script (autolens_workspace_test#196). `start_new_session=True`
+    puts the child in its own group; killing the group closes the inherited
+    pipe and lets the read finish.
+    """
+    proc = subprocess.Popen(
+        args,
+        stdout=stdout,
+        stderr=stderr,
+        text=text,
+        env=env,
+        cwd=cwd,
+        start_new_session=True,
+    )
+    try:
+        output, errs = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        kill_group(proc)
+        # The group is gone, so this drains whatever was buffered and returns.
+        output, errs = proc.communicate()
+        raise subprocess.TimeoutExpired(
+            args, timeout, output=output, stderr=errs
+        ) from None
+    except BaseException:
+        # Matches subprocess.run's context manager: never leave the child (or
+        # its group) running when the caller is unwinding, e.g. on Ctrl-C.
+        kill_group(proc)
+        proc.wait()
+        raise
+    if check and proc.returncode != 0:
+        raise subprocess.CalledProcessError(
+            proc.returncode, args, output=output, stderr=errs
+        )
+    return subprocess.CompletedProcess(args, proc.returncode, output, errs)
 
 
 def py_to_notebook(filename: Path):
@@ -305,7 +368,7 @@ def execute_notebook(f, report=None, env=None):
         # from the repo root. nbconvert has no CLI flag for the kernel cwd, so
         # the runner sets resources['metadata']['path'] via the Python API.
         # Still a subprocess, so isolation/timeout/env are unchanged.
-        subprocess.run(
+        run_capped(
             [
                 sys.executable,
                 str(Path(__file__).parent / "run_notebook.py"),
@@ -456,16 +519,17 @@ def execute_script(f, report=None, env=None, extra_args=None):
     start = time.time()
     try:
         if report is not None:
-            result = subprocess.run(
+            result = run_capped(
                 args,
                 check=True,
                 timeout=timeout_secs,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
                 env=env,
             )
         else:
-            subprocess.run(
+            run_capped(
                 args,
                 check=True,
                 timeout=timeout_secs,
