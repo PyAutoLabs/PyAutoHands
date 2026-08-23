@@ -74,6 +74,29 @@ def tracked_dataset_files():
 UNRESOLVED = None
 
 
+def _env_config():
+    """Import the sibling ``env_config`` module in either invocation context.
+
+    This module is reached two ways and they put different things on the path:
+
+    - as a **CLI verb**, ``bin/autohands`` (``_python_in_autohands``) runs it as a
+      script with ``autohands/`` ITSELF on ``PYTHONPATH``, so siblings are
+      top-level modules -- the flat ``from env_config import ...`` idiom the other
+      guards in this package use;
+    - as a **library import** (pytest, or anything importing
+      ``autohands.check_dataset_allowlist``), the package's PARENT is on the path
+      and the flat name does not resolve.
+
+    Supporting only the package-qualified form silently broke the CLI verb the
+    moment it was registered. Supporting only the flat form breaks the tests.
+    """
+    try:
+        import env_config  # CLI: autohands/ is on PYTHONPATH
+    except ImportError:
+        from autohands import env_config  # library: imported as a package
+    return env_config
+
+
 def _releasing_tokens():
     """Tokens whose declaration unsets ``PYAUTO_SMALL_DATASETS``.
 
@@ -82,16 +105,19 @@ def _releasing_tokens():
     protecting scripts without an edit here. Falls back to the known pair only if
     the import is unavailable (the guard must never hard-fail on an env_config
     refactor -- it would block a release).
+
+    That fallback is a genuine last resort, not a routine path: before
+    :func:`_env_config` existed this swallowed the CLI's ImportError and quietly
+    returned the hardcoded pair, so the verb never actually consulted the map --
+    a silent degradation that still produced a green run.
     """
     try:
-        from autohands.env_config import ENV_DECLARATION_TOKENS
+        tokens = _env_config().ENV_DECLARATION_TOKENS
     except Exception:
         return {"full_datasets", "real_output"}
 
     return {
-        tok
-        for tok, vars_ in ENV_DECLARATION_TOKENS.items()
-        if "PYAUTO_SMALL_DATASETS" in vars_
+        tok for tok, vars_ in tokens.items() if "PYAUTO_SMALL_DATASETS" in vars_
     }
 
 
@@ -243,7 +269,7 @@ def check_capped_deletion(prefixes, tracked) -> int:
     ``prefixes``/``tracked`` are leg 1's already-computed allowlist and tracked
     file list, so this adds no extra git calls beyond the Python file listing.
     """
-    from autohands.env_config import read_env_declaration
+    read_env_declaration = _env_config().read_env_declaration
 
     # The invariant is NOT "the path sits under an allowlist prefix" -- it is
     # "rmtree(path) would delete committed files". Those differ, and the prefix
