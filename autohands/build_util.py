@@ -109,15 +109,19 @@ def run_capped(args, timeout, check=False, stdout=None, stderr=None,
     to make: same `TimeoutExpired` and `CalledProcessError`, carrying the same
     captured `output`/`stderr`, so every caller's handling is unchanged.
 
-    The group is the point. `subprocess.run` kills only the direct child and
-    then reads the pipes to EOF -- but any grandchild that inherited stdout
-    holds that pipe open after the child dies, so the read blocks and the
-    timeout does not actually stop anything. A script whose work has finished
-    can therefore hang the runner indefinitely, which is how smoke CI came to
-    sit at the 6-hour GitHub Actions ceiling reporting nothing since the last
-    completed script (autolens_workspace_test#196). `start_new_session=True`
-    puts the child in its own group; killing the group closes the inherited
-    pipe and lets the read finish.
+    The group is the point. `subprocess.run` kills only the direct child, so a
+    grandchild -- a Popen'd helper, a multiprocessing worker, a compile server
+    -- outlives the cap and keeps running, holding whatever memory and devices
+    it had. Over a run of hundreds of scripts those accumulate against every
+    script that follows. `start_new_session=True` puts the child in its own
+    group, and killing the group takes its descendants with it.
+
+    The same mechanism matters more for a runner that captures output without
+    a cap at all: there the parent waits for the stdout pipe to reach EOF, and
+    a grandchild holding that pipe open keeps the read blocked after the child
+    itself has exited -- a script whose work has finished hangs the runner
+    indefinitely. That shape is a workspace-side bug, not this module's, but
+    the fix is this same group kill.
     """
     proc = subprocess.Popen(
         args,
