@@ -21,6 +21,10 @@ ADMIN_JAMMY="$PYAUTOBASE/admin_jammy"
 # with "# " are rendered as section headers; everything else is a real
 # subcommand and must have a matching SHORT_DESC entry plus cmd_<name> and
 # help_<name> functions.
+#
+# Together with INTERNAL_MODULES below, this is the complete registry of
+# autohands/: every module there is either a subcommand here or an internal
+# module listed there. tests/test_autohands_registry.py enforces it.
 
 SUBCOMMAND_ORDER=(
   "# Build and release pipeline"
@@ -31,17 +35,28 @@ SUBCOMMAND_ORDER=(
   bump_colab_urls
   "# Workspace operations (run from a workspace root)"
   generate
+  generate_markdown
+  regenerate_navigator
   run
   run_python
   run_all
+  "# Workspace guards (CI-invoked; runnable locally)"
+  check_navigator
+  check_search_memory
+  check_dataset_allowlist
+  validate_env_profiles
   "# Release support"
   board
   script_matrix
   aggregate_results
   slow_skip_check
   generate_release_notes
+  slack_release_notes
   create_analysis_issue
   tag_and_merge
+  tombstone
+  "# Assistant seeding"
+  clone_seed
   "# Triage support"
   repro_command
   "# Monitoring daemon (delegates to PyAutoHeart)"
@@ -59,6 +74,12 @@ declare -A SHORT_DESC=(
   [url_check]="Shim → pyauto-heart url_check (forbidden Binder/Colab URL guard)"
   [bump_colab_urls]="Rewrite Colab URLs in cwd from old date-tag to new date-tag"
   [generate]="Convert workspace scripts/ to notebooks/ (run from a workspace root)"
+  [generate_markdown]="Render curated workspace scripts to executed markdown pages with figures"
+  [regenerate_navigator]="Rebuild a workspace's llms-full.txt + workspace_index.json catalogue"
+  [check_navigator]="Guard: navigator/instruction path references all resolve on disk"
+  [check_search_memory]="Guard: every MultiStart* search in a workspace sets batch_size explicitly"
+  [check_dataset_allowlist]="Guard: tracked dataset/ files are covered by the .gitignore allowlist"
+  [validate_env_profiles]="Guard: a workspace's smoke/release env profiles parse and resolve"
   [run]="Execute notebooks in a workspace folder"
   [run_python]="Execute Python scripts in a workspace folder"
   [run_all]="Run scripts across one or more workspaces and produce summary reports"
@@ -67,14 +88,30 @@ declare -A SHORT_DESC=(
   [aggregate_results]="Aggregate per-job JSON results into a release-readiness report"
   [slow_skip_check]="Surface SLOW / NEEDS_FIX entries in workspace no_run.yaml files"
   [generate_release_notes]="Generate release notes from merged PRs and create GitHub Releases"
+  [slack_release_notes]="Convert a release body into the #pipreleases Slack payload"
   [create_analysis_issue]="Open a GitHub issue with the release report and assign Copilot"
   [tag_and_merge]="Commit and tag every library repo for a release"
+  [tombstone]="Build the sub-floor tombstone sdists that redirect users to a supported release"
+  [clone_seed]="Build (and optionally push) an assistant seed repo from a clone plan"
   [repro_command]="Emit the shell command autohands uses to run one script (for triage handoffs)"
   [watch]="Start the PyAutoHeart monitoring daemon (Ctrl-C to stop)"
   [status]="Print the latest PyAutoHeart state cache with green/yellow/red"
   [tick]="Force one PyAutoHeart refresh cycle"
   [fix]="Bundle context for a Heart failure topic and emit a Claude invocation"
   [help]="List subcommands or show details for one"
+)
+
+# Modules in autohands/ that are deliberately NOT CLI verbs. Every *.py there
+# must be a registered subcommand above or listed here — the completeness rule
+# tests/test_autohands_registry.py enforces. Keep the reason on the line.
+INTERNAL_MODULES=(
+  add_notebook_quotes   # docstring->cell transform stage; its __main__ is a debug aid
+  run_notebook          # per-notebook worker subprocess spawned by run.py
+  navigator             # catalogue library behind regenerate_navigator / check_navigator
+  build_util            # shared py_to_notebook machinery
+  env_config            # env-profile resolution library
+  result_collector      # per-run JSON result library
+  generate_autofit      # generate.py's autofit-specific branch
 )
 
 # _python_in_autohands <script> [args...]
@@ -189,6 +226,48 @@ cmd_generate() {
   _python_in_autohands generate.py "$@"
 }
 
+help_generate_markdown() {
+  cat <<'EOF'
+autohands generate_markdown <project> [--only SUBSTRING] [--optimize-only]
+
+Render the scripts listed in the workspace's config/build/markdown_examples.yaml
+to *executed* markdown pages under markdown/, with output figures extracted as
+PNGs alongside, plus a markdown/README.md index. Run from the workspace root.
+
+Arguments:
+  project         Project name (e.g. autofit, autogalaxy, autolens)
+  --only          Substring filter on the configured script paths
+  --optimize-only Skip rendering; re-encode the PNGs of already-committed pages
+
+Manual / at-release only, never per-commit — it runs the science for real.
+Refuses to start under PYAUTO_TEST_MODE (a truncated search makes wrong
+images); model-fit scripts resume from the completed output/ cache instead.
+Rules and rationale are in the module docstring; see docs/internals.md.
+EOF
+}
+cmd_generate_markdown() {
+  _python_in_autohands generate_markdown.py "$@"
+}
+
+help_regenerate_navigator() {
+  cat <<'EOF'
+autohands regenerate_navigator [project]
+
+Rebuild the workspace catalogue — llms-full.txt and workspace_index.json — for
+the workspace in the current directory, without regenerating notebooks and
+without the science stack (needs only pyyaml). Run from the workspace root.
+
+Arguments:
+  project        Generator project (default: $NAVIGATOR_PROJECT, else autolens)
+
+This is the entry point the navigator_check.yml staleness job uses, and the one
+to run locally when a catalogue has drifted from its scripts.
+EOF
+}
+cmd_regenerate_navigator() {
+  _python_in_autohands regenerate_navigator.py "$@"
+}
+
 help_run() {
   cat <<'EOF'
 autohands run <project> <directory> [--visualise] [--report-dir DIR] [--env-config FILE]
@@ -255,6 +334,97 @@ EOF
 }
 cmd_run_all() {
   _python_in_autohands run_all.py "$@"
+}
+
+# ----- Workspace guards -----
+#
+# CI gates that a maintainer can also run locally to reproduce a red check.
+# Note the input contracts differ: --root, a positional path, or plain cwd.
+
+help_check_navigator() {
+  cat <<'EOF'
+autohands check_navigator [--root DIR] [--banners warn|fail] [--ignore-file FILE]
+
+Guard: every scripts/... and notebooks/... reference in a workspace's navigator
+and instruction files resolves on disk (literal paths must exist; globs must
+match at least one file), plus a banner-comment lint. Markdown files are also
+scanned for folder references relative to their own location.
+
+Arguments:
+  --root         Workspace root to check (default: current directory)
+  --banners      Banner lint mode: fail (nonzero exit) or warn (default: fail)
+  --ignore-file  Ignore file of paths/globs
+
+Runs in CI from .github/workflows/navigator_check.yml.
+EOF
+}
+cmd_check_navigator() {
+  _python_in_autohands check_navigator.py "$@"
+}
+
+help_check_search_memory() {
+  cat <<'EOF'
+autohands check_search_memory --root DIR [--scripts-dir DIR]
+
+Guard: every af.MultiStart* search in a workspace's scripts sets batch_size
+explicitly. The default (batch_size=None) vmaps all 48 starts at once, which
+for a memory-heavy likelihood wants ~86 GB and took down two nightly runs in
+2026-07 (PyAutoFit#1452). Writing batch_size=None passes — the rule is that the
+memory decision is typed out where a reviewer sees it, not arrived at by
+defaulting.
+
+Arguments:
+  --root         Workspace root (required)
+  --scripts-dir  Scripts directory relative to root (default: scripts)
+
+Runs in CI from .github/workflows/navigator_check.yml.
+EOF
+}
+cmd_check_search_memory() {
+  _python_in_autohands check_search_memory.py "$@"
+}
+
+help_check_dataset_allowlist() {
+  cat <<'EOF'
+autohands check_dataset_allowlist
+
+Guard: every tracked file under dataset/ in the workspace is covered by that
+workspace's .gitignore allowlist (the !dataset/... re-include lines), so a
+force-committed simulated dataset fails the build instead of shipping ~10 MB of
+runtime-generated data to users. Takes no arguments — operates on the current
+directory, so run it from the workspace root.
+
+Allowlist-based, not git check-ignore-based (which never flags an
+already-tracked file). A workspace with no !dataset/... re-includes has not
+adopted the regime yet and is skipped with a notice.
+
+Runs as a leg of pre_build.sh.
+EOF
+}
+cmd_check_dataset_allowlist() {
+  _python_in_autohands check_dataset_allowlist.py "$@"
+}
+
+help_validate_env_profiles() {
+  cat <<'EOF'
+autohands validate_env_profiles <workspace> [--strict-derivation]
+                                [--strict-markers] [--strict-declarations]
+
+Guard: parse both of a workspace's env profiles (config/build/profile_smoke.yaml
+and profile_release.yaml), resolve every script under each, and fail on config
+errors that would otherwise surface only as the next nightly's red run — a
+profile that will not parse, unknown keys, malformed or dead overrides, bad
+__Env__ declarations, resolver round-trip failures. A legacy env_vars*.yaml in
+config/build/ is itself an error.
+
+Takes the workspace root as a positional path (not --root); the --strict-*
+flags promote the corresponding warning tiers to errors.
+
+Runs in CI from PyAutoHeart's smoke-tests.yml.
+EOF
+}
+cmd_validate_env_profiles() {
+  _python_in_autohands validate_env_profiles.py "$@"
 }
 
 # ----- Release support -----
@@ -360,6 +530,27 @@ cmd_generate_release_notes() {
   _python_in_autohands generate_release_notes.py "$@"
 }
 
+help_slack_release_notes() {
+  cat <<'EOF'
+autohands slack_release_notes --version VERSION --result RESULT --run-url URL
+                              [--repo OWNER/REPO]
+
+Build the #pipreleases Slack payload from a release body: convert the markdown
+generate_release_notes produced into Slack mrkdwn and emit the JSON message.
+
+Arguments:
+  --version   Release version
+  --result    Release outcome
+  --run-url   GitHub Actions run URL
+  --repo      Repository (default: PyAutoLabs/PyAutoLens)
+
+Invoked by the release.yml notification job.
+EOF
+}
+cmd_slack_release_notes() {
+  _python_in_autohands slack_release_notes.py "$@"
+}
+
 help_create_analysis_issue() {
   cat <<'EOF'
 autohands create_analysis_issue <report.json> --run-id <ID> [--repo <OWNER/REPO>] [--dry-run]
@@ -391,6 +582,48 @@ EOF
 }
 cmd_tag_and_merge() {
   bash "$AUTOHANDS_DIR/tag_and_merge.sh" "$@"
+}
+
+help_tombstone() {
+  cat <<'EOF'
+autohands tombstone [--out DIR] [--package NAME]
+
+Build the sub-floor tombstone sdists — minimal packages published below a
+raised version floor whose only job is to point a user landing on an old
+version at a supported release.
+
+Arguments:
+  --out       Directory to write the sdists into (default: dist-tombstone)
+  --package   Build only this package (repeatable; default is all five)
+
+Published by the manual-dispatch publish_tombstone.yml workflow, deliberately
+not by release.yml.
+EOF
+}
+cmd_tombstone() {
+  _python_in_autohands tombstone.py "$@"
+}
+
+# ----- Assistant seeding -----
+
+help_clone_seed() {
+  cat <<'EOF'
+autohands clone_seed <plan.json> [--push] [--out DIR]
+
+Build an assistant seed repository from a clone plan: create the repo layout and
+copy the generic set described by the plan, optionally pushing it.
+
+Arguments:
+  plan.json   Clone plan (the JSON the Brain clone conductor emits)
+  --push      Push the built seed to its remote
+  --out       Build directory (default: a kept temp dir)
+
+The executor half of the clone flow — PyAutoBrain's clone conductor decides
+what to seed and delegates the birth here, gated by Heart.
+EOF
+}
+cmd_clone_seed() {
+  _python_in_autohands clone_seed.py "$@"
 }
 
 # ----- Triage support -----
@@ -558,6 +791,20 @@ EOF
         printf '    %-28s %s\n' "$entry" "${SHORT_DESC[$entry]:-}"
       fi
     done
+    cat <<'EOF'
+
+  Internal modules (in autohands/, deliberately not CLI verbs)
+EOF
+    local i=0 mod
+    {
+      for mod in "${INTERNAL_MODULES[@]}"; do
+        [ $((i % 3)) -eq 0 ] && printf '    '
+        printf '%-24s' "$mod"
+        i=$((i + 1))
+        [ $((i % 3)) -eq 0 ] && printf '\n'
+      done
+      [ $((i % 3)) -ne 0 ] && printf '\n'
+    } | sed 's/[[:space:]]*$//'
     cat <<'EOF'
 
 Run `autohands help <subcommand>` to see full documentation.
