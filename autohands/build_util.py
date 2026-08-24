@@ -490,6 +490,7 @@ def _classify_notebook_run(run_target, recorded, report, env, timeout_secs):
                 status=Status.TIMEOUT,
                 duration_seconds=duration,
                 error_message=message,
+                cap_seconds=timeout_secs,
             ))
             return "timeout"
         logging.exception(e)
@@ -509,6 +510,8 @@ def _classify_notebook_run(run_target, recorded, report, env, timeout_secs):
                     status=Status.PASSED,
                     duration_seconds=duration,
                     error_message="sys.exit(0) skip guard (ignored)",
+                    cap_seconds=timeout_secs,
+                    exit_code=e.returncode,
                 ))
             else:
                 print(f"  PASS (skipped via sys.exit(0), {duration:.1f}s)")
@@ -523,6 +526,8 @@ def _classify_notebook_run(run_target, recorded, report, env, timeout_secs):
                     status=Status.PASSED,
                     duration_seconds=duration,
                     error_message="InversionException (ignored)",
+                    cap_seconds=timeout_secs,
+                    exit_code=e.returncode,
                 ))
             return "passed"
 
@@ -537,6 +542,8 @@ def _classify_notebook_run(run_target, recorded, report, env, timeout_secs):
                 duration_seconds=duration,
                 error_message=str(e),
                 traceback=stderr,
+                cap_seconds=timeout_secs,
+                exit_code=e.returncode,
             ))
             return "failed"
         # stderr is captured now (see the subprocess call above), so echo it
@@ -554,6 +561,8 @@ def _classify_notebook_run(run_target, recorded, report, env, timeout_secs):
             file=recorded,
             status=Status.PASSED,
             duration_seconds=duration,
+            cap_seconds=timeout_secs,
+            exit_code=0,
         ))
     return "passed"
 
@@ -758,6 +767,7 @@ def execute_script(f, report=None, env=None, extra_args=None):
                 status=Status.TIMEOUT,
                 duration_seconds=duration,
                 error_message=message,
+                cap_seconds=timeout_secs,
             ))
             return
         logging.exception(e)
@@ -777,6 +787,8 @@ def execute_script(f, report=None, env=None, extra_args=None):
                 duration_seconds=duration,
                 error_message=str(e),
                 traceback=stderr,
+                cap_seconds=timeout_secs,
+                exit_code=e.returncode,
             ))
             return
         logging.exception(e)
@@ -790,6 +802,8 @@ def execute_script(f, report=None, env=None, extra_args=None):
             file=str(f),
             status=Status.PASSED,
             duration_seconds=duration,
+            cap_seconds=timeout_secs,
+            exit_code=0,
         ))
 
 

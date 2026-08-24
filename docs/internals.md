@@ -123,6 +123,41 @@ All scripts in `autohands/` are run from within a checked-out workspace director
 - **`url_check`** — URL hygiene moved to PyAutoHeart (Heart owns all health checking). `autohands url_check` is now a thin shim to `pyauto-heart url_check`; the ecosystem-wide sweep runs from PyAutoHeart's central `url-check.yml` workflow (replacing the old per-repo `url_check.yml` workflows). The runnable scripts live at `PyAutoHeart/heart/checks/url_check*.{sh,py}`.
 - **`bump_colab_urls.sh <new-tag>`** — Rewrites every `colab.research.google.com/github/PyAutoLabs/<repo>/blob/<old-tag>/...` URL in cwd to use `<new-tag>`, where `<repo>` is one of `autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace`, `HowToFit`, `HowToGalaxy`, `HowToLens`. Called by the `release_workspaces` and `bump_library_colab_urls` jobs in `release.yml` so README/docs Colab links always pin to the just-released tag. Idempotent; skips URLs not in canonical PyAutoLabs/date-tagged form.
 
+### What `--report-dir` contains
+
+Every `RunReport.write()` (so `run_python.py`, `run.py` and `generate.py`, on
+every leg that is given `--report-dir`) puts three things in that directory:
+
+- `<project>__<dir>__<run_type>.json` — the per-run report. Read by
+  PyAutoHeart's `script_timing` (which globs `*__script.json`) and, via
+  `aggregate_results`, by its `test_run` check. **Its shape is a published
+  interface** — add fields to the timing dataset below, not to this.
+- `<project>__<dir>__<run_type>.md` — the human-readable form.
+- `smoke_timings.json` — the standing per-entry **timing dataset**: one row per
+  entry, `{entry, kind, status, seconds, cap_s, exit_code}`, plus the run
+  metadata (`project`, `directory`, `run_type`, `env_profile`, `python`, `ts`)
+  and a `legs` list. `seconds` is the runner's own `time.time()` measurement —
+  the same number the `PASS`/`TIMEOUT` console line prints, never re-derived —
+  and `cap_s` is `build_util.timeout_for`'s resolved cap, so a TIMEOUT row
+  records the cap it hit. An entry that never ran (skipped, or listed but
+  missing) carries `"seconds": null` rather than a fabricated zero.
+
+  There is **one** timings file per report directory, not one per leg: a
+  directory receives several runner invocations (a smoke gate's script and
+  notebook legs; every directory of every workspace in the `run_all`
+  mega-run), and each `write()` merges its rows into the existing file keyed on
+  the entry path. So the script leg and notebook leg both survive, re-running a
+  leg replaces its own rows, and the top-level metadata describes the leg that
+  wrote last while `legs` records every contributor. `aggregate_results` skips
+  the file by name — it is a sidecar, not a run report.
+
+  When `$GITHUB_STEP_SUMMARY` is set (i.e. in Actions), each `write()` also
+  appends a slowest-first markdown table of its own entries to the job summary,
+  so a run's timings are readable without downloading an artifact. Off CI
+  nothing is appended. PyAutoHeart's reusable `smoke-tests.yml` uploads the
+  report directory as `smoke-timings-<python-version>`, which is what makes the
+  dataset persist beyond the job.
+
 ## Architecture
 
 ### Script-to-Notebook Conversion Pipeline
