@@ -131,7 +131,14 @@ def _surface(runs: list, script_count: int) -> dict:
 
 def aggregate(results_dir: Path) -> dict:
     """Read all JSON result files and produce a consolidated report."""
-    json_files = sorted(results_dir.glob("**/*.json"))
+    # The timing dataset lives in the same directory but is not a run report —
+    # it has no ``results`` key and would enter ``runs`` as an empty phantom
+    # run, so it is excluded by name here rather than by shape.
+    from result_collector import TIMINGS_FILENAME
+
+    json_files = sorted(
+        p for p in results_dir.glob("**/*.json") if p.name != TIMINGS_FILENAME
+    )
     if not json_files:
         print(f"No JSON result files found in {results_dir}", file=sys.stderr)
         return {

@@ -123,6 +123,13 @@ if __name__ == "__main__":
             project=project,
             directory=directory,
             run_type="notebook",
+            # Same surface statement the script leg has recorded since
+            # PyAutoHeart#83 §5.3. It was missing here, so every notebook
+            # report claimed env_profile "unknown" while running under a
+            # resolved profile — and the timing dataset (PyAutoHands#264)
+            # inherits this field, where an unknown surface makes two runs
+            # incomparable for exactly the reason _surface exists.
+            env_profile=(env_config_path.name if env_config_path else "none"),
         )
         # Only when the policy file exists: with an explicit list it may be
         # absent, and there are then no skip reasons to parse.
