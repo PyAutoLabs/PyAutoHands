@@ -2,9 +2,11 @@ import datetime
 import logging
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 from pathlib import Path
@@ -356,11 +358,86 @@ def is_clean_skip_exit(output: str) -> bool:
     return bool(tail) and _SKIP_EXIT_RE.match(tail[-1]) is not None
 
 
-def execute_notebook(f, report=None, env=None):
+def regenerate_notebook(nb_path, scripts_dir) -> Path:
+    """
+    Regenerate one notebook from its source ``.py`` into a temp dir.
+
+    The recovery for a *stale* notebook: the script moved on but the committed
+    ``.ipynb`` was never refreshed by ``generate.py``. Whole-workspace
+    regeneration stays ``generate.py``'s job — this regenerates only the single
+    notebook in front of the runner, so the recovery is cheap.
+
+    The regenerated copy lives in a temp dir; the committed ``notebooks/`` tree
+    is never touched, so a smoke run leaves the worktree clean.
+
+    Parameters
+    ----------
+    nb_path
+        The notebook that failed, e.g. ``notebooks/imaging/model_fit.ipynb``.
+    scripts_dir
+        The directory holding the source scripts, e.g. ``<workspace>/scripts``.
+        The source is looked up at the notebook's path relative to its own
+        ``notebooks/`` root, with a ``.py`` suffix.
+
+    Returns
+    -------
+    The path to the regenerated notebook.
+
+    Raises
+    ------
+    FileNotFoundError
+        If no source script exists — nothing to regenerate from.
+    """
+    nb_path = Path(nb_path)
+    scripts_dir = Path(scripts_dir)
+    script_path = scripts_dir / Path(nb_path.name).with_suffix(".py")
+    if not script_path.exists():
+        raise FileNotFoundError(f"No source script at {script_path}")
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="smoke_regen_"))
+    tmp_script = tmp_dir / script_path.name
+    shutil.copy(script_path, tmp_script)
+    old_cwd = os.getcwd()
+    try:
+        os.chdir(tmp_dir)
+        return Path(py_to_notebook(tmp_script))
+    finally:
+        os.chdir(old_cwd)
+
+
+def _run_notebook_once(f, report=None, env=None, recorded=None, write_back=True):
+    """
+    Run one notebook once and classify the outcome.
+
+    Returns ``"passed"``, ``"failed"`` or ``"timeout"`` so the caller can decide
+    whether a retry is warranted; results are still appended to ``report`` here,
+    under ``recorded`` (which may differ from ``f`` when a regenerated temp copy
+    is standing in for the committed notebook).
+    """
     print(f"Running <{f}> at {datetime.datetime.now().isoformat()}")
 
     timeout_secs = timeout_for(env)
+    recorded = str(recorded if recorded is not None else f)
 
+    run_target = Path(f)
+    scratch_dir = None
+    if not write_back:
+        # run_notebook.py writes the executed notebook back in place, so point
+        # it at a throwaway copy to leave the committed tree clean. The kernel's
+        # cwd is pinned to the repo root either way, so relative dataset/ and
+        # output/ paths resolve identically.
+        scratch_dir = Path(tempfile.mkdtemp(prefix="smoke_nb_"))
+        run_target = scratch_dir / Path(f).name
+        shutil.copyfile(f, run_target)
+
+    try:
+        return _classify_notebook_run(run_target, recorded, report, env, timeout_secs)
+    finally:
+        if scratch_dir is not None:
+            shutil.rmtree(scratch_dir, ignore_errors=True)
+
+
+def _classify_notebook_run(run_target, recorded, report, env, timeout_secs):
     start = time.time()
     try:
         # stderr is always captured so a clean `sys.exit(0)` skip guard can be
@@ -372,11 +449,16 @@ def execute_notebook(f, report=None, env=None):
         # from the repo root. nbconvert has no CLI flag for the kernel cwd, so
         # the runner sets resources['metadata']['path'] via the Python API.
         # Still a subprocess, so isolation/timeout/env are unchanged.
+        #
+        # It is invoked through sys.executable, NOT a bare `jupyter` binary, so
+        # a missing notebook toolchain surfaces as an ordinary non-zero exit
+        # (one FAIL, run continues) rather than a FileNotFoundError escaping and
+        # aborting the whole run with no summary line.
         run_capped(
             [
                 sys.executable,
                 str(Path(__file__).parent / "run_notebook.py"),
-                str(f),
+                str(run_target),
                 str(Path.cwd()),
             ],
             check=True,
@@ -398,12 +480,12 @@ def execute_notebook(f, report=None, env=None):
             if captured:
                 message = f"{message}\n{captured}"
             report.results.append(ScriptResult(
-                file=str(f),
+                file=recorded,
                 status=Status.TIMEOUT,
                 duration_seconds=duration,
                 error_message=message,
             ))
-            return
+            return "timeout"
         logging.exception(e)
         sys.exit(1)
     except subprocess.CalledProcessError as e:
@@ -417,26 +499,26 @@ def execute_notebook(f, report=None, env=None):
                 from result_collector import ScriptResult, Status
                 print(f"  PASS (skipped via sys.exit(0), {duration:.1f}s)")
                 report.results.append(ScriptResult(
-                    file=str(f),
+                    file=recorded,
                     status=Status.PASSED,
                     duration_seconds=duration,
                     error_message="sys.exit(0) skip guard (ignored)",
                 ))
             else:
                 print(f"  PASS (skipped via sys.exit(0), {duration:.1f}s)")
-            return
+            return "passed"
 
         if "InversionException" in traceback.format_exc():
             if report is not None:
                 from result_collector import ScriptResult, Status
                 print(f"  PASS (InversionException, {duration:.1f}s)")
                 report.results.append(ScriptResult(
-                    file=str(f),
+                    file=recorded,
                     status=Status.PASSED,
                     duration_seconds=duration,
                     error_message="InversionException (ignored)",
                 ))
-            return
+            return "passed"
 
         if report is not None:
             from result_collector import ScriptResult, Status
@@ -444,13 +526,13 @@ def execute_notebook(f, report=None, env=None):
             last_line = stderr.strip().splitlines()[-1] if stderr.strip() else str(e)
             print(f"  FAIL ({duration:.1f}s) {last_line}")
             report.results.append(ScriptResult(
-                file=str(f),
+                file=recorded,
                 status=Status.FAILED,
                 duration_seconds=duration,
                 error_message=str(e),
                 traceback=stderr,
             ))
-            return
+            return "failed"
         # stderr is captured now (see the subprocess call above), so echo it
         # before dying or the failure would be silent.
         if captured:
@@ -463,10 +545,71 @@ def execute_notebook(f, report=None, env=None):
         from result_collector import ScriptResult, Status
         print(f"  PASS ({duration:.1f}s)")
         report.results.append(ScriptResult(
-            file=str(f),
+            file=recorded,
             status=Status.PASSED,
             duration_seconds=duration,
         ))
+    return "passed"
+
+
+def execute_notebook(f, report=None, env=None, write_back=True,
+                     retry_from_scripts=None, report_as=None):
+    """
+    Execute one notebook as a subprocess, with the kernel cwd at the repo root.
+
+    ``write_back`` controls whether the notebook keeps its executed outputs.
+    True (the default) is the generation/release contract: ``run_notebook.py``
+    writes back in place, matching ``nbconvert --output <f> <f>``, so a
+    partially-executed notebook keeps its outputs and generated notebooks are
+    committed with them. False executes a throwaway copy and leaves the
+    committed tree untouched — what a **PR smoke gate** needs, since dirtying
+    ``notebooks/`` on every run would have the gate mutate the tree it is
+    testing.
+
+    ``retry_from_scripts``, set to a workspace's ``scripts`` directory, turns a
+    genuine failure into one regenerate-and-retry: the notebook is rebuilt from
+    its source ``.py`` (:func:`regenerate_notebook`) and run once more. This
+    catches a *stale* notebook — the script moved on but the committed
+    ``.ipynb`` was never refreshed by ``generate.py``. Deliberately narrow:
+
+    * a TIMEOUT is never retried — it would burn a second full cap to reach the
+      same result, doubling the slowest entry's cost;
+    * a clean skip-guard exit is already a PASS and never reaches the retry;
+    * the retry's verdict REPLACES the first attempt's, so one notebook
+      contributes exactly one result.
+
+    ``report_as`` is the path recorded in the report, defaulting to ``f``; the
+    retry passes the original notebook so a temp path never leaks into results.
+
+    Returns ``"passed"``, ``"failed"`` or ``"timeout"``.
+    """
+    recorded = report_as if report_as is not None else f
+    mark = len(report.results) if report is not None else None
+
+    status = _run_notebook_once(
+        f, report=report, env=env, recorded=recorded, write_back=write_back
+    )
+    if status != "failed" or retry_from_scripts is None:
+        return status
+
+    print("  notebook failed; regenerating from source script and retrying...")
+    try:
+        regenerated = regenerate_notebook(f, retry_from_scripts)
+    except Exception as exc:
+        # No source script, or generation itself failed. The first attempt's
+        # FAIL stands — the recovery was unavailable, not the notebook fixed.
+        print(f"  [regenerate_notebook] {exc}")
+        return status
+
+    if report is not None:
+        # Drop the first attempt so the retry's verdict is the only one recorded.
+        del report.results[mark:]
+    # The regenerated notebook is already a throwaway in /tmp, so writing its
+    # outputs back costs nothing and touches no committed file.
+    return _run_notebook_once(
+        regenerated, report=report, env=env, recorded=recorded, write_back=True
+    )
+
 
 
 def execute_notebooks_in_folder(
@@ -476,15 +619,35 @@ def execute_notebooks_in_folder(
     report=None,
     skip_reasons=None,
     env_config=None,
+    files=None,
+    write_back=True,
+    retry_from_scripts=None,
 ):
+    """
+    Run the notebooks under ``directory``, honouring ``no_run_list``.
+
+    ``files`` selects the discovery model, mirroring
+    :func:`execute_scripts_in_folder`: omitted, notebooks are discovered
+    recursively (opt-out coverage); supplied by :func:`files_from_list`, exactly
+    those entries run in that order (opt-in). ``no_run_list`` applies either way
+    and wins over the list.
+
+    ``write_back`` and ``retry_from_scripts`` are passed through to
+    :func:`execute_notebook`; a PR smoke gate wants ``write_back=False`` (leave
+    the committed tree clean) plus the workspace's ``scripts`` directory for the
+    stale-notebook recovery.
+    """
     # Infrastructure files — always skip, never report
     infra_skip = ["__init__", "README"]
     no_run_list.extend(infra_skip)
-    files = list((Path.cwd() / directory).rglob("*.ipynb"))
 
-    print(f"Found {len(files)} notebooks")
+    if files is None:
+        files = sorted((Path.cwd() / directory).rglob("*.ipynb"))
+        print(f"Found {len(files)} notebooks")
+    else:
+        print(f"Running {len(files)} listed notebooks")
 
-    for file in sorted(files):
+    for file in files:
         if file.stem in infra_skip:
             continue
         if visualise_dict is not None:
@@ -497,6 +660,9 @@ def execute_notebooks_in_folder(
             ):
                 continue
         if should_skip(file, no_run_list):
+            # Before the existence check, for the same reason as the script
+            # runner: an excluded notebook that has also been deleted is still
+            # excluded, and a failure would contradict the exclusion.
             if report is not None:
                 from result_collector import ScriptResult, Status
                 reason = _find_skip_reason(file, no_run_list, skip_reasons or {})
@@ -505,10 +671,28 @@ def execute_notebooks_in_folder(
                     status=Status.SKIPPED,
                     skip_reason=reason,
                 ))
+        elif not file.exists():
+            # Only reachable from an allowlist. One FAIL, run continues.
+            print(f"  {file} ...  FAIL (listed but not found)")
+            if report is not None:
+                from result_collector import ScriptResult, Status
+                report.results.append(ScriptResult(
+                    file=str(file),
+                    status=Status.FAILED,
+                    error_message=f"Listed in the notebook list but not found at {file}",
+                ))
+            else:
+                sys.exit(1)
         else:
             from env_config import build_env_for_script
             env = build_env_for_script(file, env_config)
-            execute_notebook(file, report=report, env=env)
+            execute_notebook(
+                file,
+                report=report,
+                env=env,
+                write_back=write_back,
+                retry_from_scripts=retry_from_scripts,
+            )
 
 
 def execute_script(f, report=None, env=None, extra_args=None):
