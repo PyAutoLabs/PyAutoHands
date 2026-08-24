@@ -48,14 +48,26 @@ no_run_path = WORKSPACE_BUILD_CONFIG / "no_run.yaml"
 if not no_run_path.exists():
     no_run_path = AUTOHANDS_CONFIG / "no_run.yaml"
 
-with open(no_run_path) as f:
-    no_run_data = yaml.safe_load(f)
-
-# Support both flat list (workspace) and keyed dict (legacy autohands)
-if isinstance(no_run_data, dict):
-    no_run_list = no_run_data[project]
+if no_run_path.exists():
+    with open(no_run_path) as f:
+        no_run_data = yaml.safe_load(f)
+    # Support both flat list (workspace) and keyed dict (legacy autohands)
+    if isinstance(no_run_data, dict):
+        no_run_list = no_run_data.get(project, [])
+    else:
+        no_run_list = no_run_data or []
+elif args.list_file:
+    # With an explicit list the allowlist IS the policy, so there is nothing
+    # for no_run.yaml to filter and its absence is not an error. Discovery
+    # still requires it — without it "run everything under this directory"
+    # has no exclusion policy at all.
+    no_run_list = []
 else:
-    no_run_list = no_run_data or []
+    raise FileNotFoundError(
+        f"{no_run_path} not found. A discovery run needs an exclusion policy; "
+        f"pass --list to run an explicit set of scripts instead, or add "
+        f"config/build/no_run.yaml (an empty file is valid and skips nothing)."
+    )
 
 # smoke profile: explicit flag > workspace config/build/profile_smoke.yaml > none
 env_config_path = None
@@ -78,7 +90,13 @@ if __name__ == "__main__":
             run_type="script",
             env_profile=(env_config_path.name if env_config_path else "none"),
         )
-        skip_reasons = parse_no_run_reasons(no_run_path, project)
+        # Only when the policy file exists: with an explicit list it may be
+        # absent, and there are then no skip reasons to parse.
+        skip_reasons = (
+            parse_no_run_reasons(no_run_path, project)
+            if no_run_path.exists()
+            else {}
+        )
 
     env_config = None
     if env_config_path:

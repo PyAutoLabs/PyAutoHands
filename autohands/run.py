@@ -73,15 +73,20 @@ WORKSPACE_BUILD_CONFIG = Path.cwd() / "config" / "build"
 # build target owned its own files, so a missing config is a workspace bug and
 # is reported as one rather than silently resolving to someone else's rules.
 no_run_path = WORKSPACE_BUILD_CONFIG / "no_run.yaml"
-if not no_run_path.exists():
+if no_run_path.exists():
+    with open(no_run_path) as f:
+        no_run_list = yaml.safe_load(f) or []
+elif args.list_file:
+    # With an explicit list the allowlist IS the policy, so there is nothing for
+    # no_run.yaml to filter and its absence is not an error.
+    no_run_list = []
+else:
     raise FileNotFoundError(
         f"{no_run_path} not found. Every workspace must own its "
-        f"config/build/no_run.yaml (an empty file is valid and skips nothing). "
+        f"config/build/no_run.yaml (an empty file is valid and skips nothing), "
+        f"or pass --list to run an explicit set of notebooks. "
         f"Run from the workspace root, not from PyAutoHands."
     )
-
-with open(no_run_path) as f:
-    no_run_list = yaml.safe_load(f) or []
 
 if visualise:
     # A workspace with no visualise_notebooks.yaml has nothing marked for
@@ -119,7 +124,13 @@ if __name__ == "__main__":
             directory=directory,
             run_type="notebook",
         )
-        skip_reasons = parse_no_run_reasons(no_run_path, project)
+        # Only when the policy file exists: with an explicit list it may be
+        # absent, and there are then no skip reasons to parse.
+        skip_reasons = (
+            parse_no_run_reasons(no_run_path, project)
+            if no_run_path.exists()
+            else {}
+        )
 
     env_config = None
     if env_config_path:

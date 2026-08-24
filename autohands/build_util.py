@@ -629,8 +629,9 @@ def execute_notebooks_in_folder(
     ``files`` selects the discovery model, mirroring
     :func:`execute_scripts_in_folder`: omitted, notebooks are discovered
     recursively (opt-out coverage); supplied by :func:`files_from_list`, exactly
-    those entries run in that order (opt-in). ``no_run_list`` applies either way
-    and wins over the list.
+    those entries run in that order (opt-in). ``no_run_list`` applies to
+    DISCOVERY ONLY — with an allowlist the list is authoritative, for the same
+    reason as :func:`execute_scripts_in_folder`.
 
     ``write_back`` and ``retry_from_scripts`` are passed through to
     :func:`execute_notebook`; a PR smoke gate wants ``write_back=False`` (leave
@@ -641,6 +642,7 @@ def execute_notebooks_in_folder(
     infra_skip = ["__init__", "README"]
     no_run_list.extend(infra_skip)
 
+    files_are_allowlist = files is not None
     if files is None:
         files = sorted((Path.cwd() / directory).rglob("*.ipynb"))
         print(f"Found {len(files)} notebooks")
@@ -659,7 +661,9 @@ def execute_notebooks_in_folder(
                 )
             ):
                 continue
-        if should_skip(file, no_run_list):
+        # The allowlist is the policy when there is one: no_run.yaml governs
+        # OTHER runs (the release mega-run, notebook generation), not this one.
+        if not files_are_allowlist and should_skip(file, no_run_list):
             # Before the existence check, for the same reason as the script
             # runner: an excluded notebook that has also been deleted is still
             # excluded, and a failure would contradict the exclusion.
@@ -866,17 +870,22 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
     :func:`files_from_list`), exactly those entries run, in that order —
     coverage is opt-in.
 
-    ``no_run_list`` applies either way. An allowlisted script that is also
-    ``no_run``-listed is SKIPPED with its documented reason: an explicit
-    exclusion is the more specific statement of intent, and letting an
-    allowlist override it would resurrect a script that was deliberately
-    turned off.
+    ``no_run_list`` applies to DISCOVERY ONLY. When ``files`` is supplied the
+    list is authoritative and ``no_run.yaml`` is NOT consulted: the two express
+    policy for **different runs**. ``no_run.yaml`` governs the release mega-run
+    and notebook generation; an allowlist governs the PR smoke gate. A script
+    legitimately appears in both — excluded from the full build, required in
+    smoke — so filtering the list by ``no_run`` would silently delete coverage.
+    Measured before this was settled: honouring ``no_run`` over the workspaces'
+    allowlists would have dropped 13 scripts across four repos, every one of
+    which runs today.
     """
     no_run_list = no_run_list or []
     # Infrastructure files — always skip, never report
     infra_skip = ["__init__", "README"]
     no_run_list.extend(infra_skip)
 
+    files_are_allowlist = files is not None
     if files is None:
         files = find_scripts_in_folder(directory)
         print(f"Found {len(files)} scripts")
@@ -886,7 +895,9 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
     for file in files:
         if file.stem in infra_skip:
             continue
-        if should_skip(file, no_run_list):
+        # The allowlist is the policy when there is one: no_run.yaml governs
+        # OTHER runs (the release mega-run, notebook generation), not this one.
+        if not files_are_allowlist and should_skip(file, no_run_list):
             # Checked BEFORE existence: an excluded script that has also been
             # deleted is still excluded, and reporting it as a failure would
             # contradict the exclusion.

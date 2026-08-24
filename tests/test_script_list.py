@@ -95,12 +95,19 @@ def test_missing_list_file_is_an_error_not_an_empty_run(workspace):
         files_from_list("scripts", workspace / "does_not_exist.txt")
 
 
-def test_no_run_wins_over_the_allowlist(workspace, capsys):
+def test_the_allowlist_wins_over_no_run(workspace):
     """
-    An allowlisted script that is also no_run-listed is SKIPPED, with its reason.
+    An allowlisted script runs even when no_run.yaml also names it.
 
-    The explicit exclusion is the more specific statement of intent; letting the
-    allowlist override it would resurrect a script someone deliberately turned off.
+    The two files are policy for DIFFERENT runs: no_run.yaml governs the release
+    mega-run and notebook generation, an allowlist governs the PR smoke gate. A
+    script legitimately appears in both — excluded from the full build, required
+    in smoke.
+
+    This is measured, not theoretical. The vendored workspace runners read only
+    smoke_tests.txt and never open no_run.yaml, and across the four repos that
+    carry both files 13 allowlisted scripts are also no_run-listed. Filtering the
+    list by no_run would silently delete every one of them from smoke coverage.
     """
     listing = workspace / "smoke_tests.txt"
     listing.write_text("top_level.py\na.py\n")
@@ -110,8 +117,26 @@ def test_no_run_wins_over_the_allowlist(workspace, capsys):
         directory="scripts",
         no_run_list=["a"],
         report=report,
-        skip_reasons={"a": "deliberately off"},
+        skip_reasons={"a": "excluded from the release build"},
         files=files_from_list("scripts", listing),
+    )
+
+    by_name = {Path(r.file).name: r for r in report.results}
+    assert by_name["a.py"].status == Status.PASSED, (
+        "an allowlisted script must run even when no_run.yaml names it"
+    )
+    assert by_name["top_level.py"].status == Status.PASSED
+
+
+def test_no_run_still_filters_discovery(workspace):
+    """The opt-out path is untouched: without a list, no_run.yaml still skips."""
+    report = RunReport(project="p", directory="scripts", run_type="script")
+
+    execute_scripts_in_folder(
+        directory="scripts",
+        no_run_list=["a"],
+        report=report,
+        skip_reasons={"a": "deliberately off"},
     )
 
     by_name = {Path(r.file).name: r for r in report.results}
@@ -154,26 +179,25 @@ def test_absent_flag_leaves_discovery_untouched(workspace):
     assert Path(report.results[0].file).name == "simulator_script.py"
 
 
-def test_no_run_wins_even_when_the_listed_file_is_missing(workspace):
+def test_a_listed_missing_file_fails_even_if_no_run_names_it(workspace):
     """
-    An excluded script that has also been deleted is SKIPPED, not FAILED.
+    With the list authoritative, a stale entry is a FAIL whatever no_run says.
 
-    Pins the check order: reporting a failure for a script someone deliberately
-    turned off would contradict the exclusion, and would redden a gate over a
-    file nobody intends to run.
+    no_run.yaml cannot rescue it: the list is the smoke policy, so an entry
+    naming a file that does not exist is a broken allowlist and must be visible.
     """
     listing = workspace / "smoke_tests.txt"
-    listing.write_text("deleted_and_excluded.py\ntop_level.py\n")
+    listing.write_text("gone_and_excluded.py\ntop_level.py\n")
     report = RunReport(project="p", directory="scripts", run_type="script")
 
     execute_scripts_in_folder(
         directory="scripts",
-        no_run_list=["deleted_and_excluded"],
+        no_run_list=["gone_and_excluded"],
         report=report,
-        skip_reasons={"deleted_and_excluded": "retired"},
+        skip_reasons={"gone_and_excluded": "retired"},
         files=files_from_list("scripts", listing),
     )
 
     by_name = {Path(r.file).name: r for r in report.results}
-    assert by_name["deleted_and_excluded.py"].status == Status.SKIPPED
-    assert by_name["deleted_and_excluded.py"].skip_reason == "retired"
+    assert by_name["gone_and_excluded.py"].status == Status.FAILED
+    assert "top_level.py" in by_name
