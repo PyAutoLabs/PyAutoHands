@@ -217,3 +217,60 @@ class TestRetryIsNarrow:
         assert status == "passed"
         assert len(calls) == 1
         assert report.results[0].status == Status.PASSED
+
+
+class TestNestedNotebooks:
+    """
+    A notebook's source script is found by its path relative to `notebooks/`.
+
+    Every workspace notebook lives in a subdirectory (`imaging/`, `modeling/`,
+    ...). Resolving the source by bare filename would look in the wrong place
+    and, worse, could collide across subdirectories — two `model_fit.ipynb`
+    under different topics map to two different scripts.
+    """
+
+    def test_nested_notebook_regenerates_from_its_own_source(self, workspace):
+        _write_notebook(
+            workspace / "notebooks" / "imaging" / "model_fit.ipynb",
+            "raise RuntimeError('stale')",
+        )
+        (workspace / "scripts" / "imaging").mkdir(parents=True)
+        (workspace / "scripts" / "imaging" / "model_fit.py").write_text("x = 1 + 1\n")
+        # A decoy at the root: resolving by bare filename would pick this up.
+        (workspace / "scripts" / "model_fit.py").write_text("raise RuntimeError('wrong source')\n")
+        report = _report()
+
+        status = execute_notebook(
+            workspace / "notebooks" / "imaging" / "model_fit.ipynb",
+            report=report,
+            write_back=False,
+            retry_from_scripts=workspace / "scripts",
+            notebook_rel=Path("imaging/model_fit.ipynb"),
+        )
+
+        assert status == "passed", "must regenerate from scripts/imaging/, not the root decoy"
+        assert len(report.results) == 1
+
+    def test_the_folder_runner_passes_the_relative_path(self, workspace):
+        """End-to-end through execute_notebooks_in_folder, which computes it."""
+        from build_util import execute_notebooks_in_folder
+
+        _write_notebook(
+            workspace / "notebooks" / "imaging" / "model_fit.ipynb",
+            "raise RuntimeError('stale')",
+        )
+        (workspace / "scripts" / "imaging").mkdir(parents=True)
+        (workspace / "scripts" / "imaging" / "model_fit.py").write_text("x = 1 + 1\n")
+        (workspace / "scripts" / "model_fit.py").write_text("raise RuntimeError('wrong source')\n")
+        report = _report()
+
+        execute_notebooks_in_folder(
+            directory="notebooks",
+            no_run_list=[],
+            report=report,
+            write_back=False,
+            retry_from_scripts=workspace / "scripts",
+        )
+
+        assert len(report.results) == 1
+        assert report.results[0].status == Status.PASSED
