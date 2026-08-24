@@ -294,6 +294,7 @@ cmd_run() {
 help_run_python() {
   cat <<'EOF'
 autohands run_python <project> <directory> [--report-dir DIR] [--env-config FILE]
+                    [--list FILE]
 
 Execute Python scripts in <directory> for <project>, skipping files
 listed in config/build/no_run.yaml.
@@ -303,6 +304,10 @@ Arguments:
   directory      Subdirectory of scripts/ to execute
   --report-dir   Directory to write structured JSON results to
   --env-config   Path to env_vars.yaml for per-script environment config
+  --list         Script list (e.g. a workspace's smoke_tests.txt). Given, only
+                 the listed scripts run, in the list's order (opt-in coverage);
+                 omitted, scripts are discovered recursively under <directory>
+                 (opt-out coverage). no_run.yaml applies either way, and wins.
 
 Run from the workspace root.
 EOF

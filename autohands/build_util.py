@@ -619,19 +619,93 @@ def find_scripts_in_folder(directory: str) -> List[Path]:
     )
 
 
-def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_reasons=None, env_config=None):
+def files_from_list(directory: str, list_path) -> List[Path]:
+    """
+    Resolve an explicit allowlist of scripts to run, in the allowlist's own order.
+
+    The opt-in counterpart to :func:`find_scripts_in_folder`. Blank lines and
+    ``#`` comments are ignored; every other line is a path relative to
+    ``directory``. Duplicated entries are collapsed to their first occurrence so
+    a repeated line does not run the script twice.
+
+    Order is the file's order, deliberately — NOT ``find_scripts_in_folder``'s
+    simulator-first sort. An allowlist is hand-maintained, so its sequence is
+    the author's statement of what must run before what, and re-sorting it would
+    silently reorder a suite whose entries depend on an earlier one's output.
+
+    Entries are returned whether or not they exist on disk; a missing one is
+    reported per-entry by the caller rather than aborting the run.
+
+    Parameters
+    ----------
+    directory
+        The directory the allowlist's entries are relative to.
+    list_path
+        The allowlist file (e.g. a workspace's ``smoke_tests.txt``).
+
+    Returns
+    -------
+    A list of paths to the scripts, in allowlist order.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the allowlist file itself is missing. That is a configuration error,
+        not a script failure: silently running nothing would be a vacuously
+        green gate.
+    """
+    list_path = Path(list_path)
+    if not list_path.exists():
+        raise FileNotFoundError(f"no script list at {list_path}")
+
+    root = Path.cwd() / directory
+    files: List[Path] = []
+    seen = set()
+    for line in list_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line in seen:
+            continue
+        seen.add(line)
+        files.append(root / line)
+    return files
+
+
+def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_reasons=None, env_config=None, files=None):
+    """
+    Run the scripts under ``directory``, honouring ``no_run_list``.
+
+    ``files`` selects the discovery model. Omitted (the default), scripts are
+    discovered recursively under ``directory`` — coverage is opt-out, and
+    excluding one is an entry in ``no_run.yaml``. Supplied (from
+    :func:`files_from_list`), exactly those entries run, in that order —
+    coverage is opt-in.
+
+    ``no_run_list`` applies either way. An allowlisted script that is also
+    ``no_run``-listed is SKIPPED with its documented reason: an explicit
+    exclusion is the more specific statement of intent, and letting an
+    allowlist override it would resurrect a script that was deliberately
+    turned off.
+    """
     no_run_list = no_run_list or []
     # Infrastructure files — always skip, never report
     infra_skip = ["__init__", "README"]
     no_run_list.extend(infra_skip)
 
-    files = find_scripts_in_folder(directory)
-    print(f"Found {len(files)} scripts")
+    if files is None:
+        files = find_scripts_in_folder(directory)
+        print(f"Found {len(files)} scripts")
+    else:
+        print(f"Running {len(files)} listed scripts")
 
     for file in files:
         if file.stem in infra_skip:
             continue
         if should_skip(file, no_run_list):
+            # Checked BEFORE existence: an excluded script that has also been
+            # deleted is still excluded, and reporting it as a failure would
+            # contradict the exclusion.
             if report is not None:
                 from result_collector import ScriptResult, Status
                 reason = _find_skip_reason(file, no_run_list, skip_reasons or {})
@@ -640,6 +714,21 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
                     status=Status.SKIPPED,
                     skip_reason=reason,
                 ))
+        elif not file.exists():
+            # Only reachable from an allowlist — discovery cannot yield a
+            # missing path. Report it and carry on: the runner's contract is to
+            # continue through failures, and a stale allowlist entry must not
+            # cost coverage of every entry after it.
+            print(f"  {file} ...  FAIL (listed but not found)")
+            if report is not None:
+                from result_collector import ScriptResult, Status
+                report.results.append(ScriptResult(
+                    file=str(file),
+                    status=Status.FAILED,
+                    error_message=f"Listed in the script list but not found at {file}",
+                ))
+            else:
+                sys.exit(1)
         else:
             from env_config import build_env_for_script, args_for_script
             env = build_env_for_script(file, env_config)
