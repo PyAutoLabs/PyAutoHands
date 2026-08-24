@@ -114,8 +114,8 @@ This workspace is often imported from `/mnt/c/...` and Codex may not be able to 
 
 All scripts in `autohands/` are run from within a checked-out workspace directory (not from this repo root). They rely on `PYTHONPATH` including the PyAutoHands directory.
 
-- **`run_python.py <project> <directory> [--report-dir DIR] [--env-config FILE] [--list FILE]`** — Executes Python scripts in a workspace folder, skipping files listed in `config/no_run.yaml`. Coverage is opt-out by default (recursive discovery); `--list` switches it to opt-in, running exactly the entries of a script list such as a workspace's `smoke_tests.txt`, in that list's own order. `no_run.yaml` applies either way and wins over the list, so an explicitly excluded script stays excluded. A missing list file is an error, never an empty run.
-- **`run.py <project> <directory> [--visualise] [--report-dir DIR] [--env-config FILE] [--list FILE] [--no-write-back] [--retry-from DIR]`** — Executes Jupyter notebooks in a workspace folder, skipping files in `config/no_run.yaml`. `--list` switches coverage from opt-out discovery to opt-in (a workspace's `smoke_notebooks.txt`, in that list's order); `no_run.yaml` still wins over the list. `--no-write-back` executes a throwaway copy so the committed notebooks stay clean (a PR gate wants this; the release pipeline does not, since there the outputs are the product). `--retry-from <scripts-dir>` regenerates a failing notebook from its source `.py` and retries ONCE — the stale-notebook recovery; timeouts are never retried.
+- **`run_python.py <project> <directory> [--report-dir DIR] [--env-config FILE] [--list FILE]`** — Executes Python scripts in a workspace folder, skipping files listed in `config/no_run.yaml`. Coverage is opt-out by default (recursive discovery); `--list` switches it to opt-in, running exactly the entries of a script list such as a workspace's `smoke_tests.txt`, in that list's own order. `no_run.yaml` filters **discovery only** — with `--list` the allowlist is authoritative, because the two are policy for different runs (`no_run.yaml` for the release mega-run and notebook generation, the allowlist for the PR smoke gate) and a script legitimately appears in both. A missing list file is an error, never an empty run; a missing `no_run.yaml` is an error for discovery but fine under `--list`.
+- **`run.py <project> <directory> [--visualise] [--report-dir DIR] [--env-config FILE] [--list FILE] [--no-write-back] [--retry-from DIR]`** — Executes Jupyter notebooks in a workspace folder, skipping files in `config/no_run.yaml`. `--list` switches coverage from opt-out discovery to opt-in (a workspace's `smoke_notebooks.txt`, in that list's order); `no_run.yaml` filters discovery only — with `--list` the allowlist is authoritative. `--no-write-back` executes a throwaway copy so the committed notebooks stay clean (a PR gate wants this; the release pipeline does not, since there the outputs are the product). `--retry-from <scripts-dir>` regenerates a failing notebook from its source `.py` and retries ONCE — the stale-notebook recovery; timeouts are never retried.
 - **`generate.py <project>`** — Converts Python scripts in `scripts/` to `.ipynb` notebooks in `notebooks/`, run from within the workspace root
 - **`generate_markdown.py <project> [--only <substring>] [--optimize-only]`** — Renders the curated scripts listed in the workspace's `config/build/markdown_examples.yaml` to **executed** markdown pages with output images under `markdown/`, plus an index, committed so examples are readable on GitHub. Manual / at-release only, never per-commit; refuses `PYAUTO_TEST_MODE` (truncated searches make wrong images — model-fit reruns instead resume from the completed `output/` cache); never renders `features/` scripts; restores tracked files a script modifies (e.g. simulators rewriting `dataset/`). Extracted figures are optimized on the way out, but only for the render in progress — `--optimize-only` renders nothing and puts already-committed `markdown/**/<page>_files/` PNGs through the same optimizer, for pages built before it shipped. Rules and rationale in the module docstring.
 - **`script_matrix.py <project1> [project2 ...]`** — Outputs a JSON matrix of `{name, directory}` pairs for GitHub Actions matrix strategy
@@ -205,7 +205,16 @@ none of those three sweeps, precisely because it holds no logic. The obstacle
 was never behaviour but *discovery model*: `run_python.py` was opt-out only,
 while the other two variants are opt-in allowlists. `--list <file>` closes that
 gap for the script leg, so the `workspace_test` variant can collapse to a HowTo-
-shaped delegator. The notebook leg followed in the same change:
+shaped delegator.
+
+Under `--list` the allowlist is **authoritative** and `no_run.yaml` is not
+consulted. The two are policy for different runs — `no_run.yaml` for the release
+mega-run and notebook generation, the allowlist for the PR smoke gate — and the
+vendored runners have never read `no_run.yaml` at all. Measured before this was
+settled: filtering the allowlists by `no_run` would have dropped **13 scripts**
+across `autogalaxy_workspace_test` (9), `autolens_workspace_test` (2),
+`autofit_workspace` (1) and `autolens_workspace` (1), every one of which runs in
+smoke today. The notebook leg followed in the same change:
 `run.py` gained the matching `--list`, plus `--no-write-back` and
 `--retry-from`, so the `workspace` variant can collapse too.
 

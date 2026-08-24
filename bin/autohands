@@ -287,8 +287,9 @@ Arguments:
   --list           Notebook list (e.g. a workspace's smoke_notebooks.txt).
                    Given, only the listed notebooks run, in the list's order
                    (opt-in coverage); omitted, notebooks are discovered
-                   recursively (opt-out). no_run.yaml applies either way, and
-                   wins over the list.
+                   recursively (opt-out). no_run.yaml filters DISCOVERY only:
+                   with --list the allowlist is authoritative, since the two are
+                   policy for different runs.
   --no-write-back  Execute a throwaway copy, leaving the committed notebooks
                    untouched. What a PR smoke gate wants; the release pipeline
                    omits it, because there the executed outputs ARE the product.
@@ -320,7 +321,9 @@ Arguments:
   --list         Script list (e.g. a workspace's smoke_tests.txt). Given, only
                  the listed scripts run, in the list's order (opt-in coverage);
                  omitted, scripts are discovered recursively under <directory>
-                 (opt-out coverage). no_run.yaml applies either way, and wins.
+                 (opt-out coverage). no_run.yaml filters DISCOVERY only: with
+                 --list the allowlist is authoritative, since the two are policy
+                 for different runs (release build vs PR smoke gate).
 
 Run from the workspace root.
 EOF
