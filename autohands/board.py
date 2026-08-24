@@ -35,6 +35,7 @@ from __future__ import annotations
 import datetime
 import html as _html
 import json
+import os
 import re
 import subprocess
 import sys
@@ -43,6 +44,46 @@ import urllib.request
 from pathlib import Path
 
 HANDS_HOME = Path(__file__).resolve().parents[1]
+
+# The family look lives once, in the Brain (``board/_theme.py``): the
+# stylesheet, the hero that redraws this organ's logo as a mark, and the
+# cross-board footer. Imported rather than copied, so the look moves for the
+# whole family at once — release_board.yml checks PyAutoBrain out beside this
+# repo, and a local run finds the sibling checkout the way the other PyAuto
+# tools resolve each other.
+BOARD_KEY = "hands"  # this board's entry in the Brain's palette table
+
+
+def _workspace_root() -> Path:
+    """Where the sibling PyAuto checkouts live: `$PYAUTO_ROOT`, else `~/Code`.
+
+    The org's own directory name is an instance fact, so it is never written
+    here — a workspace that does not follow the default sets `$PYAUTO_ROOT`
+    (the same variable the dev-flow doors read).
+    """
+    return Path(os.environ.get("PYAUTO_ROOT") or Path.home() / "Code")
+
+
+def theme():
+    """The shared theme module, or a RuntimeError naming the fix.
+
+    Only the html path needs it; ``--md``/``--badge``/``--json`` never call
+    here, so the digest keeps working with no PyAutoBrain in reach.
+    """
+    for cand in (os.environ.get("PYAUTO_BRAIN"), HANDS_HOME / "PyAutoBrain",
+                 HANDS_HOME.parent / "PyAutoBrain",
+                 _workspace_root() / "PyAutoBrain"):
+        if not cand:
+            continue
+        board = Path(cand) / "board"
+        if (board / "_theme.py").is_file():
+            if str(board) not in sys.path:
+                sys.path.insert(0, str(board))
+            import _theme
+            return _theme
+    raise RuntimeError(
+        "the shared board theme (PyAutoBrain/board/_theme.py) is not in reach "
+        "— check PyAutoBrain out beside this repo or set PYAUTO_BRAIN")
 CONFIG_PATH = Path(__file__).resolve().parent / "config" / "workspaces.yaml"
 
 SCHEMA_VERSION = 1
@@ -275,11 +316,14 @@ BOARD_FAMILY = (("mind", "PyAutoMind"), ("brain", "PyAutoBrain"),
 
 
 def _boards_nav(snapshot: dict) -> str:
+    """The cross-board footer — one chip per sibling, each in its own organ's
+    colour (the theme owns the chip palette; this board owns the URLs)."""
     owner = str(snapshot.get("owner") or "").lower()
     if not owner:
         return ""
-    return " · ".join(f'<a href="https://{owner}.github.io/{repo}/">{name}</a>'
-                      for name, repo in BOARD_FAMILY)
+    links = {key: f"https://{owner}.github.io/{repo}/"
+             for key, repo in BOARD_FAMILY}
+    return theme().boards_footer(links, BOARD_KEY)
 
 
 def _latest(snapshot: dict) -> dict | None:
@@ -358,16 +402,45 @@ def _render_md_brief(snapshot: dict) -> str:
 
 
 def _copy_btn(payload: str, label: str = "copy") -> str:
+    """A one-tap payload chip. The behaviour is the family's shared script
+    (``_theme.JS``): a delegated click handler reading ``data-cmd``."""
     return (f"<button class='copy' type='button' "
             f"title='{_html.escape(label, quote=True)}' "
-            f"data-copy=\"{_html.escape(payload, quote=True)}\" "
-            f"onclick='cp(this)'>📋</button>")
+            f"data-cmd=\"{_html.escape(payload, quote=True)}\">\U0001f4cb</button>")
 
 
 _PYPI_CLS = {"live": "ok", "yanked": "fail", "missing": "warn", "unavailable": "unobs"}
 
 
+# The lede, and the page-specific shapes the shared sheet has no opinion on:
+# the status dot each row carries and the version chips. Written against the
+# theme's variables, so this board follows the family accent rather than
+# setting a second palette.
+_LEDE = ("What the Hands shipped — a record of execution, newest first. Tap "
+         "\U0001f4cb to put a command on your clipboard for a Claude Code chat.")
+
+_EXTRA_CSS = """
+.chip{display:inline-block;background:var(--btn);border:1px solid var(--line);
+ border-radius:999px;padding:.15rem .6rem;margin:.15rem .2rem 0 0;
+ font-size:.85rem;white-space:nowrap}
+table.recent td.dot{width:10px;padding-right:0}
+table.recent td.dot::before{content:"";display:inline-block;width:10px;
+ height:10px;border-radius:50%;margin-top:.35rem;background:var(--muted)}
+tr.ok td.dot::before{background:var(--ok)}
+tr.warn td.dot::before{background:var(--warn)}
+tr.fail td.dot::before{background:var(--bad)}
+table.recent td.name{font-weight:600;white-space:nowrap}
+.ndot{display:inline-block;width:12px;height:12px;border-radius:50%;
+ margin-right:.25rem;background:var(--muted)}
+.ndot.ok{background:var(--ok)}
+.ndot.fail{background:var(--bad)}
+.errors{margin-top:1.2rem}
+footer{margin-top:2rem;color:var(--muted);font-size:.82em}
+"""
+
+
 def _render_html(snapshot: dict) -> str:
+    t_ = theme()
     latest = _latest(snapshot)
     head = (f"{_html.escape(latest['version'])}" if latest else "unavailable")
     head_age = _age(latest.get("date")) if latest else ""
@@ -422,74 +495,31 @@ def _render_html(snapshot: dict) -> str:
         errors = (f"<div class='errors'><p class='meta'>unavailable this "
                   f"render:</p><ul class='meta'>{items}</ul></div>")
     heart = _heart_board_url(snapshot)
+    hero = t_.hero(BOARD_KEY, "Dashboard", _LEDE)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PyAuto releases — {head}</title>
-<style>
-  :root {{ color-scheme: light dark; }}
-  * {{ box-sizing: border-box; }}
-  body {{ font: 15px/1.5 -apple-system, Segoe UI, Roboto, sans-serif;
-         margin: 0; padding: 2rem 1rem; background: #0d1117; color: #c9d1d9; }}
-  .wrap {{ max-width: 760px; margin: 0 auto; }}
-  h1 {{ font-size: 1.3rem; margin: 0 0 .25rem; }}
-  h2 {{ font-size: 1rem; margin: 1.5rem 0 .5rem; }}
-  .version {{ display: inline-block; padding: .3rem .9rem; border-radius: 999px;
-             font-weight: 700; letter-spacing: .04em; background: #1f6feb; color: #fff; }}
-  .meta {{ color: #8b949e; font-size: .9rem; }}
-  .chip {{ display: inline-block; background: #161b22; border: 1px solid #30363d;
-          border-radius: 999px; padding: .15rem .6rem; margin: .15rem .2rem 0 0;
-          font-size: .85rem; white-space: nowrap; }}
-  table {{ width: 100%; border-collapse: collapse; }}
-  td {{ padding: .5rem .5rem; border-top: 1px solid #21262d; vertical-align: top; }}
-  td.dot {{ width: 10px; }}
-  td.dot::before {{ content: ""; display: inline-block; width: 10px; height: 10px;
-                   border-radius: 50%; margin-top: .35rem; }}
-  tr.ok td.dot::before {{ background: #3fb950; }}
-  tr.warn td.dot::before {{ background: #d29922; }}
-  tr.fail td.dot::before {{ background: #f85149; }}
-  tr.unobs td.dot::before {{ background: #6e7681; }}
-  td.name {{ font-weight: 600; white-space: nowrap; }}
-  a {{ color: #58a6ff; text-decoration: none; }}
-  a:hover {{ text-decoration: underline; }}
-  .ndot {{ display: inline-block; width: 12px; height: 12px; border-radius: 50%;
-          margin-right: .25rem; }}
-  .ndot.ok {{ background: #3fb950; }}
-  .ndot.fail {{ background: #f85149; }}
-  button.copy {{ background: #21262d; border: 1px solid #30363d; border-radius: 6px;
-                color: #c9d1d9; cursor: pointer; padding: .05rem .45rem;
-                margin-left: .35rem; font-size: .85rem; line-height: 1.4; }}
-  button.copy:hover {{ background: #30363d; }}
-  footer {{ margin-top: 2rem; color: #8b949e; font-size: .8rem; }}
-</style>
-<script>
-function cp(b){{var t=b.getAttribute('data-copy');
- if(navigator.clipboard&&navigator.clipboard.writeText){{
-   navigator.clipboard.writeText(t).then(function(){{ok(b)}},function(){{fb(t)}});
- }}else{{fb(t)}}}}
-function ok(b){{b.textContent='✓';setTimeout(function(){{b.textContent='📋'}},1200)}}
-function fb(t){{window.prompt('Copy this:',t)}}
-</script></head>
-<body><div class="wrap">
-  <h1>PyAutoHands Dashboard</h1>
-  <p><span class="version">{head}</span> <span class="meta">{head_age}</span> <span class="meta"><a href="dashboard.md">markdown version</a></span></p>
-  <p class="meta">What the Hands shipped — a record of execution, newest first.
-  Whether it is <em>safe</em> to release lives with the
-  <a href="{heart}">PyAutoHeart Dashboard</a>.</p>
-  <p>{chips}</p>
-  <p class="meta">📋 copies the command into your clipboard, ready to paste
-  into a Claude Code chat.</p>
-  <h2>Libraries</h2>
-  <table>{''.join(lib_rows)}</table>
-  <h2>Release train</h2>
-  <table>{''.join(train_rows)}</table>
-  {nightly}
-  {errors}
-  <footer>Rendered by <code>autohands/board.py</code> from the GitHub + PyPI
-  APIs · generated {_html.escape(str(snapshot.get('generated') or '?'))} ·
-  Hands executes, never gates.</footer>
-  <p class="meta">Boards: {_boards_nav(snapshot)}</p>
-</div></body></html>
+<title>PyAutoHands Dashboard</title>
+<style>{t_.css(BOARD_KEY)}{_EXTRA_CSS}</style>
+</head>
+<body>
+{hero}
+<p class="verdict"><b>{head}</b><span class="muted">{head_age}</span></p>
+<p class="muted">Whether it is <em>safe</em> to release lives with the
+<a href="{heart}">PyAutoHeart Dashboard</a> — the Hands execute, never gate.
+<a href="dashboard.md">markdown version</a></p>
+<p>{chips}</p>
+<h2>Libraries</h2>
+<table class="recent">{''.join(lib_rows)}</table>
+<h2>Release train</h2>
+<table class="recent">{''.join(train_rows)}</table>
+{nightly}
+{errors}
+{_boards_nav(snapshot)}
+<footer>Rendered by <code>autohands/board.py</code> from the GitHub + PyPI
+APIs · generated {_html.escape(str(snapshot.get('generated') or '?'))}.</footer>
+<script>{t_.JS}</script>
+</body></html>
 """
 
 

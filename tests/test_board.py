@@ -69,7 +69,7 @@ def test_shipped_date_comes_from_the_version_scheme():
 
 def test_failed_train_run_carries_a_bug_prompt():
     html = board.render(SNAP, "html")
-    assert "data-copy=" in html and "cp(this)" in html
+    assert "data-cmd=" in html  # the shared copy handler's payload hook
     assert "/bug Release train: SomeHands release.yml run failed on 2026-06-01" in html
     assert "https://ci.invalid/runs/1" in html
     # the action chips are present too
@@ -112,7 +112,7 @@ def test_html_is_self_contained():
     assert "fetch(" not in out and "XMLHttpRequest" not in out
     # data-copy payloads are inert clipboard text, not asset loads — strip
     # them, then every remaining URL must sit in an href.
-    stripped = re.sub(r'data-copy="[^"]*"', "", out)
+    stripped = re.sub(r'data-cmd="[^"]*"', "", out)
     for m in re.finditer(r"(?:http|https)://", stripped):
         before = stripped[max(0, m.start() - 30):m.start()]
         assert 'href="' in before or "href='" in before, f"non-href URL at {m.start()}"
@@ -132,3 +132,15 @@ def test_boundary_language_links_the_heart():
     for out in (md, html):
         assert "Heart" in out  # readiness explicitly deferred to the Heart
     assert "https://someorg.github.io/PyAutoHeart/" in html
+
+
+def test_html_wears_the_shared_family_theme():
+    # The look is the Brain's `board/_theme.py`, not a stylesheet copied in
+    # here: the page must carry this board's hero (mark, wordmark, tagline)
+    # and its accent, or it has silently fallen out of the family.
+    t = board.theme()
+    html = board.render(SNAP, "html")
+    assert t.MARKS[board.BOARD_KEY] in html
+    assert t.ORGANS[board.BOARD_KEY]["tagline"] in html
+    assert t.ORGANS[board.BOARD_KEY]["ink_dark"] in html
+    assert "#58a6ff" not in html  # the old hard-coded GitHub blue

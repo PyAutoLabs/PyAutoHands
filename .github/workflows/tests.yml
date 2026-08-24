@@ -91,6 +91,13 @@ jobs:
         with:
           repository: PyAutoLabs/PyAutoMind
           path: PyAutoMind
+      # The shared board look the dashboard renders with — imported from the
+      # Brain, never copied here, so the board tests exercise the real thing.
+      - name: Checkout PyAutoBrain (the shared board theme)
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoBrain
+          path: PyAutoBrain
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
