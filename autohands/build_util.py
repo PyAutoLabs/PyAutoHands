@@ -358,7 +358,7 @@ def is_clean_skip_exit(output: str) -> bool:
     return bool(tail) and _SKIP_EXIT_RE.match(tail[-1]) is not None
 
 
-def regenerate_notebook(nb_path, scripts_dir) -> Path:
+def regenerate_notebook(nb_path, scripts_dir, rel=None) -> Path:
     """
     Regenerate one notebook from its source ``.py`` into a temp dir.
 
@@ -376,8 +376,13 @@ def regenerate_notebook(nb_path, scripts_dir) -> Path:
         The notebook that failed, e.g. ``notebooks/imaging/model_fit.ipynb``.
     scripts_dir
         The directory holding the source scripts, e.g. ``<workspace>/scripts``.
-        The source is looked up at the notebook's path relative to its own
-        ``notebooks/`` root, with a ``.py`` suffix.
+    rel
+        The notebook's path RELATIVE to its own ``notebooks/`` root, e.g.
+        ``imaging/model_fit.ipynb``. The source script is that same relative
+        path under ``scripts_dir`` with a ``.py`` suffix. Omitting it falls back
+        to the bare filename, which is only correct for a notebook sitting at
+        the root — every workspace notebook lives in a subdirectory, so callers
+        iterating a tree must pass this.
 
     Returns
     -------
@@ -390,7 +395,8 @@ def regenerate_notebook(nb_path, scripts_dir) -> Path:
     """
     nb_path = Path(nb_path)
     scripts_dir = Path(scripts_dir)
-    script_path = scripts_dir / Path(nb_path.name).with_suffix(".py")
+    rel = Path(rel) if rel is not None else Path(nb_path.name)
+    script_path = scripts_dir / rel.with_suffix(".py")
     if not script_path.exists():
         raise FileNotFoundError(f"No source script at {script_path}")
 
@@ -553,7 +559,7 @@ def _classify_notebook_run(run_target, recorded, report, env, timeout_secs):
 
 
 def execute_notebook(f, report=None, env=None, write_back=True,
-                     retry_from_scripts=None, report_as=None):
+                     retry_from_scripts=None, report_as=None, notebook_rel=None):
     """
     Execute one notebook as a subprocess, with the kernel cwd at the repo root.
 
@@ -594,7 +600,7 @@ def execute_notebook(f, report=None, env=None, write_back=True,
 
     print("  notebook failed; regenerating from source script and retrying...")
     try:
-        regenerated = regenerate_notebook(f, retry_from_scripts)
+        regenerated = regenerate_notebook(f, retry_from_scripts, rel=notebook_rel)
     except Exception as exc:
         # No source script, or generation itself failed. The first attempt's
         # FAIL stands — the recovery was unavailable, not the notebook fixed.
@@ -690,12 +696,20 @@ def execute_notebooks_in_folder(
         else:
             from env_config import build_env_for_script
             env = build_env_for_script(file, env_config)
+            # The path relative to the notebooks root is what maps a notebook
+            # to its source script; the bare filename would collide across
+            # subdirectories and miss the source entirely.
+            try:
+                notebook_rel = file.relative_to(Path.cwd() / directory)
+            except ValueError:  # pragma: no cover - file outside the root
+                notebook_rel = Path(file.name)
             execute_notebook(
                 file,
                 report=report,
                 env=env,
                 write_back=write_back,
                 retry_from_scripts=retry_from_scripts,
+                notebook_rel=notebook_rel,
             )
 
 
