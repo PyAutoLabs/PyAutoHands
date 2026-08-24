@@ -293,7 +293,6 @@ jobs:
             # np.row_stack — removed in NumPy 2.0. Against the numpy 2.x the
             # install above resolves, that pin is an immediate AttributeError
             # across the graphical/ and tools/ suites.
-            pip install pynufft==2025.1.1
             pip install pytest
             pip install numba
             python3 -m pytest
@@ -352,7 +351,7 @@ jobs:
             sleep 10
           done
           # matplotlib deliberately unpinned — see the Tests step above.
-          pip install pynufft==2025.1.1 numba
+          pip install numba
           # Belt-and-braces JAX install — the [optional] → [jax] chain
           # occasionally silently drops jax from test.pypi resolution.
           pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
@@ -771,7 +770,7 @@ jobs:
           sleep 10
         done
         # matplotlib deliberately unpinned — see the Tests step above.
-        pip install pynufft==2025.1.1 numba
+        pip install numba
         # Belt-and-braces JAX install (same reason as the install steps above).
         pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
         pushd workspace
