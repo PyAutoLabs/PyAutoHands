@@ -271,18 +271,31 @@ cmd_regenerate_navigator() {
 help_run() {
   cat <<'EOF'
 autohands run <project> <directory> [--visualise] [--report-dir DIR] [--env-config FILE]
+              [--list FILE] [--no-write-back] [--retry-from DIR]
 
 Execute Jupyter notebooks in <directory> for <project>, skipping files
 listed in the workspace's config/build/no_run.yaml (required).
 
 Arguments:
-  project        Project name (e.g. autofit, autogalaxy, autolens)
-  directory      Subdirectory of notebooks/ to execute
-  --visualise    Only run notebooks listed in the workspace's
-                 config/build/visualise_notebooks.yaml (selects nothing
-                 if the workspace has no such file)
-  --report-dir   Directory to write structured JSON results to
-  --env-config   Path to env_vars.yaml for per-script environment config
+  project          Project name (e.g. autofit, autogalaxy, autolens)
+  directory        Subdirectory of notebooks/ to execute
+  --visualise      Only run notebooks listed in the workspace's
+                   config/build/visualise_notebooks.yaml (selects nothing
+                   if the workspace has no such file)
+  --report-dir     Directory to write structured JSON results to
+  --env-config     Path to env_vars.yaml for per-script environment config
+  --list           Notebook list (e.g. a workspace's smoke_notebooks.txt).
+                   Given, only the listed notebooks run, in the list's order
+                   (opt-in coverage); omitted, notebooks are discovered
+                   recursively (opt-out). no_run.yaml applies either way, and
+                   wins over the list.
+  --no-write-back  Execute a throwaway copy, leaving the committed notebooks
+                   untouched. What a PR smoke gate wants; the release pipeline
+                   omits it, because there the executed outputs ARE the product.
+  --retry-from     Scripts directory. On a genuine failure the notebook is
+                   regenerated from its source .py and retried ONCE, recovering
+                   a stale notebook whose script moved on. Timeouts are never
+                   retried; a clean skip-guard exit is already a PASS.
 
 Run from the workspace root.
 EOF
@@ -294,6 +307,7 @@ cmd_run() {
 help_run_python() {
   cat <<'EOF'
 autohands run_python <project> <directory> [--report-dir DIR] [--env-config FILE]
+                    [--list FILE]
 
 Execute Python scripts in <directory> for <project>, skipping files
 listed in config/build/no_run.yaml.
@@ -303,6 +317,10 @@ Arguments:
   directory      Subdirectory of scripts/ to execute
   --report-dir   Directory to write structured JSON results to
   --env-config   Path to env_vars.yaml for per-script environment config
+  --list         Script list (e.g. a workspace's smoke_tests.txt). Given, only
+                 the listed scripts run, in the list's order (opt-in coverage);
+                 omitted, scripts are discovered recursively under <directory>
+                 (opt-out coverage). no_run.yaml applies either way, and wins.
 
 Run from the workspace root.
 EOF

@@ -114,8 +114,8 @@ This workspace is often imported from `/mnt/c/...` and Codex may not be able to 
 
 All scripts in `autohands/` are run from within a checked-out workspace directory (not from this repo root). They rely on `PYTHONPATH` including the PyAutoHands directory.
 
-- **`run_python.py <project> <directory>`** — Executes Python scripts in a workspace folder, skipping files listed in `config/no_run.yaml`
-- **`run.py <project> <directory> [--visualise]`** — Executes Jupyter notebooks in a workspace folder, skipping files in `config/no_run.yaml`
+- **`run_python.py <project> <directory> [--report-dir DIR] [--env-config FILE] [--list FILE]`** — Executes Python scripts in a workspace folder, skipping files listed in `config/no_run.yaml`. Coverage is opt-out by default (recursive discovery); `--list` switches it to opt-in, running exactly the entries of a script list such as a workspace's `smoke_tests.txt`, in that list's own order. `no_run.yaml` applies either way and wins over the list, so an explicitly excluded script stays excluded. A missing list file is an error, never an empty run.
+- **`run.py <project> <directory> [--visualise] [--report-dir DIR] [--env-config FILE] [--list FILE] [--no-write-back] [--retry-from DIR]`** — Executes Jupyter notebooks in a workspace folder, skipping files in `config/no_run.yaml`. `--list` switches coverage from opt-out discovery to opt-in (a workspace's `smoke_notebooks.txt`, in that list's order); `no_run.yaml` still wins over the list. `--no-write-back` executes a throwaway copy so the committed notebooks stay clean (a PR gate wants this; the release pipeline does not, since there the outputs are the product). `--retry-from <scripts-dir>` regenerates a failing notebook from its source `.py` and retries ONCE — the stale-notebook recovery; timeouts are never retried.
 - **`generate.py <project>`** — Converts Python scripts in `scripts/` to `.ipynb` notebooks in `notebooks/`, run from within the workspace root
 - **`generate_markdown.py <project> [--only <substring>] [--optimize-only]`** — Renders the curated scripts listed in the workspace's `config/build/markdown_examples.yaml` to **executed** markdown pages with output images under `markdown/`, plus an index, committed so examples are readable on GitHub. Manual / at-release only, never per-commit; refuses `PYAUTO_TEST_MODE` (truncated searches make wrong images — model-fit reruns instead resume from the completed `output/` cache); never renders `features/` scripts; restores tracked files a script modifies (e.g. simulators rewriting `dataset/`). Extracted figures are optimized on the way out, but only for the render in progress — `--optimize-only` renders nothing and puts already-committed `markdown/**/<page>_files/` PNGs through the same optimizer, for pages built before it shipped. Rules and rationale in the module docstring.
 - **`script_matrix.py <project1> [project2 ...]`** — Outputs a JSON matrix of `{name, directory}` pairs for GitHub Actions matrix strategy
@@ -166,11 +166,9 @@ would require regenerating and committing notebooks across every workspace.
 
 **Propagation.** Each workspace repo carries its own
 `.github/scripts/run_smoke.py` (no template sync — PyAutoHeart's reusable
-`smoke-tests.yml` deliberately leaves the runner in the workspace), and that
-copy has its own `execute_notebook` used by the PR smoke gate. It already
-imports from PyAutoHands (`env_config`, `build_util.py_to_notebook`, with
-`PyAutoHands/autohands` on `PYTHONPATH`), so adoption is a two-line change per
-workspace:
+`smoke-tests.yml` deliberately leaves the runner in the workspace). The three
+notebook-capable copies each had their own `execute_notebook`, so the skip guard
+had to be adopted per repo — a two-line change, applied 2026-07-25:
 
 ```python
 from build_util import is_clean_skip_exit
@@ -180,15 +178,57 @@ if rc != 0 and is_clean_skip_exit(output):
     rc = 0
 ```
 
-Workspaces carrying a `run_smoke.py` copy: `autofit_workspace`,
-`autogalaxy_workspace`, `autolens_workspace`, `autofit_workspace_test`,
-`autogalaxy_workspace_test`, `autolens_workspace_test`,
-`autocti_workspace_test`, `HowToGalaxy`, `HowToLens` (nine copies, five distinct
-revisions — they have drifted). Only the three **user-facing workspaces**
-(`autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace`) have a
-notebook execution leg, so only those three needed the edit — applied
-2026-07-25. The HowTo and `*_test` runners are scripts-only (no
-`smoke_notebooks.txt`, no nbconvert path) and require nothing.
+### The `run_smoke.py` copies
+
+**Ten copies in three variants** (measured 2026-08-24 across every repo's
+`main`). They are three structurally different programs, not revisions of one:
+
+| Variant | Repos | Lines | Notebook leg | Coverage |
+|---|---|---|---|---|
+| **workspace** | `autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace` | 356 | yes | opt-in (`smoke_tests.txt` + `smoke_notebooks.txt`) |
+| **workspace_test** | `autofit_workspace_test`, `autogalaxy_workspace_test`, `autolens_workspace_test`, `autocti_workspace_test` | 198 | no | opt-in (`smoke_tests.txt`) |
+| **HowTo** | `HowToLens`, `HowToGalaxy`, `HowToFit` | 75 | no | opt-out (`no_run.yaml`) |
+
+There is **no live drift inside any variant**: the three workspace copies are
+byte-identical, the four `workspace_test` copies differ only in two docstring
+lines, and the three HowTo copies differ only in their `PROJECT` constant. That
+state was reached by three manual N-repo sweeps, not by a sync mechanism —
+#185 (env resolution collapsed onto `env_config`), #226/#227 (`timeout_for` and
+`kill_group` promoted here, so all ten honour `BUILD_SCRIPT_TIMEOUT` and the
+process-group kill), and the jupyter-guard fix. Only the skip guard is
+notebook-specific: `is_clean_skip_exit` belongs in exactly the three
+notebook-capable copies, since the other seven never shell out to `jupyter`.
+
+**Direction of travel: delegation.** The HowTo tier is the target shape — 75
+lines of `PROJECT` plus a `subprocess.run` into `run_python.py` — and it needed
+none of those three sweeps, precisely because it holds no logic. The obstacle
+was never behaviour but *discovery model*: `run_python.py` was opt-out only,
+while the other two variants are opt-in allowlists. `--list <file>` closes that
+gap for the script leg, so the `workspace_test` variant can collapse to a HowTo-
+shaped delegator. The notebook leg followed in the same change:
+`run.py` gained the matching `--list`, plus `--no-write-back` and
+`--retry-from`, so the `workspace` variant can collapse too.
+
+Two of the three notebook behaviours that variant held needed real promotion,
+and one dissolved on inspection:
+
+- **`--no-write-back` (promoted).** `run_notebook.py` writes executed outputs
+  back in place — right for generation, where the outputs are the product, but
+  wrong for a PR gate, which must not dirty the tree it is testing. The flag
+  executes a throwaway copy instead. The kernel cwd is pinned to the repo root
+  either way, so this supersedes the workspace copy's staged-copy-at-root trick
+  rather than porting it.
+- **`--retry-from` (promoted).** One regenerate-from-source retry recovers a
+  *stale* notebook whose script moved on. Deliberately narrow: a TIMEOUT is
+  never retried (a second full cap for the same answer), a clean skip-guard exit
+  is already a PASS and never reaches it, and the retry's verdict REPLACES the
+  first attempt's so one notebook contributes one result.
+- **`JUPYTER_MISSING_RC` (not needed).** That guard exists because the workspace
+  copy shelled out to a bare `jupyter` binary, so an absent toolchain raised
+  `FileNotFoundError` out of `main()` and aborted the run with no summary line.
+  `execute_notebook` invokes `sys.executable run_notebook.py`, which always
+  exists, so a missing toolchain is an ordinary non-zero exit — one FAIL, run
+  continues. The failure mode is structurally absent here.
 
 ### Google Colab architecture
 

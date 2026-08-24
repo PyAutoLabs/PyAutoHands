@@ -22,6 +22,18 @@ parser.add_argument(
     default=None,
     help="Path to profile_smoke.yaml for per-script environment configuration",
 )
+parser.add_argument(
+    "--list",
+    dest="list_file",
+    type=str,
+    default=None,
+    help=(
+        "Path to a script list (e.g. a workspace's smoke_tests.txt). Given, only "
+        "the listed scripts run, in the list's order (opt-in coverage); omitted, "
+        "scripts are discovered recursively under DIRECTORY (opt-out coverage). "
+        "no_run.yaml applies either way."
+    ),
+)
 
 args = parser.parse_args()
 
@@ -73,12 +85,23 @@ if __name__ == "__main__":
         from env_config import load_env_config
         env_config = load_env_config(env_config_path)
 
+    files = None
+    if args.list_file:
+        try:
+            files = build_util.files_from_list(directory, args.list_file)
+        except FileNotFoundError as e:
+            # A missing list is a configuration error, not a script failure.
+            # Running nothing and exiting 0 would be a vacuously green gate.
+            print(f"ERROR: {e}", file=sys.stderr)
+            sys.exit(1)
+
     build_util.execute_scripts_in_folder(
         no_run_list=no_run_list,
         directory=directory,
         report=report,
         skip_reasons=skip_reasons,
         env_config=env_config,
+        files=files,
     )
 
     if report is not None:
