@@ -41,6 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The family look (hero, palette, stylesheet) is defined once in the
+      # Brain and imported by the renderer — never copied in here.
+      - uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoBrain
+          path: PyAutoBrain
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
