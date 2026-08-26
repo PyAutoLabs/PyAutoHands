@@ -46,7 +46,26 @@ set -euo pipefail
 
 VENV="${PYAUTO_SESSION_VENV:-$HOME/.pyauto/session-py312}"
 BASE_DEPS=(pytest PyYAML)
-EXTRAS_FILE="${CLAUDE_PROJECT_DIR:-$PWD}/.claude/session-python.txt"
+
+# Which checkout is this copy of the hook installed in?
+#
+# NOT $CLAUDE_PROJECT_DIR. That is the session's project directory, which equals
+# the repo only when the session holds exactly ONE repo. A session scoped to
+# several organs clones them side by side under the project directory
+# (/home/user/PyAutoMind, /home/user/PyAutoBrain, ...), and then
+# $CLAUDE_PROJECT_DIR is their parent — so reading session-python.txt from it
+# found nothing, silently, in exactly the sessions that hold the most repos.
+#
+# Derive it from where this script actually is, in both the installed and the
+# canonical location.
+HOOK_SELF="$(readlink -f "$0")"
+case "$(dirname "$HOOK_SELF")" in
+    */.claude/hooks) REPO_DIR="$(cd "$(dirname "$HOOK_SELF")/../.." && pwd)" ;;
+    */policy)        REPO_DIR="$(cd "$(dirname "$HOOK_SELF")/.."    && pwd)" ;;
+    *)               REPO_DIR="${CLAUDE_PROJECT_DIR:-$PWD}" ;;
+esac
+WORKSPACE_ROOT="$(dirname "$REPO_DIR")"
+EXTRAS_FILE="$REPO_DIR/.claude/session-python.txt"
 
 # stderr, not stdout: a SessionStart hook's stdout is fed to the agent as
 # session context.
@@ -173,6 +192,107 @@ retool_uv_tools() {
     done
 }
 
+# 4. Honest git history.
+#
+# A remote session clones shallow. `git merge-base --is-ancestor` then LIES
+# across the graft boundary: it reports "not an ancestor" for a commit whose
+# ancestry is simply not in the clone, and the ship/close-out skills act on that
+# answer. A completion record already logged this the hard way
+# (complete/2026/08/status-sh-repos-missing-source.md, "environment note").
+#
+# These repos are small (single-digit MB of .git), so unshallowing costs a
+# couple of seconds once per container and removes a whole class of wrong
+# answer. Bounded and non-fatal: a slow or blocked network leaves a shallow
+# clone and a warning, never a failed session start.
+ensure_full_clone() {
+    local repo
+    for repo in "$WORKSPACE_ROOT"/*/; do
+        [ -e "${repo}.git/shallow" ] || continue
+        log "unshallowing $(basename "$repo") (shallow clones make ancestry checks lie)"
+        if timeout 120 git -C "$repo" fetch --unshallow --quiet 2>/dev/null \
+           || timeout 120 git -C "$repo" fetch --depth=2147483647 --quiet 2>/dev/null; then
+            log "  $(basename "$repo"): full history ($(git -C "$repo" rev-list --count HEAD 2>/dev/null) commits)"
+        else
+            log "  WARNING: $(basename "$repo") is still shallow — run 'git fetch --unshallow' before trusting any ancestry check"
+        fi
+    done
+}
+
+# 5. Make the NEXT session in this container start correctly.
+#
+# Claude Code registers project hooks from the session's project directory. In a
+# one-repo session that IS the repo, and `<repo>/.claude/settings.json` is found.
+# In a session holding several organs the project directory is their parent,
+# which is not a repo and has no `.claude/` — so none of the per-repo hooks are
+# registered and none of this script runs. That is why a multi-repo session came
+# up on the container's Python 3.11: not a broken hook, an unreachable one.
+#
+# A repo cannot ship a file into its own parent, so install it at run time. The
+# settings we write fan out to every sibling repo's own hook, so the layout
+# stays "each repo owns its hook" and this file stays generated-from-one-source.
+# It takes effect on the next session start in this container.
+install_workspace_settings() {
+    # Only in the multi-repo layout: when the project dir IS this repo, Claude
+    # Code already found the repo's own settings and there is nothing to add.
+    [ -n "${CLAUDE_PROJECT_DIR:-}" ] || return 0
+    [ "$(readlink -f "$CLAUDE_PROJECT_DIR")" != "$(readlink -f "$REPO_DIR")" ] || return 0
+
+    local settings="$CLAUDE_PROJECT_DIR/.claude/settings.json"
+    local fanout="$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+    [ -w "$CLAUDE_PROJECT_DIR" ] || { log "WARNING: $CLAUDE_PROJECT_DIR not writable; multi-repo sessions will keep skipping the hook"; return 0; }
+
+    mkdir -p "$(dirname "$fanout")"
+    cat >"$fanout" <<'FANOUT'
+#!/usr/bin/env bash
+# GENERATED at session start by a PyAuto repo's own session-start hook.
+# Runs every sibling repo's hook, because the workspace root is not a repo and
+# therefore has no hook of its own. Each repo's hook is idempotent, so the
+# second and later ones cost ~0.2s.
+set -u
+ROOT="$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)"
+for repo in "$ROOT"/*/; do
+    hook="${repo}.claude/hooks/session-start.sh"
+    [ -x "$hook" ] || continue
+    CLAUDE_PROJECT_DIR="${repo%/}" "$hook" || \
+        printf '[session-start] WARNING: %s failed\n' "$hook" >&2
+done
+FANOUT
+    chmod 0755 "$fanout"
+
+    if [ ! -f "$settings" ]; then
+        cat >"$settings" <<'SETTINGS'
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+SETTINGS
+        log "installed $settings — multi-repo sessions in this container now run the hook"
+    fi
+}
+
+# Git history and hook reachability have nothing to do with the interpreter, so
+# they run first and unconditionally: a container where the 3.12 venv cannot be
+# built still wants honest ancestry and a hook that fires next session.
+ensure_full_clone
+install_workspace_settings
+
+# PYAUTO_SESSION_SKIP_PYTHON=1 stops here — the seam the hook's own tests use to
+# exercise the legs above without building an interpreter.
+if [ "${PYAUTO_SESSION_SKIP_PYTHON:-}" = "1" ]; then
+    log "PYAUTO_SESSION_SKIP_PYTHON=1 — leaving the interpreter alone"
+    exit 0
+fi
+
 if ensure_venv; then
     ensure_repo_extras
     point_system_default "$(readlink -f "$VENV/bin/python")"
@@ -184,6 +304,9 @@ if ensure_venv; then
             echo "export PYAUTO_SESSION_PY312=\"$VENV\""
             echo "export VIRTUAL_ENV=\"$VENV\""
             echo "export PATH=\"$VENV/bin:\$PATH\""
+            # The workspace root, so the Brain's shell/python resolvers agree
+            # with the session instead of each re-deriving it.
+            echo "export PYAUTO_ROOT=\"$WORKSPACE_ROOT\""
         } >>"$CLAUDE_ENV_FILE"
     fi
     log "default python is now $("$VENV/bin/python" -V 2>&1) ($VENV/bin)"
