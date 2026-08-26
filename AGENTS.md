@@ -38,6 +38,34 @@ See [`docs/internals.md`](docs/internals.md) for the build pipeline, workspace
 folder structure, config files, and `release.yml` details. Read it when
 changing the pipeline itself, not by default.
 
+## Remote sessions: knock on the door first
+
+Measured in a web/mobile container, where this file is loaded and little else is.
+
+- **A session holding several organs registers no SessionStart hook.** Claude
+  Code reads project hooks from the project directory, which in that layout is
+  the repos' *parent*, not a repo — so none of the Python-3.12 setup runs and
+  the session uses the container's 3.11. Knock on the door yourself in the first
+  turn:
+
+  ```
+  bash PyAutoMind/scripts/session_bootstrap.sh          # fix it
+  bash PyAutoMind/scripts/session_bootstrap.sh --check  # report only
+  ```
+
+  The symptom of skipping it: collection `ImportError`s naming `yaml`, or
+  `No module named pytest`. Both are the session resolving a pytest that is not
+  this workspace's — never a broken test module.
+
+- **This repo declares extra deps.** `.claude/session-python.txt` names
+  `ipynb-py-convert` and `Pillow` — the same set `tests.yml` installs. The
+  bootstrap installs them; without it 14 tests fail on a missing module or a
+  missing binary while CI on the same commit is green.
+
+- **Run the suite in parallel.** `pytest-xdist` is a base dep of that bootstrap:
+  `python3 -m pytest -q -n auto`. This repo's 406 tests are 27s on one
+  core and 13s on four.
+
 <!-- repos_sync:history:begin -->
 ## Never rewrite history
 
