@@ -82,3 +82,44 @@ def test_legacy_verify_install_shim_describes_the_heart_contract():
     assert "[--find-links DIR]" in text
     assert "pip, conda & Colab, A–F" in text
     assert "A–E" not in text
+
+
+# The session hook installs pytest, PyYAML and pytest-xdist for every repo; a
+# repo needing more declares it in .claude/session-python.txt.
+SESSION_BASE_DEPS = {"pytest", "pyyaml", "pytest-xdist"}
+SESSION_PYTHON = Path(__file__).resolve().parents[1] / ".claude" / "session-python.txt"
+
+
+def _declared_session_deps():
+    deps = set()
+    for line in SESSION_PYTHON.read_text().splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line:
+            deps.add(line.lower())
+    return deps
+
+
+def test_a_remote_session_installs_what_ci_installs():
+    """CI green and a red session on the same commit is the worst pair.
+
+    tests.yml names this repo's whole dependency set explicitly. A web/mobile
+    session gets pytest + PyYAML + pytest-xdist and whatever this repo declares
+    — so anything in the CI set that is neither a base dep nor declared here is
+    a test that fails in a session and passes in CI, naming a missing module or
+    a missing binary and never naming the environment. Measured before this file
+    existed: 14 failures on `PIL` and `ipynb-py-convert`.
+    """
+    step = next(
+        s for s in yaml.safe_load(SELF_TEST_WORKFLOW.read_text())["jobs"]["pytest"]["steps"]
+        if "pip install" in str(s.get("run", ""))
+    )
+    ci_deps = {d.lower() for d in step["run"].split("pip install", 1)[1].split()}
+
+    assert ci_deps - SESSION_BASE_DEPS == _declared_session_deps()
+
+
+def test_declared_session_deps_are_the_ones_the_code_actually_reaches_for():
+    """Both are external: one an import, one a binary shelled out to."""
+    declared = _declared_session_deps()
+    assert "pillow" in declared, "generate_markdown imports PIL"
+    assert "ipynb-py-convert" in declared, "build_util shells out to it"

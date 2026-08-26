@@ -1,0 +1,9 @@
+# Deps this repo's suite needs beyond the session hook's base set
+# (pytest, PyYAML, pytest-xdist). Read by PyAutoMind's session-start hook.
+#
+# Keep this the same set `.github/workflows/tests.yml` installs, minus the base
+# deps — `tests/test_python_matrix_workflow.py` pins that. Without it a remote
+# session runs 14 red tests that name a missing module or a missing binary and
+# never say "environment", while CI on the same commit is green.
+ipynb-py-convert   # a CLI binary build_util shells out to (not an import)
+Pillow             # generate_markdown's PNG optimisation path

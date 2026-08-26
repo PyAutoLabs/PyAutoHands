@@ -45,7 +45,10 @@ set -euo pipefail
 [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] || exit 0
 
 VENV="${PYAUTO_SESSION_VENV:-$HOME/.pyauto/session-py312}"
-BASE_DEPS=(pytest PyYAML)
+# pytest-xdist is a base dep, not a nicety: a remote container has 4 cores and
+# the Brain suite takes 96s on one of them and 28s on four. A session that has
+# to `pip install` before it can run tests fast will simply not run them fast.
+BASE_DEPS=(pytest PyYAML pytest-xdist)
 
 # Which checkout is this copy of the hook installed in?
 #
@@ -100,7 +103,7 @@ find_base_python() {
 venv_ready() {
     is_py312 "$VENV/bin/python" \
         && [ -x "$VENV/bin/pip" ] \
-        && "$VENV/bin/python" -c 'import pytest, yaml' >/dev/null 2>&1
+        && "$VENV/bin/python" -c 'import pytest, yaml, xdist' >/dev/null 2>&1
 }
 
 # 1. The interpreter a session types: python, python3, pip, pytest.
@@ -117,13 +120,19 @@ ensure_venv() {
     log "building $VENV on $base_python"
     rm -rf "$VENV"
     mkdir -p "$(dirname "$VENV")"
+    # --system-site-packages makes the venv a strict SUPERSET of the base
+    # interpreter. That is what lets `point_system_default` make this venv the
+    # session's `python3` without silently removing anything the image
+    # installed: an isolated venv would swap one set of missing modules for
+    # another, and the session would find out through a ModuleNotFoundError
+    # that reads like broken code.
     if command -v uv >/dev/null 2>&1; then
         # --seed puts pip inside the venv too, so `pip install` targets 3.12
         # rather than falling through to the container's 3.11 /usr/bin/pip.
-        uv venv --seed --python "$base_python" "$VENV" >&2
+        uv venv --seed --system-site-packages --python "$base_python" "$VENV" >&2
         uv pip install --python "$VENV/bin/python" --quiet "${BASE_DEPS[@]}" >&2
     else
-        "$base_python" -m venv "$VENV" >&2
+        "$base_python" -m venv --system-site-packages "$VENV" >&2
         "$VENV/bin/python" -m pip install --quiet --upgrade pip >&2
         "$VENV/bin/python" -m pip install --quiet "${BASE_DEPS[@]}" >&2
     fi
@@ -152,16 +161,159 @@ ensure_repo_extras() {
 }
 
 # 2. What PATH means without this session's env file.
-point_system_default() {
-    local base_python="$1" link
-    for link in /usr/local/bin/python /usr/local/bin/python3; do
-        is_py312 "$link" && continue
-        [ -w "$(dirname "$link")" ] || { log "WARNING: cannot rewrite $link (not writable)"; continue; }
-        ln -sfn "$base_python" "$link"
+#
+# This leg is the one that matters most, because the env file is exactly what a
+# multi-repo session does NOT get: Claude Code registers project hooks from the
+# session's project directory, that directory is the repos' parent, and no hook
+# runs there (see leg 5). So every Bash call in such a session resolves whatever
+# the image put on PATH, and these two names are the fallback that has to be
+# right on its own.
+#
+# It used to point them at the BASE interpreter — `point_system_default
+# "$(readlink -f "$VENV/bin/python")"` resolved the venv's python straight
+# through to /usr/bin/python3.12. That satisfied the version question and lost
+# everything else: `python3 -m pytest` answered "No module named pytest", and
+# the session's own venv, sitting one directory away with pytest in it, was
+# unreachable from any shell.
+#
+# Two details make the fix work:
+#
+#   * A wrapper script, not a symlink. Python resolves a symlinked executable
+#     before looking for `pyvenv.cfg`, so a symlink to $VENV/bin/python lands on
+#     the base interpreter's prefix and the venv is lost again — silently, and
+#     in the same shape as the bug being fixed. `exec`ing it keeps the venv.
+#   * --system-site-packages on the venv (see ensure_venv), so pointing the
+#     system default here adds the session's packages without removing the
+#     image's.
+# Bounded, because this predicate is what runs a candidate interpreter — and
+# the one failure mode worth surviving is an interpreter that never returns.
+venv_backed() {
+    [ -x "$1" ] || return 1
+    [ "$(timeout 20 "$1" -c 'import sys; print(sys.prefix)' 2>/dev/null)" = "$VENV" ]
+}
+
+# Does following $1's symlinks pass through $2? A venv's python legitimately
+# RESOLVES to the same base interpreter a system default points at, so comparing
+# endpoints refuses safe rewrites. The question that matters is narrower: is the
+# path being rewritten a link in the target's own chain — because then the
+# wrapper execs itself.
+links_through() {
+    local node="$1" needle="$2" hops=0
+    needle="$(cd "$(dirname "$needle")" 2>/dev/null && printf '%s/%s' "$(pwd -P)" "$(basename "$needle")")"
+    while [ -L "$node" ] && [ "$hops" -lt 40 ]; do
+        node="$(cd "$(dirname "$node")" && cd "$(dirname "$(readlink "$node")")" 2>/dev/null && printf '%s/%s' "$(pwd -P)" "$(basename "$(readlink "$node")")")"
+        [ "$node" = "$needle" ] && return 0
+        hops=$((hops + 1))
     done
-    is_py312 /usr/local/bin/python3 \
-        && log "/usr/local/bin/python{,3} -> $base_python" \
-        || log "WARNING: /usr/local/bin/python3 is still $(/usr/local/bin/python3 -V 2>&1)"
+    return 1
+}
+
+# `rm -f` first, and it is not tidiness. /usr/local/bin/python3 is a SYMLINK to
+# the real interpreter, and a redirect opens the link's TARGET: `cat >` there
+# overwrites /usr/bin/python3.12 itself with this wrapper. The venv's own
+# python symlinks to that same file, so the wrapper then execs itself — the
+# container loses its interpreter and every `python3` spins at 100% CPU. Writing
+# a fresh file at the path replaces the link instead of following it.
+#
+# `links_through` is the second half of the same guard: a target that reaches
+# the destination through its own symlink chain builds the identical loop by the
+# other route, so refuse rather than write it.
+write_venv_shim() {
+    local dest="$1" target="$2"
+    [ -w "$(dirname "$dest")" ] || { log "WARNING: cannot rewrite $dest (not writable)"; return 1; }
+    [ -x "$target" ] || { log "WARNING: $target is not executable; leaving $dest alone"; return 1; }
+    if links_through "$target" "$dest"; then
+        log "WARNING: refusing to point $dest at $target — it links back through $dest"
+        return 1
+    fi
+    rm -f "$dest"
+    cat >"$dest" <<SHIM
+#!/bin/sh
+# GENERATED by PyAutoMind's session-start hook. A wrapper, not a symlink:
+# Python resolves a symlink before reading pyvenv.cfg, which loses the venv.
+exec "$target" "\$@"
+SHIM
+    chmod 0755 "$dest"
+}
+
+point_system_default() {
+    local link bin="${PYAUTO_SESSION_SYSTEM_BIN:-/usr/local/bin}"
+    for link in "$bin/python" "$bin/python3"; do
+        venv_backed "$link" && continue
+        write_venv_shim "$link" "$VENV/bin/python" || continue
+    done
+    venv_backed "$bin/python3" \
+        && log "$bin/python{,3} -> $VENV/bin/python (venv, with pytest and yaml)" \
+        || log "WARNING: $bin/python3 is still $(timeout 20 "$bin/python3" -V 2>&1)"
+}
+
+# 2b. The `pytest` that PATH actually finds.
+#
+# $HOME/.local/bin precedes /usr/local/bin, and it holds uv's tool shims — so
+# fixing python3 alone still leaves bare `pytest` resolving to uv's ISOLATED
+# pytest, which by design cannot see PyYAML or a repo's own extras. In this
+# workspace that made `pytest` exit on four collection ImportErrors that read
+# like broken source, in a session where the suite was in fact green.
+#
+# A session should have exactly one pytest, and it should be the venv's.
+# Confined to uv's own shim directory: a distro-packaged pytest is not ours to
+# overwrite. Runs after retool_uv_tools, which rewrites these same shims.
+point_pytest_at_venv() {
+    local shim_dir="${HOME}/.local/bin" name path
+    [ -x "$VENV/bin/pytest" ] || return 0
+    for name in pytest py.test; do
+        path="$(command -v "$name" 2>/dev/null)" || continue
+        [ -n "$path" ] || continue
+        case "$path" in
+            "$VENV"/*) continue ;;
+            "$shim_dir"/*) ;;
+            *) log "WARNING: $name resolves to $path, outside uv's shim dir — left alone"; continue ;;
+        esac
+        write_venv_shim "$path" "$VENV/bin/$name" \
+            && log "$path -> $VENV/bin/$name (so \`$name\` sees this repo's deps)"
+    done
+}
+
+# 2c. Every OTHER console script the venv owns.
+#
+# `pytest` and `python3` survive without the venv on PATH because 2 and 2b give
+# each one its own shim. Nothing else does — and PATH is exactly what a
+# multi-repo session never gets, because the env file that exports it is written
+# by Claude Code around a hook it never registers (see leg 5). So a dependency
+# declared in `.claude/session-python.txt` that ships a CONSOLE SCRIPT rather
+# than an importable module was installed into the venv and then invisible.
+#
+# Measured, not hypothetical: PyAutoHands shells out to `ipynb-py-convert`, and
+# with the package installed its suite still failed five tests with
+# `FileNotFoundError: ipynb-py-convert` — the binary sitting in $VENV/bin,
+# unreachable, while `--check` called the session healthy. A missing binary and
+# an unreachable one are the same symptom, and neither says "environment".
+#
+# The claim policy is 2b's, because the reasoning is 2b's: a name we can reach
+# only through uv's shim dir or not at all is ours to provide; a name the image
+# owns elsewhere is not ours to overwrite.
+point_venv_scripts_at_venv() {
+    local shim_dir="${HOME}/.local/bin" entry name path
+    [ -d "$VENV/bin" ] || return 0
+    mkdir -p "$shim_dir" 2>/dev/null || return 0
+    for entry in "$VENV"/bin/*; do
+        [ -f "$entry" ] && [ -x "$entry" ] || continue
+        name="$(basename "$entry")"
+        case "$name" in
+            # python/pip are legs 2 and the venv's own plumbing; pytest is 2b.
+            # The activate family is meant to be sourced, never executed.
+            python*|pip*|pytest|py.test|activate*|deactivate*|*.bat|*.ps1|*.csh|*.fish|*.nu) continue ;;
+        esac
+        path="$(command -v "$name" 2>/dev/null)" || path=""
+        case "$path" in
+            "$VENV"/*) continue ;;
+            "") ;;
+            "$shim_dir"/*) ;;
+            *) log "WARNING: $name resolves to $path, outside uv's shim dir — left alone"; continue ;;
+        esac
+        write_venv_shim "$shim_dir/$name" "$entry" \
+            && log "$shim_dir/$name -> $entry (venv console script)"
+    done
 }
 
 # 3. The uv-managed tools — rebuilt on 3.12 only where they are not already.
@@ -232,16 +384,34 @@ ensure_full_clone() {
 # stays "each repo owns its hook" and this file stays generated-from-one-source.
 # It takes effect on the next session start in this container.
 install_workspace_settings() {
-    # Only in the multi-repo layout: when the project dir IS this repo, Claude
-    # Code already found the repo's own settings and there is nothing to add.
-    [ -n "${CLAUDE_PROJECT_DIR:-}" ] || return 0
-    [ "$(readlink -f "$CLAUDE_PROJECT_DIR")" != "$(readlink -f "$REPO_DIR")" ] || return 0
+    # Target the WORKSPACE ROOT, derived from this checkout — not
+    # $CLAUDE_PROJECT_DIR, and not only when the two differ.
+    #
+    # The early return this replaces ("only in the multi-repo layout") made the
+    # whole leg unreachable. Writing the fan-out requires the hook to be
+    # running; the hook runs only in a session whose project dir is a repo —
+    # that is, a SINGLE-repo session — and the early return then skipped it as
+    # having nothing to add. So the one session type that could seed the
+    # container never did, and the multi-repo session that needed it never ran
+    # the hook to find out. Observed directly: a container with two single-repo
+    # sessions behind it still had no workspace-root settings, and the next
+    # session — three organs, project dir /home/user — fired no hook, ran on
+    # PATH's pytest, and left both clones shallow for three minutes until an
+    # unrelated verb happened to knock on session_bootstrap.sh.
+    #
+    # A single-repo session has the same sibling layout one directory up, so it
+    # can seed the root for free. Skip only if the root is itself a repo (then
+    # it owns its own hook) or is not writable.
+    local root="$WORKSPACE_ROOT"
+    [ -n "$root" ] && [ -d "$root" ] || return 0
+    [ -d "$root/.git" ] && return 0
 
-    local settings="$CLAUDE_PROJECT_DIR/.claude/settings.json"
-    local fanout="$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
-    [ -w "$CLAUDE_PROJECT_DIR" ] || { log "WARNING: $CLAUDE_PROJECT_DIR not writable; multi-repo sessions will keep skipping the hook"; return 0; }
+    local settings="$root/.claude/settings.json"
+    local fanout="$root/.claude/hooks/session-start.sh"
+    [ -w "$root" ] || { log "WARNING: $root not writable; multi-repo sessions will keep skipping the hook"; return 0; }
 
     mkdir -p "$(dirname "$fanout")"
+    rm -f "$fanout"   # never write through a symlink; see write_venv_shim
     cat >"$fanout" <<'FANOUT'
 #!/usr/bin/env bash
 # GENERATED at session start by a PyAuto repo's own session-start hook.
@@ -283,6 +453,14 @@ SETTINGS
 # Git history and hook reachability have nothing to do with the interpreter, so
 # they run first and unconditionally: a container where the 3.12 venv cannot be
 # built still wants honest ancestry and a hook that fires next session.
+# PYAUTO_SESSION_DEFINE_ONLY=1 defines every function and performs no action —
+# the seam this hook's own tests use to drive one leg at a time against a
+# temporary directory, instead of against the container they run in. Sourcing
+# returns; executing exits.
+if [ "${PYAUTO_SESSION_DEFINE_ONLY:-}" = "1" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
 ensure_full_clone
 install_workspace_settings
 
@@ -295,8 +473,10 @@ fi
 
 if ensure_venv; then
     ensure_repo_extras
-    point_system_default "$(readlink -f "$VENV/bin/python")"
+    point_system_default
     retool_uv_tools
+    point_pytest_at_venv
+    point_venv_scripts_at_venv
     # Every repo in the session registers this hook, so the second copy must not
     # prepend the venv a second time.
     if [ -n "${CLAUDE_ENV_FILE:-}" ] && ! grep -qs 'PYAUTO_SESSION_PY312=' "$CLAUDE_ENV_FILE"; then
