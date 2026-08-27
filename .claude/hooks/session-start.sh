@@ -22,7 +22,9 @@
 #      resolving PATH without this session's env (a subprocess with a scrubbed
 #      environment, a `#!/usr/bin/env python3` script) also gets 3.12;
 #   3. the uv-managed tools rebuilt on 3.12 — mypy and flake8 read the
-#      interpreter's version, so on 3.11 they judged code against 3.11 rules.
+#      interpreter's version, so on 3.11 they judged code against 3.11 rules —
+#      and then repaired, because (2) is what breaks each tool env's own
+#      `bin/python`, and a rebuild cannot fix a link it is handed.
 #
 # What it deliberately does NOT touch: the update-alternatives links under
 # /usr/bin. Scripts with a literal `#!/usr/bin/python3` shebang follow those,
@@ -344,6 +346,69 @@ retool_uv_tools() {
     done
 }
 
+# 3b. The link uv's rebuild cannot fix from inside.
+#
+# uv creates each tool env with `bin/python` as a SYMLINK to whatever `python3`
+# was at install time — here `/usr/local/bin/python3`, which leg 2 has already
+# replaced with a wrapper that `exec`s the session venv. Every tool env's python
+# then resolves its prefix to the VENV: `sys.prefix` is the venv, the tool's own
+# site-packages never reaches `sys.path`, and the console script dies with
+# `ModuleNotFoundError: No module named 'flake8'` — with flake8 sitting
+# installed two directories away.
+#
+# TWO paths reach that state, which is why this runs after leg 3 rather than
+# only on the envs leg 3 rebuilt: leg 3 rebuilds a 3.11 tool and hands the new
+# env the hijacked path, and leg 2 separately breaks every PRE-EXISTING tool env
+# that already pointed there and that leg 3 skips (`is_py312 … && continue`).
+# Running here covers both, because leg 2 runs before leg 3.
+#
+# Measured 2026-08-27, post-bootstrap: mypy, flake8, black, poetry and pyright
+# all dead this way; `ruff` survived (a native binary) and `pytest` survived
+# (leg 2b points its shim straight at the venv, which has pytest). The
+# bootstrap's `--check` called every one of them "3.12 OK", because the
+# interpreter they reach IS 3.12 — it is simply the wrong one. A session then
+# lints clean by not linting at all, and CI is the thing that finds out.
+#
+# The fix is one link: a venv's `bin/python` must resolve to a BASE interpreter,
+# never to a path this hook hijacks.
+#
+# This lived in `scripts/session_bootstrap.sh` for one pass, which is the wrong
+# home. The bootstrap is what a MULTI-repo session runs; a SINGLE-repo session
+# registers this hook and never calls the bootstrap, so it got leg 2's breakage
+# and none of the repair.
+repair_uv_tools() {
+    local tools_dir base tool link prefix
+    base="$("$VENV/bin/python" -c 'import sys, os; print(os.path.join(sys.base_prefix, "bin", "python3.12"))' 2>/dev/null)" || base=""
+    [ -x "$base" ] || base="$(command -v python3.12 2>/dev/null)" || base=""
+    [ -x "$base" ] || return 0
+    tools_dir="${PYAUTO_UV_TOOLS_DIR:-$(uv tool dir 2>/dev/null || echo "$HOME/.local/share/uv/tools")}"
+    [ -d "$tools_dir" ] || return 0
+    for tool in "$tools_dir"/*/; do
+        link="${tool}bin/python"
+        [ -L "$link" ] || continue
+        # Ask the interpreter where it thinks it lives, rather than tracing the
+        # link: `/usr/local/bin/python3` is a WRAPPER SCRIPT (a symlink there
+        # would lose the venv — leg 2's whole note), so `readlink -f` stops at
+        # the wrapper and reports nothing about the venv behind it. sys.prefix
+        # is the outcome; anything else is the mechanism.
+        prefix="$("$link" -c 'import sys; print(sys.prefix)' 2>/dev/null)" || continue
+        [ -n "$prefix" ] || continue
+        [ "$prefix" = "${tool%/}" ] && continue   # resolves to its own env: correct
+        # Non-fatal like every other leg: an unwritable tools dir is a warning,
+        # never a failed session start.
+        ln -sfn "$base" "$link" || {
+            log "WARNING: could not repoint $(basename "${tool%/}") at $base"
+            continue
+        }
+        prefix="$("$link" -c 'import sys; print(sys.prefix)' 2>/dev/null)" || prefix=""
+        if [ "$prefix" = "${tool%/}" ]; then
+            log "repointed $(basename "${tool%/}") at $base (it resolved into $VENV, not its own env)"
+        else
+            log "WARNING: $(basename "${tool%/}") still resolves to ${prefix:-nothing} — it will not run"
+        fi
+    done
+}
+
 # 4. Honest git history.
 #
 # A remote session clones shallow. `git merge-base --is-ancestor` then LIES
@@ -461,6 +526,15 @@ if [ "${PYAUTO_SESSION_DEFINE_ONLY:-}" = "1" ]; then
     return 0 2>/dev/null || exit 0
 fi
 
+# Run leg 3b on its own, without a session start. The door
+# `scripts/session_bootstrap.sh` knocks on after it has run every repo's hook —
+# a subprocess rather than a source, so this script's `set -euo pipefail` never
+# leaks into a caller that is contractually "a bootstrap, never a gate".
+if [ "${1:-}" = "--repair-uv-tools" ]; then
+    repair_uv_tools
+    exit 0
+fi
+
 ensure_full_clone
 install_workspace_settings
 
@@ -475,6 +549,7 @@ if ensure_venv; then
     ensure_repo_extras
     point_system_default
     retool_uv_tools
+    repair_uv_tools
     point_pytest_at_venv
     point_venv_scripts_at_venv
     # Every repo in the session registers this hook, so the second copy must not
