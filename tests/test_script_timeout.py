@@ -397,3 +397,29 @@ class TestCappedScriptLeavesAStack:
             proc.communicate()
 
         assert elapsed < build_util.ABORT_GRACE_SECS
+
+
+def test_the_abort_does_not_leave_a_core_dump(tmp_path, monkeypatch):
+    # The SIGABRT kills the child with a core-dumping signal. The stack is
+    # already on stderr, so a core adds nothing and a mega-run of them would
+    # fill the runner's disk. build_util lowers RLIMIT_CORE at import and
+    # children inherit it.
+    import resource
+
+    soft, _hard = resource.getrlimit(resource.RLIMIT_CORE)
+    assert soft == 0
+
+    script = _write_script(tmp_path, "import time\ntime.sleep(120)\n")
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(subprocess.TimeoutExpired):
+        build_util.run_capped(
+            [sys.executable, str(script)],
+            timeout=2,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env={**os.environ, "PYTHONFAULTHANDLER": "1"},
+        )
+
+    assert not list(tmp_path.glob("core*"))

@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import re
+import resource
 import shutil
 import signal
 import subprocess
@@ -89,6 +90,19 @@ def _timeout_output(e: subprocess.TimeoutExpired) -> str:
             parts.append(f"--- last {label} before timeout ---\n{text}")
     return "\n".join(parts)
 
+
+
+# The SIGABRT below leaves the child dying of a core-dumping signal. Nothing
+# here wants a core: the stack has already been written to stderr, and a
+# multi-GB core per timed-out script would fill a runner's disk over a mega-run.
+# Lowering a soft limit always succeeds, and children inherit it -- which covers
+# the workspace runners' own `Popen` calls too, not just `run_capped`'s, since
+# they import this module in the same process.
+try:
+    _soft, _hard = resource.getrlimit(resource.RLIMIT_CORE)
+    resource.setrlimit(resource.RLIMIT_CORE, (0, _hard))
+except (ValueError, OSError):  # pragma: no cover - platform without RLIMIT_CORE
+    pass
 
 
 # How long a script killed at its cap may spend writing its own traceback
