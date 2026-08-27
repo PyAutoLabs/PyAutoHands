@@ -281,10 +281,10 @@ class TestCappedScriptLeavesAStack:
     first, and with `PYTHONFAULTHANDLER` set (env_config's
     DIAGNOSTIC_ENV_DEFAULTS) that dumps every thread's Python stack to stderr.
 
-    This is the general form of PyAutoFit's `jax_compile.py` watchdog, which
-    covers only the first JAX compile and is disarmed as soon as it returns --
-    so a script hanging afterwards leaves nothing at all
-    (PyAutoLabs/PyAutoFit#1528).
+    This is the general form of the fit library's `jax_compile.py` watchdog,
+    which covers only the first JAX compile and is disarmed as soon as it
+    returns -- so a script hanging afterwards leaves nothing at all. See the
+    `jax-compile-stall` epic in PyAutoMind.
     """
 
     _HANGS_IN_A_NAMED_FUNCTION = (

@@ -126,11 +126,12 @@ def kill_group(proc: subprocess.Popen, dump_traceback_first: bool = True) -> Non
     reports even when the process is parked inside a C extension holding it,
     which is where a hung scientific script actually is.
 
-    This is the general form of the narrow watchdog in PyAutoFit's
+    This is the general form of the narrow watchdog in the fit library's
     `jax_compile.py`, which can only cover the first JAX compile: that watchdog
     is disarmed the moment the compile returns, so a script that hangs later --
     as `imaging/jax_likelihood/mge_group.py` does, ~1780s after its compile
-    finished -- produces no stack at all (PyAutoLabs/PyAutoFit#1528).
+    finished -- produces no stack at all. See the `jax-compile-stall` epic in
+    PyAutoMind for the investigation this came out of.
 
     `dump_traceback_first=False` skips the grace period for callers unwinding
     on an interrupt, where the user wants the process gone now and there is no
