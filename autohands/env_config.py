@@ -42,7 +42,33 @@ MANAGED_ENV_PREFIXES = ("PYAUTO_",)
 # output is the only diagnostic artifact, so full frames always beat tidy ones
 # here. This is an infrastructure/diagnostics var, not a PYAUTO_ workspace-
 # behaviour var, so it is not part of the scrubbed managed family above.
-DIAGNOSTIC_ENV_DEFAULTS = {"JAX_TRACEBACK_FILTERING": "off"}
+# `PYTHONUNBUFFERED` and `PYTHONFAULTHANDLER` are here for the same reason, and
+# they are what a *hang* needs rather than what a crash needs.
+#
+# The runners capture output through `subprocess.PIPE`. A pipe is not a tty, so
+# a child's `print()` is BLOCK-buffered and flushed only at exit, while
+# `logging` goes to stderr and arrives immediately. A script killed at its cap
+# never exits cleanly, so its entire stdout buffer dies with it: every
+# "and then silence" tail in the JAX-stall campaign
+# (PyAutoLabs/PyAutoFit#1528) is silence of stderr only, with the script's own
+# progress prints thrown away. Five scripts were quarantined across the two
+# test workspaces on evidence that had been truncated before anyone read it.
+# Unbuffered, the last line a killed script printed survives, which is usually
+# enough to name the block it was in.
+#
+# `PYTHONFAULTHANDLER` then installs faulthandler's signal handlers, which is
+# what makes the SIGABRT in `build_util.kill_group` produce a stack. It is a
+# C-level handler and does not need the GIL, so it still reports when the
+# process is parked inside a C extension -- which for a hung scientific script
+# is exactly where it is.
+#
+# All three are infrastructure/diagnostics vars, not PYAUTO_ workspace-behaviour
+# vars, so they are not part of the scrubbed managed family above.
+DIAGNOSTIC_ENV_DEFAULTS = {
+    "JAX_TRACEBACK_FILTERING": "off",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONFAULTHANDLER": "1",
+}
 
 
 # --- In-file env declarations (docs/env_profile_redesign.md §10) --------------

@@ -576,3 +576,38 @@ def test_read_declaration_raw_prefix_forms_all_parse(tmp_path):
             )
             p = _write_script(tmp_path, f"imaging/x{index}{len(delim)}{delim[0]}.py", body)
             assert read_env_declaration(p) == ["jax"], (prefix, delim)
+
+
+# --- Hang diagnostics (PyAutoLabs/PyAutoFit#1528) -----------------------------
+
+
+def test_child_stdout_is_unbuffered_by_default(monkeypatch):
+    # The runners capture through a PIPE, which is not a tty, so a child's
+    # print() is block-buffered and dies with the process when the cap kills
+    # it. Every "and then silence" tail in the JAX-stall campaign was stderr
+    # only, with the script's own progress prints already discarded.
+    monkeypatch.delenv("PYTHONUNBUFFERED", raising=False)
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_TEST_MODE": "2"}})
+    assert env["PYTHONUNBUFFERED"] == "1"
+
+
+def test_faulthandler_is_enabled_by_default(monkeypatch):
+    # What makes kill_group's SIGABRT produce a stack rather than just a death.
+    monkeypatch.delenv("PYTHONFAULTHANDLER", raising=False)
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_TEST_MODE": "2"}})
+    assert env["PYTHONFAULTHANDLER"] == "1"
+
+
+@pytest.mark.parametrize("var", ["PYTHONUNBUFFERED", "PYTHONFAULTHANDLER"])
+def test_hang_diagnostics_override_ambient(monkeypatch, var):
+    # An ambient "0" must not silently re-buffer or disarm a profiled run.
+    monkeypatch.setenv(var, "0")
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {"PYAUTO_TEST_MODE": "2"}})
+    assert env[var] == "1"
+
+
+@pytest.mark.parametrize("var", ["PYTHONUNBUFFERED", "PYTHONFAULTHANDLER"])
+def test_profile_can_still_override_hang_diagnostics(monkeypatch, var):
+    monkeypatch.delenv(var, raising=False)
+    env = build_env_for_script(Path("scripts/x.py"), {"defaults": {var: ""}})
+    assert env[var] == ""

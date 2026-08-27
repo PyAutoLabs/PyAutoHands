@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import re
+import resource
 import shutil
 import signal
 import subprocess
@@ -91,14 +92,78 @@ def _timeout_output(e: subprocess.TimeoutExpired) -> str:
 
 
 
-def kill_group(proc: subprocess.Popen) -> None:
-    """SIGKILL the child's whole process group, tolerating an already-dead one.
+# The SIGABRT below leaves the child dying of a core-dumping signal. Nothing
+# here wants a core: the stack has already been written to stderr, and a
+# multi-GB core per timed-out script would fill a runner's disk over a mega-run.
+# Lowering a soft limit always succeeds, and children inherit it -- which covers
+# the workspace runners' own `Popen` calls too, not just `run_capped`'s, since
+# they import this module in the same process.
+try:
+    _soft, _hard = resource.getrlimit(resource.RLIMIT_CORE)
+    resource.setrlimit(resource.RLIMIT_CORE, (0, _hard))
+except (ValueError, OSError):  # pragma: no cover - platform without RLIMIT_CORE
+    pass
+
+
+# How long a script killed at its cap may spend writing its own traceback
+# before the group is killed outright. Only ever spent on a run that has
+# already burned its full cap, so it buys evidence at no cost to a healthy run.
+ABORT_GRACE_SECS = 5.0
+
+
+def kill_group(proc: subprocess.Popen, dump_traceback_first: bool = True) -> None:
+    """Kill the child's whole process group, tolerating an already-dead one.
 
     Public (unprefixed) because the workspace `run_smoke.py` runners import it
     rather than each growing a copy.
+
+    A capped script is SIGABRT'd first so it leaves a stack behind. SIGKILL
+    cannot be caught, so a group killed outright says nothing about where it
+    was -- and "where was it?" is the only question a hang poses. With
+    `PYTHONFAULTHANDLER` set (`env_config.DIAGNOSTIC_ENV_DEFAULTS`), SIGABRT
+    makes the interpreter dump every thread's Python stack to stderr before it
+    dies. faulthandler's handler is C-level and does not take the GIL, so it
+    reports even when the process is parked inside a C extension holding it,
+    which is where a hung scientific script actually is.
+
+    This is the general form of the narrow watchdog in the fit library's
+    `jax_compile.py`, which can only cover the first JAX compile: that watchdog
+    is disarmed the moment the compile returns, so a script that hangs later --
+    as `imaging/jax_likelihood/mge_group.py` does, ~1780s after its compile
+    finished -- produces no stack at all. See the `jax-compile-stall` epic in
+    PyAutoMind for the investigation this came out of.
+
+    `dump_traceback_first=False` skips the grace period for callers unwinding
+    on an interrupt, where the user wants the process gone now and there is no
+    failure to diagnose.
+
+    The dump is best-effort by construction. Nothing drains the output pipe
+    during the grace period, so a child whose pipe is already full cannot write
+    its traceback and will not exit; the wait is bounded so that costs the
+    grace period and nothing more.
     """
     try:
-        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        pgid = os.getpgid(proc.pid)
+    except (ProcessLookupError, PermissionError):  # pragma: no cover - race
+        proc.kill()
+        return
+
+    if dump_traceback_first:
+        try:
+            # The direct child only, not the group: it is the script whose
+            # stack is wanted, and aborting arbitrary grandchildren risks core
+            # dumps from processes nobody is asking about.
+            proc.send_signal(signal.SIGABRT)
+        except (ProcessLookupError, PermissionError):  # pragma: no cover - race
+            pass
+        else:
+            try:
+                proc.wait(timeout=ABORT_GRACE_SECS)
+            except subprocess.TimeoutExpired:
+                pass
+
+    try:
+        os.killpg(pgid, signal.SIGKILL)
     except (ProcessLookupError, PermissionError):  # pragma: no cover - race
         proc.kill()
 
@@ -146,7 +211,9 @@ def run_capped(args, timeout, check=False, stdout=None, stderr=None,
     except BaseException:
         # Matches subprocess.run's context manager: never leave the child (or
         # its group) running when the caller is unwinding, e.g. on Ctrl-C.
-        kill_group(proc)
+        # No traceback dump here: an interrupt is not a failure to diagnose,
+        # and making Ctrl-C wait out a grace period is its own small cruelty.
+        kill_group(proc, dump_traceback_first=False)
         proc.wait()
         raise
     if check and proc.returncode != 0:
