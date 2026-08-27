@@ -271,3 +271,129 @@ class TestTimeoutKillsProcessGroup:
                 text=True,
             )
         assert "before the hang" in (excinfo.value.output or "")
+
+
+class TestCappedScriptLeavesAStack:
+    """A script killed at its cap must say where it was.
+
+    SIGKILL cannot be caught, so a group killed outright reports nothing --
+    which is the whole problem a hang poses. `kill_group` SIGABRTs the child
+    first, and with `PYTHONFAULTHANDLER` set (env_config's
+    DIAGNOSTIC_ENV_DEFAULTS) that dumps every thread's Python stack to stderr.
+
+    This is the general form of PyAutoFit's `jax_compile.py` watchdog, which
+    covers only the first JAX compile and is disarmed as soon as it returns --
+    so a script hanging afterwards leaves nothing at all
+    (PyAutoLabs/PyAutoFit#1528).
+    """
+
+    _HANGS_IN_A_NAMED_FUNCTION = (
+        "import time\n"
+        "def the_block_that_hangs():\n"
+        "    time.sleep(120)\n"
+        "the_block_that_hangs()\n"
+    )
+
+    def test_the_dump_names_the_function_the_script_was_parked_in(self, tmp_path):
+        script = _write_script(tmp_path, self._HANGS_IN_A_NAMED_FUNCTION)
+
+        with pytest.raises(subprocess.TimeoutExpired) as excinfo:
+            build_util.run_capped(
+                [sys.executable, str(script)],
+                timeout=2,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env={**os.environ, "PYTHONFAULTHANDLER": "1"},
+            )
+
+        output = excinfo.value.output or ""
+        assert "the_block_that_hangs" in output
+
+    def test_an_unflushed_print_survives_the_kill_when_unbuffered(self, tmp_path):
+        # The real-world case the other tests in this file miss: every one of
+        # them passes flush=True, but workspace scripts do not, and a PIPE is
+        # block-buffered. Unbuffered, the last line printed survives the kill.
+        script = _write_script(
+            tmp_path, "print('reached the slow block')\nimport time\ntime.sleep(120)\n"
+        )
+
+        with pytest.raises(subprocess.TimeoutExpired) as excinfo:
+            build_util.run_capped(
+                [sys.executable, str(script)],
+                timeout=2,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env={**os.environ, "PYTHONUNBUFFERED": "1"},
+            )
+
+        assert "reached the slow block" in (excinfo.value.output or "")
+
+    def test_without_unbuffered_the_same_print_is_lost(self, tmp_path):
+        # Pins WHY the env default is needed rather than just that it is set.
+        # If this ever starts passing, the buffering premise has changed and
+        # the default can be reconsidered.
+        script = _write_script(
+            tmp_path, "print('reached the slow block')\nimport time\ntime.sleep(120)\n"
+        )
+        env = {k: v for k, v in os.environ.items() if k != "PYTHONFAULTHANDLER"}
+        env["PYTHONUNBUFFERED"] = ""
+
+        with pytest.raises(subprocess.TimeoutExpired) as excinfo:
+            build_util.run_capped(
+                [sys.executable, str(script)],
+                timeout=2,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=env,
+            )
+
+        assert "reached the slow block" not in (excinfo.value.output or "")
+
+    def test_the_group_still_dies_even_if_the_abort_is_ignored(self, tmp_path):
+        # SIGABRT is best-effort; the SIGKILL after the grace period is not.
+        script = _write_script(
+            tmp_path,
+            "import signal, time\n"
+            "signal.signal(signal.SIGABRT, signal.SIG_IGN)\n"
+            "time.sleep(120)\n",
+        )
+        started = time.time()
+
+        with pytest.raises(subprocess.TimeoutExpired):
+            build_util.run_capped(
+                [sys.executable, str(script)],
+                timeout=2,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+        # Capped at 2s, plus at most the abort grace -- never the script's 120s.
+        assert time.time() - started < 2 + build_util.ABORT_GRACE_SECS + 10
+
+    def test_an_interrupt_does_not_wait_out_the_grace_period(self, tmp_path):
+        # Ctrl-C wants the process gone now; there is no failure to diagnose.
+        script = _write_script(
+            tmp_path,
+            "import signal, time\n"
+            "signal.signal(signal.SIGABRT, signal.SIG_IGN)\n"
+            "time.sleep(120)\n",
+        )
+        proc = subprocess.Popen(
+            [sys.executable, str(script)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            start_new_session=True,
+        )
+        try:
+            started = time.time()
+            build_util.kill_group(proc, dump_traceback_first=False)
+            elapsed = time.time() - started
+        finally:
+            proc.communicate()
+
+        assert elapsed < build_util.ABORT_GRACE_SECS
