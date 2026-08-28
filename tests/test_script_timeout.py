@@ -132,6 +132,72 @@ class TestTimeoutOutput:
         assert "on stderr" in out
 
 
+# A faulthandler dump as `kill_group`'s SIGABRT actually produces it: the
+# `Fatal Python error` banner, the frames, then the loaded-extension list --
+# which on the PyAuto stack is ~1900 characters, i.e. nearly the whole 2000-char
+# tail budget. Before the dump-aware split, a hang's own stack was captured by
+# the abort and then thrown away by the cap (autolens_workspace_test#287).
+_FAULTHANDLER_DUMP = (
+    "Fatal Python error: Aborted\n"
+    "\n"
+    "Current thread 0x00007f3a2c0b4740 (most recent call first):\n"
+    '  File "/venv/lib/python3.12/site-packages/jax/_src/array.py", line 401 in _value\n'
+    '  File "/venv/lib/python3.12/site-packages/jax/_src/api.py", line 2537 in block_until_ready\n'
+    '  File "/work/scripts/multi_dataset/jax_likelihood/delaunay.py", line 208 in <module>\n'
+)
+_EXTENSION_MODULES = (
+    "\nExtension modules: "
+    + ", ".join(f"pyauto_ext_module_number_{i:02d}" for i in range(64))
+    + " (total: 64)\n"
+)
+
+
+class TestTimeoutOutputKeepsTheAbortStack:
+    """The stack the SIGABRT was sent to obtain must reach the report."""
+
+    def test_the_dump_survives_a_noisy_stderr_and_loses_the_module_list(self):
+        noise = "chatty library warning line\n" * 120  # >3000 chars of noise
+        assert len(noise) > 3000
+        assert len(_EXTENSION_MODULES) > 1800
+        e = subprocess.TimeoutExpired(
+            cmd="x", timeout=1, stderr=noise + _FAULTHANDLER_DUMP + _EXTENSION_MODULES
+        )
+
+        out = _timeout_output(e)
+
+        # Every frame of the dump survives, banner included.
+        assert "Fatal Python error: Aborted" in out
+        assert "Current thread 0x00007f3a2c0b4740" in out
+        assert "jax/_src/array.py" in out
+        assert "block_until_ready" in out
+        assert "delaunay.py" in out and "line 208" in out
+        # The extension list -- the thing that used to eat the tail -- is gone.
+        assert "Extension modules:" not in out
+        assert "pyauto_ext_module_number_00" not in out
+        # The noise ahead of the dump is still capped.
+        assert "truncated" in out
+        assert len(out) < len(noise)
+
+    def test_a_dump_with_no_preceding_noise_is_returned_whole(self):
+        e = subprocess.TimeoutExpired(
+            cmd="x", timeout=1, stderr=_FAULTHANDLER_DUMP + _EXTENSION_MODULES
+        )
+        out = _timeout_output(e)
+        assert "truncated" not in out
+        assert "delaunay.py" in out
+        assert "Extension modules:" not in out
+
+    def test_plain_long_stderr_still_truncates_to_the_tail(self):
+        # No dump means no change in behaviour: the cap applies as it always has.
+        e = subprocess.TimeoutExpired(
+            cmd="x", timeout=1, stderr="B" * 50_000 + "THE-LAST-STDERR-LINE"
+        )
+        out = _timeout_output(e)
+        assert "THE-LAST-STDERR-LINE" in out
+        assert "truncated" in out
+        assert len(out) < 50_000
+
+
 def _write_script(tmp_path: Path, body: str) -> Path:
     script = tmp_path / "script.py"
     script.write_text(body)
