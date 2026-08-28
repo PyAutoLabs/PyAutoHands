@@ -22,7 +22,34 @@ BUILD_PYTHON_INTERPRETER = os.environ.get("BUILD_PYTHON_INTERPRETER", "python3")
 # out. A timed-out script is killed mid-flight, so its tail is the only clue to
 # which block was executing — enough to name the block, not so much that a
 # chatty script floods the report.
+#
+# One exception: a faulthandler dump (the stack `kill_group`'s SIGABRT exists to
+# produce) is kept WHOLE and the cap applies only to the text before it. The cap
+# used to swallow it — the dump's trailing `Extension modules:` list alone runs
+# to ~1900 of these 2000 characters, so a hang's own stack was written and then
+# cut (the delaunay.py timeout in the lens workspace-test repo, #287). That list is dropped; the frames are the
+# evidence.
 TIMEOUT_OUTPUT_TAIL_CHARS = 2000
+
+# A faulthandler dump opens with one of these lines and runs to the end of the
+# stream; its final paragraph is the loaded-extension list, which carries no
+# diagnostic information.
+_FAULTHANDLER_MARKER_RE = re.compile(
+    r"^(?:Fatal Python error:|Current thread 0x)", re.MULTILINE
+)
+_EXTENSION_MODULES_RE = re.compile(r"^Extension modules:.*\Z", re.MULTILINE | re.DOTALL)
+
+
+def _split_faulthandler_dump(text: str):
+    """Split ``text`` into ``(text before any dump, the dump)``.
+
+    Returns ``(text, "")`` when the stream carries no faulthandler dump.
+    """
+    match = _FAULTHANDLER_MARKER_RE.search(text)
+    if match is None:
+        return text, ""
+    dump = _EXTENSION_MODULES_RE.sub("", text[match.start() :]).rstrip()
+    return text[: match.start()].rstrip(), dump
 
 
 def timeout_for(env=None) -> int:
@@ -71,7 +98,17 @@ def _timeout_output(e: subprocess.TimeoutExpired) -> str:
     but only when the call captured it (``capture_output``/``stdout=PIPE``);
     otherwise both attributes are None and the child wrote straight to the
     console. Streams may be bytes or str depending on ``text=``.
+
+    A faulthandler dump is kept whole (minus its ``Extension modules:`` list)
+    and only the text preceding it is capped, so the stack the SIGABRT was sent
+    to obtain survives into the report. Without a dump the behaviour is the
+    plain tail it has always been.
     """
+
+    def cap(text: str) -> str:
+        if len(text) > TIMEOUT_OUTPUT_TAIL_CHARS:
+            return "...[truncated]...\n" + text[-TIMEOUT_OUTPUT_TAIL_CHARS:]
+        return text
 
     def tail(stream) -> str:
         if not stream:
@@ -79,9 +116,11 @@ def _timeout_output(e: subprocess.TimeoutExpired) -> str:
         if isinstance(stream, bytes):
             stream = stream.decode("utf-8", errors="replace")
         stream = stream.strip()
-        if len(stream) > TIMEOUT_OUTPUT_TAIL_CHARS:
-            return "...[truncated]...\n" + stream[-TIMEOUT_OUTPUT_TAIL_CHARS:]
-        return stream
+        before, dump = _split_faulthandler_dump(stream)
+        if not dump:
+            return cap(stream)
+        before = cap(before)
+        return f"{before}\n{dump}" if before else dump
 
     parts = []
     for label, stream in (("stdout", e.stdout), ("stderr", e.stderr)):
