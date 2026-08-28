@@ -136,7 +136,7 @@ class TestTimeoutOutput:
 # `Fatal Python error` banner, the frames, then the loaded-extension list --
 # which on the PyAuto stack is ~1900 characters, i.e. nearly the whole 2000-char
 # tail budget. Before the dump-aware split, a hang's own stack was captured by
-# the abort and then thrown away by the cap (autolens_workspace_test#287).
+# the abort and then thrown away by the cap (lens workspace-test #287).
 _FAULTHANDLER_DUMP = (
     "Fatal Python error: Aborted\n"
     "\n"

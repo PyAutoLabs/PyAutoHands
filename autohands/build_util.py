@@ -27,7 +27,7 @@ BUILD_PYTHON_INTERPRETER = os.environ.get("BUILD_PYTHON_INTERPRETER", "python3")
 # produce) is kept WHOLE and the cap applies only to the text before it. The cap
 # used to swallow it — the dump's trailing `Extension modules:` list alone runs
 # to ~1900 of these 2000 characters, so a hang's own stack was written and then
-# cut (autolens_workspace_test#287). That list is dropped; the frames are the
+# cut (the delaunay.py timeout in the lens workspace-test repo, #287). That list is dropped; the frames are the
 # evidence.
 TIMEOUT_OUTPUT_TAIL_CHARS = 2000
 
