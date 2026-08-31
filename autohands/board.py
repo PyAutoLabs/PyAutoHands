@@ -496,6 +496,13 @@ def _render_html(snapshot: dict) -> str:
                   f"render:</p><ul class='meta'>{items}</ul></div>")
     heart = _heart_board_url(snapshot)
     hero = t_.hero(BOARD_KEY, "Dashboard", _LEDE)
+    # The way back from the Pages board to the repository front door; owner
+    # and repo come from the snapshot (the git remote), so nothing is
+    # hardcoded and the segment drops out when the origin is unknown.
+    gh_owner, gh_repo = snapshot.get("owner"), snapshot.get("repo")
+    github_link = (f' · <a href="https://github.com/{gh_owner}/{gh_repo}'
+                   '/blob/main/README.md">GitHub Page</a>'
+                   if gh_owner and gh_repo else "")
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -507,7 +514,7 @@ def _render_html(snapshot: dict) -> str:
 <p class="verdict"><b>{head}</b><span class="muted">{head_age}</span></p>
 <p class="muted">Whether it is <em>safe</em> to release lives with the
 <a href="{heart}">PyAutoHeart Dashboard</a> — the Hands execute, never gate.
-<a href="dashboard.md">markdown version</a></p>
+<a href="dashboard.md">markdown version</a>{github_link}</p>
 <p>{chips}</p>
 <h2>Libraries</h2>
 <table class="recent">{''.join(lib_rows)}</table>
