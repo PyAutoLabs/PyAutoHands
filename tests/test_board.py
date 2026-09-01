@@ -105,6 +105,10 @@ def test_badge_shape():
 def test_html_is_self_contained():
     out = board.render(SNAP, "html")
     assert out.lstrip().startswith("<!doctype html>")
+    # The header links the markdown twin and the repository front door.
+    assert '<a href="dashboard.md">markdown version</a>' in out
+    assert ('<a href="https://github.com/SomeOrg/SomeHands/blob/main/'
+            'README.md">GitHub Page</a>') in out
     # No external ASSETS: no src=, no <link>, no fetches; inline <script> is
     # the clipboard buttons; every URL sits in an href (same contract the
     # Heart board pins).
