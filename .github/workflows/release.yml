@@ -315,10 +315,12 @@ jobs:
           - { repo: PyAutoLabs/autogalaxy_workspace, path: autogalaxy_workspace }
           - { repo: PyAutoLabs/autolens_workspace,   path: autolens_workspace }
     env:
-      PYAUTO_TEST_MODE: "1"
-      PYAUTO_SMALL_DATASETS: "1"
-      PYAUTO_FAST_PLOTS: "1"
-      PYAUTO_SKIP_WORKSPACE_VERSION_CHECK: "1"
+      # PYAUTO_* behaviour is owned by the workspace's release profile
+      # (config/build/profile_release.yaml), resolved per script by the runner
+      # below — a job-level PYAUTO_ var would be scrubbed by env_config's
+      # managed-prefix scrub anyway (#272). Only infrastructure vars stay here,
+      # for the install steps and the runner process itself; the profiles pin
+      # the same values for the scripts.
       NUMBA_CACHE_DIR: /tmp/numba_cache
       MPLCONFIGDIR: /tmp/matplotlib
       JAX_ENABLE_X64: "True"
@@ -328,6 +330,12 @@ jobs:
           repository: ${{ matrix.workspace.repo }}
           ref: main
           path: ${{ matrix.workspace.path }}
+      # The env-aware smoke runner (autohands/run_python.py + env_config.py)
+      # lives in this repo — checked out beside the workspace so the release
+      # smoke run resolves per-script env instead of a blanket job env.
+      - uses: actions/checkout@v4
+        with:
+          path: PyAutoHands
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -355,30 +363,36 @@ jobs:
           # Belt-and-braces JAX install — the [optional] → [jax] chain
           # occasionally silently drops jax from test.pypi resolution.
           pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
+          # The env-aware runner's own dependency (autohands/env_config.py);
+          # usually already present transitively, pinned-present here.
+          pip install pyyaml
       - name: Run smoke tests
+        # Routed through the canonical env-aware runner rather than a bare
+        # `python scripts/<script>` loop: run_python.py resolves each script's
+        # env from the profile plus the script's own in-file `__Env__`
+        # declaration (applied last), so a declaration like witt_wynne.py's
+        # `ENV: full_datasets` releases PYAUTO_SMALL_DATASETS instead of
+        # failing every LIVE run (#272). The release profile is the right one
+        # here — this job runs workspace main against TestPyPI wheels, the
+        # exact context profile_release.yaml pins (its defaults match the
+        # PYAUTO_* env this job used to set, version-check skip included).
+        # --report-dir is load-bearing: without a report the runner cannot
+        # propagate failures and always exits 0.
         run: |
           cd ${{ matrix.workspace.path }}
           if [ ! -f smoke_tests.txt ]; then
             echo "No smoke_tests.txt — skipping"
             exit 0
           fi
-          fail=0
-          while IFS= read -r script || [ -n "$script" ]; do
-            [ -z "$script" ] && continue
-            case "$script" in \#*) continue ;; esac
-            echo "::group::$script"
-            if python "scripts/$script"; then
-              echo "PASS: $script"
-            else
-              echo "FAIL: $script"
-              fail=$((fail + 1))
-            fi
-            echo "::endgroup::"
-          done < smoke_tests.txt
-          if [ "$fail" -gt 0 ]; then
-            echo "$fail smoke test(s) failed"
+          if [ ! -f config/build/profile_release.yaml ]; then
+            echo "::error::smoke_tests.txt exists but config/build/profile_release.yaml is missing — the release smoke run has no env policy"
             exit 1
           fi
+          python "$GITHUB_WORKSPACE/PyAutoHands/autohands/run_python.py" \
+            "${{ matrix.workspace.path }}" scripts \
+            --list smoke_tests.txt \
+            --env-config config/build/profile_release.yaml \
+            --report-dir test-results
 
   release:
     runs-on: ubuntu-latest
