@@ -44,6 +44,32 @@ user**.
 
 Then ask the user for the minor version number (default: 1).
 
+### 1b. Open the freeze window
+
+Dispatching the release workflow opens a validation window: from here until the
+run's evidence is ingested, the library `main` branches must not move, because a
+merge landing inside the window invalidates the evidence and restales the
+rehearsal (~75 minutes, measured 2026-08-29). Say so, once, where the rest of
+the organism can see it:
+
+```bash
+pyauto-heart freeze --set "release validation" --until 3h --set-by pre-build
+```
+
+PyAutoHeart owns the flag (`PyAutoHeart/REFERENCE.md` → "The release freeze
+window"); this is the call site that opens it. `--until` is mandatory and is a
+backstop, not a promise — pick a duration comfortably longer than the run you
+are dispatching, since an over-long window is cleared by the ingest anyway
+while a short one silently thaws mid-validation. It clears itself three ways:
+`pyauto-heart validate --ingest` (the evidence landing *is* the end of the
+window), `/review_release` when it triages the run, or expiry.
+
+While it is set, `/prm` refuses to merge a **library** repo's PR (`--thaw`
+overrides, logged) and `pyauto-brain vitals` and `batch collect` carry the
+line. Workspace and organ repos are not gated — this skill's own workspace
+pushes below are unaffected. Where `pyauto-heart` is not on PATH, skip this
+step and say so; it is a signal, not a precondition.
+
 ### 2. Run `autohands pre_build`
 
 Invoke the bash entry point directly:
