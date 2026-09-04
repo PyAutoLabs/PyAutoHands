@@ -308,8 +308,17 @@ def _heart_board_url(snapshot: dict) -> str:
 
 
 # The one-tap board family — the cross-board footer nav every board carries,
-# each board skipping its own entry. Owner comes from the snapshot, so no
-# instance name lives here beyond the family's repo identities.
+# each board skipping its own entry.
+#
+# Membership and order are NOT decided here: they live once, in the Brain's
+# `config/policy.yaml` `board: boards:`, and `_theme.board_links` is the read.
+# This file used to keep its own tuple, written before the Cortex had a board
+# — so this footer was short a chip and out of the family's order, and nothing
+# noticed. The tuple below survives only as the fallback for an older
+# PyAutoBrain checkout whose theme predates the helper; it is deliberately the
+# old list, because a fallback that guessed at the current one would drift the
+# same way. Owner still comes from the snapshot, so no instance name lives
+# here beyond the family's repo identities.
 BOARD_FAMILY = (("mind", "PyAutoMind"), ("brain", "PyAutoBrain"),
                 ("heart", "PyAutoHeart"), ("memory", "PyAutoMemory"),
                 ("organism", "PyAutoScientist"))
@@ -317,13 +326,17 @@ BOARD_FAMILY = (("mind", "PyAutoMind"), ("brain", "PyAutoBrain"),
 
 def _boards_nav(snapshot: dict) -> str:
     """The cross-board footer — one chip per sibling, each in its own organ's
-    colour (the theme owns the chip palette; this board owns the URLs)."""
+    colour (the theme owns the chip palette AND the family's membership; this
+    board owns only its owner and which page it is)."""
     owner = str(snapshot.get("owner") or "").lower()
     if not owner:
         return ""
-    links = {key: f"https://{owner}.github.io/{repo}/"
-             for key, repo in BOARD_FAMILY}
-    return theme().boards_footer(links, BOARD_KEY)
+    t_ = theme()
+    base = f"https://{owner}.github.io"
+    links = getattr(t_, "board_links", None)
+    links = (links(base, BOARD_KEY) if links else
+             {key: f"{base}/{repo}/" for key, repo in BOARD_FAMILY})
+    return t_.boards_footer(links, BOARD_KEY)
 
 
 def _latest(snapshot: dict) -> dict | None:
