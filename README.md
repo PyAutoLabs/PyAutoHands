@@ -26,7 +26,7 @@ Claude command (`/release`, `/release rehearse`, `/release validate`,
 <!-- The line below is auto-updated by .github/workflows/release_board.yml (everything -->
 <!-- between the hands:begin/hands:end markers is replaced with the rendered strip). -->
 <!-- hands:begin -->
-📦 **2026.9.4.1** · shipped 2026-09-04 (20h ago) · last train run ✓ [2026-09-04](https://github.com/PyAutoLabs/PyAutoHands/actions/runs/33908218375) · [dashboard →](https://pyautolabs.github.io/PyAutoHands/)
+📦 **2026.9.4.1** · shipped 2026-09-04 (1d ago) · last train run ✓ [2026-09-05](https://github.com/PyAutoLabs/PyAutoHands/actions/runs/33950669851) · [dashboard →](https://pyautolabs.github.io/PyAutoHands/)
 <!-- hands:end -->
 
 ## How PyAutoHands works
