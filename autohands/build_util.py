@@ -320,8 +320,8 @@ _setup_colab.setup("{project}")'''
 def inject_colab_setup(notebook_path, project: str):
     """
     Prepend the standard Google Colab setup cell pair (markdown explainer +
-    code cell) to a generated notebook, so every published notebook can
-    bootstrap itself on Colab.
+    code cell) to a generated notebook containing code, so runnable notebooks
+    can bootstrap themselves on Colab. Prose-only notebooks need no setup.
 
     The cells are inserted after the notebook's leading markdown cell (the
     script's intro docstring) so the title stays on top. Notebooks whose
@@ -341,6 +341,12 @@ def inject_colab_setup(notebook_path, project: str):
         notebook = json.load(f)
 
     cells = notebook["cells"]
+
+    if not any(
+        cell["cell_type"] == "code" and "".join(cell.get("source", [])).strip()
+        for cell in cells
+    ):
+        return False
 
     for cell in cells:
         if "setup_colab" in "".join(cell.get("source", [])):

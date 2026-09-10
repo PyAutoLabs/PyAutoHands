@@ -75,6 +75,35 @@ def test_skips_notebook_with_hand_written_setup(tmp_path):
     assert json.loads(nb_path.read_text())["cells"] == original
 
 
+@pytest.mark.parametrize(
+    "cells",
+    [
+        [],
+        [markdown_cell("Scientific Workflow\nFollow the guide to continue.")],
+        [markdown_cell("Scientific Workflow"), code_cell(" \n\t")],
+    ],
+    ids=["empty", "prose-only", "blank-code"],
+)
+def test_skips_notebooks_without_nonempty_code(tmp_path, cells):
+    nb_path = make_notebook(tmp_path / "tutorial.ipynb", cells)
+    original = nb_path.read_bytes()
+
+    assert build_util.inject_colab_setup(nb_path, "howtofit") is False
+    assert nb_path.read_bytes() == original
+
+
+def test_injects_when_nonempty_code_follows_blank_code(tmp_path):
+    nb_path = make_notebook(
+        tmp_path / "tutorial.ipynb",
+        [markdown_cell("Title"), code_cell("\n"), code_cell("print('ready')")],
+    )
+
+    assert build_util.inject_colab_setup(nb_path, "howtofit") is True
+    cells = json.loads(nb_path.read_text())["cells"]
+    assert '_setup_colab.setup("howtofit")' in "".join(cells[2]["source"])
+    assert cells[-1]["source"] == ["print('ready')"]
+
+
 def test_idempotent(tmp_path):
     nb_path = make_notebook(
         tmp_path / "example.ipynb", [markdown_cell("Title"), code_cell("x = 1")]
