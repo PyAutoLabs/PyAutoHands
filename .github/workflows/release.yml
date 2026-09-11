@@ -324,6 +324,18 @@ jobs:
       NUMBA_CACHE_DIR: /tmp/numba_cache
       MPLCONFIGDIR: /tmp/matplotlib
       JAX_ENABLE_X64: "True"
+      # Per-script wall-clock cap. This leg runs the workspace's RELEASE profile
+      # (reduced-but-real sampler, real fit output and visualization), the same
+      # profile PyAutoHeart's workspace-validation.yml runs in mode=release under
+      # an 1800s cap — but the runner's own default is the 300s smoke cap, and
+      # that mismatch failed the 2026-09-11 live release (run 34577342347):
+      # imaging/features/pixelization/delaunay.py TIMEOUT at 305s here after
+      # passing Heart's release validation the same morning at 234s (and this
+      # leg at 262s on 2026-09-08). The libraries had already published, so the
+      # red run reported a shipped release as a failed one. Match Heart's
+      # release-mode budget; a workspace profile override on a pattern still
+      # wins per script (build_util.timeout_for).
+      BUILD_SCRIPT_TIMEOUT: "1800"
     steps:
       - uses: actions/checkout@v4
         with:

@@ -89,7 +89,7 @@ Build + Heart workflows, read commit history), `PYAUTO_RELEASE_WEBHOOK_URL`.
 | 3 | **Known-red check** (§5) — open release-blocking issue → stop | **page**: `stopped — release-blocked by <issue>` |
 | 4 | **Validate** — run the Stages 0–3 choreography (`release validate` Phases A→C: preflight, rehearsal dispatch+poll, `mode=release` validation dispatch+poll, ingest) | **page** on any stage failure, naming the stage + run URL |
 | 5 | **Gate** — `pyauto-heart readiness --json` over the in-run snapshot (§5): verdict must be **GREEN**. STALE/YELLOW/RED all stop — no `--force` on the nightly path, ever | **page**: `stopped — Heart <verdict>: <reasons>` |
-| 6 | **Release** — dispatch `release.yml` (`rehearsal=false`, `minor_version=1`); poll to completion | `announce_release` already pages on live failure; the driver adds its own page if the dispatched run cannot be found/polled |
+| 6 | **Release** — dispatch `release.yml` (`rehearsal=false`, `minor_version=1`); poll to completion | `announce_release` already pages on live failure; the driver adds its own page if the dispatched run cannot be found/polled. A red run whose libraries nevertheless published (today's release tag now exists — the post-publish `run_smoke_tests` leg is the usual cause) is reported as **shipped with a red smoke leg**, not as a stop: the release happened, and the anchor advances |
 | 7 | **Report** — `released YYYY.M.D.1` with run URL; the morning digest picks it up | — |
 
 Every terminal outcome except the kill switch emits exactly one Slack message
@@ -180,6 +180,7 @@ message per nightly outcome, three severities:
 | `released` | 📦 info | version, repos with activity (the gate's evidence), run URL — `announce_release` already covers the release itself; the driver's message adds the *why* (activity summary) |
 | `skipped — no activity` / `already released today` | 💤 info | window checked, "quiet night" |
 | `stopped` (blocked / stage failure / not GREEN / dispatch lost) | 🚨 **page** | which step, verdict + reasons or failing stage, run URL, "no release was made" |
+| `released — smoke leg red` (the run went red after the libraries published) | ⚠️ warn | version, the release run URL, that the release stands and the smoke failure needs a human; the anchor advances as for `released` |
 
 The morning digest (PyAutoMind `morning_health`) adds the second layer: it
 reads last night's outcome and **flags the absence of any outcome** — the
