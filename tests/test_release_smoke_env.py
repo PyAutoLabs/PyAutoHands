@@ -89,3 +89,15 @@ def test_smoke_step_fails_loudly_without_a_release_profile():
 
     assert "config/build/profile_release.yaml" in run
     assert "::error::" in run
+
+
+def test_smoke_job_caps_each_script_at_the_release_budget():
+    """The leg runs the workspace's release profile, which PyAutoHeart's
+    workspace-validation.yml budgets at 1800s per script in mode=release; the
+    runner's own default is the 300s smoke cap. Under that cap a script that
+    passes Heart's release validation can time out here after the libraries
+    have already published (2026-09-11, run 34577342347: pixelization/delaunay
+    at 305s), so the job must carry Heart's budget. BUILD_SCRIPT_TIMEOUT is an
+    infrastructure var, not PYAUTO_*, so the runner's managed-prefix scrub
+    leaves it for build_util.timeout_for to read."""
+    assert smoke_job()["env"]["BUILD_SCRIPT_TIMEOUT"] == "1800"
