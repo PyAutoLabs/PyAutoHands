@@ -541,3 +541,37 @@ class TestLocalPathGuard:
         page.write_text(f"output written to {home}/checkouts/output\n")
         with pytest.raises(RuntimeError, match="absolute local paths"):
             generate_markdown.check_no_local_paths(page)
+
+    def test_authored_path_in_the_script_is_not_a_leak(self, tmp_path):
+        """
+        Every tutorial_0_visualization deliberately shows a commented
+        ``workspace_path = "/Users/.../<repo>"`` as teaching material. It is in
+        the source on purpose and reaches the page as prose, not through
+        redaction, so it must not fail the build.
+        """
+        script = tmp_path / "tutorial_0_visualization.py"
+        script.write_text(
+            '# workspace_path = "/Users/Someone/Code/Example/example_workspace"\n'
+        )
+        page = tmp_path / "tutorial_0_visualization.md"
+        page.write_text(
+            "Set it manually:\n"
+            '`# workspace_path = "/Users/Someone/Code/Example/example_workspace"`\n'
+        )
+        generate_markdown.check_no_local_paths(page, script)
+
+    def test_runtime_leak_still_caught_when_a_script_is_given(self, tmp_path):
+        """The exemption is per-path, not a blanket pass for the whole page."""
+        script = tmp_path / "tutorial_0_visualization.py"
+        script.write_text(
+            '# workspace_path = "/Users/Someone/Code/Example/example_workspace"\n'
+        )
+        page = tmp_path / "tutorial_0_visualization.md"
+        page.write_text(
+            '`# workspace_path = "/Users/Someone/Code/Example/example_workspace"`\n'
+            "/home/dev/Code/checkouts/ExampleLib/x.py:1: Warning\n"
+        )
+        with pytest.raises(RuntimeError) as excinfo:
+            generate_markdown.check_no_local_paths(page, script)
+        assert "/home/dev/Code/checkouts/ExampleLib/x.py" in str(excinfo.value)
+        assert "/Users/Someone" not in str(excinfo.value)
