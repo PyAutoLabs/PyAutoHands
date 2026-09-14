@@ -407,8 +407,8 @@ class TestRedactionRoots:
         subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
 
     def _canonical_workspace(self, tmp_path):
-        """``<tmp>/PyAutoLabs/HowToGalaxy``, a real checkout with a commit."""
-        workspace = tmp_path / "PyAutoLabs" / "HowToGalaxy"
+        """``<tmp>/checkouts/example_workspace``, a real checkout with a commit."""
+        workspace = tmp_path / "checkouts" / "example_workspace"
         workspace.mkdir(parents=True)
         self._git(workspace, "init", "-q")
         self._git(workspace, "config", "user.email", "t@t")
@@ -419,8 +419,8 @@ class TestRedactionRoots:
         return workspace
 
     def _worktree_workspace(self, tmp_path, canonical):
-        """``<tmp>/PyAutoLabs-wt/<task>/HowToGalaxy``, a worktree of it."""
-        dest = tmp_path / "PyAutoLabs-wt" / "a-task" / "HowToGalaxy"
+        """``<tmp>/checkouts-wt/<task>/example_workspace``, a worktree of it."""
+        dest = tmp_path / "checkouts-wt" / "a-task" / "example_workspace"
         self._git(canonical, "worktree", "add", "-q", "-b", "a-task", str(dest))
         return dest
 
@@ -478,7 +478,7 @@ class TestRedactionRoots:
             f"Working Directory has been set to `{canonical}`",
             redactions=generate_markdown._redactions_for(canonical),
         )
-        assert cleaned == "Working Directory has been set to `HowToGalaxy`"
+        assert cleaned == "Working Directory has been set to `example_workspace`"
 
     def test_redactions_ordered_longest_first(self, tmp_path, monkeypatch):
         monkeypatch.delenv("PYAUTO_MAIN", raising=False)
@@ -490,10 +490,10 @@ class TestRedactionRoots:
     def test_pyauto_main_redacted_when_set(self, tmp_path, monkeypatch):
         # No git repo here at all: PYAUTO_MAIN is the workspace's own answer to
         # "where is the canonical checkout" and must still be scrubbed.
-        monkeypatch.setenv("PYAUTO_MAIN", str(tmp_path / "PyAutoLabs"))
-        workspace = tmp_path / "elsewhere" / "HowToGalaxy"
+        monkeypatch.setenv("PYAUTO_MAIN", str(tmp_path / "checkouts"))
+        workspace = tmp_path / "elsewhere" / "example_workspace"
         workspace.mkdir(parents=True)
-        assert self._render(workspace, tmp_path / "PyAutoLabs") == (
+        assert self._render(workspace, tmp_path / "checkouts") == (
             ".../PyAutoArray/autoarray/operators/convolver.py:1415: UserWarning"
         )
 
@@ -504,7 +504,7 @@ class TestRedactionRoots:
         home.mkdir(parents=True)
         monkeypatch.setenv("HOME", str(home))
         monkeypatch.setenv("PYAUTO_MAIN", str(home))
-        workspace = home / "HowToGalaxy"
+        workspace = home / "example_workspace"
         workspace.mkdir()
         cleaned = generate_markdown._clean_stream_text(
             f"cache at {home}/.cache/x",
@@ -516,20 +516,20 @@ class TestRedactionRoots:
 class TestLocalPathGuard:
     def test_clean_page_passes(self, tmp_path):
         page = tmp_path / "page.md"
-        page.write_text("Working Directory has been set to `HowToGalaxy`\n")
+        page.write_text("Working Directory has been set to `example_workspace`\n")
         generate_markdown.check_no_local_paths(page)
 
     def test_leaked_home_path_fails_the_build(self, tmp_path):
         page = tmp_path / "page.md"
         page.write_text(
-            "/home/dev/Code/PyAutoLabs/PyAutoArray/autoarray/convolver.py:1: Warning\n"
+            "/home/dev/Code/checkouts/PyAutoArray/autoarray/convolver.py:1: Warning\n"
         )
         with pytest.raises(RuntimeError, match="absolute local paths"):
             generate_markdown.check_no_local_paths(page)
 
     def test_leaked_macos_path_fails_the_build(self, tmp_path):
         page = tmp_path / "page.md"
-        page.write_text("loaded /Users/dev/Code/PyAutoLabs/PyAutoArray/x.py\n")
+        page.write_text("loaded /Users/dev/Code/checkouts/PyAutoArray/x.py\n")
         with pytest.raises(RuntimeError, match="/Users/dev"):
             generate_markdown.check_no_local_paths(page)
 
@@ -538,6 +538,6 @@ class TestLocalPathGuard:
         home.mkdir(parents=True)
         monkeypatch.setenv("HOME", str(home))
         page = tmp_path / "page.md"
-        page.write_text(f"output written to {home}/PyAutoLabs/output\n")
+        page.write_text(f"output written to {home}/checkouts/output\n")
         with pytest.raises(RuntimeError, match="absolute local paths"):
             generate_markdown.check_no_local_paths(page)

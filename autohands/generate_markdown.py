@@ -155,9 +155,10 @@ def _sibling_checkout_roots(workspace_path: Path):
     surface in this workspace's output (library warnings, tracebacks).
 
     ``workspace_path.parent`` is only one of them, and in a task worktree it is
-    the *wrong* one: the workspace is checked out at ``<root>-wt/<task>/
-    HowToGalaxy`` while the libraries being imported still live in the
-    canonical ``<root>/PyAutoArray``. A worktree's git *common* directory
+    the *wrong* one: the workspace is checked out at
+    ``<root>-wt/<task>/<workspace>`` while the libraries being imported still
+    live in the canonical ``<root>/<library>``. A worktree's git *common*
+    directory
     points back into the canonical checkout, so it names the canonical
     workspace root without any assumption about how worktrees are laid out;
     ``PYAUTO_MAIN`` (the workspace's own answer to "where is the canonical
