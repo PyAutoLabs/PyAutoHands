@@ -388,3 +388,156 @@ class TestTrackedFileProtection:
         assert generate_markdown.restore_tracked_files(workspace) == []
         assert (md / "page.md").read_text() == "new page"
         assert (workspace / "output.log").exists()
+
+
+class TestRedactionRoots:
+    """
+    Where the sibling checkouts live — the assumption that broke in worktrees.
+
+    A canonical checkout has the libraries in ``workspace_path.parent``; a task
+    worktree does not (the libraries stay in the canonical tree), so a page
+    rendered from a worktree used to publish the developer's home directory.
+    """
+
+    LIBRARY_WARNING = (
+        "{root}/PyAutoArray/autoarray/operators/convolver.py:1415: UserWarning"
+    )
+
+    def _git(self, repo, *args):
+        subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+
+    def _canonical_workspace(self, tmp_path):
+        """``<tmp>/checkouts/example_workspace``, a real checkout with a commit."""
+        workspace = tmp_path / "checkouts" / "example_workspace"
+        workspace.mkdir(parents=True)
+        self._git(workspace, "init", "-q")
+        self._git(workspace, "config", "user.email", "t@t")
+        self._git(workspace, "config", "user.name", "t")
+        (workspace / "start_here.py").write_text("print('hi')\n")
+        self._git(workspace, "add", "start_here.py")
+        self._git(workspace, "commit", "-qm", "init")
+        return workspace
+
+    def _worktree_workspace(self, tmp_path, canonical):
+        """``<tmp>/checkouts-wt/<task>/example_workspace``, a worktree of it."""
+        dest = tmp_path / "checkouts-wt" / "a-task" / "example_workspace"
+        self._git(canonical, "worktree", "add", "-q", "-b", "a-task", str(dest))
+        return dest
+
+    def _render(self, workspace, warning_root):
+        return generate_markdown._clean_stream_text(
+            self.LIBRARY_WARNING.format(root=warning_root),
+            redactions=generate_markdown._redactions_for(workspace),
+        )
+
+    def test_canonical_checkout_redacts_sibling_library(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("PYAUTO_MAIN", raising=False)
+        canonical = self._canonical_workspace(tmp_path)
+        cleaned = self._render(canonical, canonical.parent)
+        assert cleaned == (
+            ".../PyAutoArray/autoarray/operators/convolver.py:1415: UserWarning"
+        )
+
+    def test_worktree_redacts_canonical_sibling_library(self, tmp_path, monkeypatch):
+        # The bug: the libraries resolve to the CANONICAL tree while the
+        # workspace is in the worktree, so `workspace_path.parent` matches
+        # nothing and the home path used to be published verbatim.
+        monkeypatch.delenv("PYAUTO_MAIN", raising=False)
+        canonical = self._canonical_workspace(tmp_path)
+        worktree = self._worktree_workspace(tmp_path, canonical)
+        cleaned = self._render(worktree, canonical.parent)
+        assert cleaned == (
+            ".../PyAutoArray/autoarray/operators/convolver.py:1415: UserWarning"
+        )
+        assert str(tmp_path) not in cleaned
+
+    def test_worktree_and_canonical_publish_the_same_page(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("PYAUTO_MAIN", raising=False)
+        canonical = self._canonical_workspace(tmp_path)
+        worktree = self._worktree_workspace(tmp_path, canonical)
+        assert self._render(worktree, canonical.parent) == self._render(
+            canonical, canonical.parent
+        )
+
+    def test_worktree_own_siblings_still_redacted(self, tmp_path, monkeypatch):
+        # A worktree render legitimately sees paths from BOTH trees: sibling
+        # library worktrees live next to the workspace worktree.
+        monkeypatch.delenv("PYAUTO_MAIN", raising=False)
+        canonical = self._canonical_workspace(tmp_path)
+        worktree = self._worktree_workspace(tmp_path, canonical)
+        assert self._render(worktree, worktree.parent) == (
+            ".../PyAutoArray/autoarray/operators/convolver.py:1415: UserWarning"
+        )
+
+    def test_workspace_path_itself_wins_over_its_root(self, tmp_path, monkeypatch):
+        # Order matters: the checkout root is a prefix of the workspace path,
+        # so redacting it first would mangle the workspace path to `.../name`.
+        monkeypatch.delenv("PYAUTO_MAIN", raising=False)
+        canonical = self._canonical_workspace(tmp_path)
+        cleaned = generate_markdown._clean_stream_text(
+            f"Working Directory has been set to `{canonical}`",
+            redactions=generate_markdown._redactions_for(canonical),
+        )
+        assert cleaned == "Working Directory has been set to `example_workspace`"
+
+    def test_redactions_ordered_longest_first(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("PYAUTO_MAIN", raising=False)
+        canonical = self._canonical_workspace(tmp_path)
+        worktree = self._worktree_workspace(tmp_path, canonical)
+        lengths = [len(old) for old, _ in generate_markdown._redactions_for(worktree)]
+        assert lengths == sorted(lengths, reverse=True)
+
+    def test_pyauto_main_redacted_when_set(self, tmp_path, monkeypatch):
+        # No git repo here at all: PYAUTO_MAIN is the workspace's own answer to
+        # "where is the canonical checkout" and must still be scrubbed.
+        monkeypatch.setenv("PYAUTO_MAIN", str(tmp_path / "checkouts"))
+        workspace = tmp_path / "elsewhere" / "example_workspace"
+        workspace.mkdir(parents=True)
+        assert self._render(workspace, tmp_path / "checkouts") == (
+            ".../PyAutoArray/autoarray/operators/convolver.py:1415: UserWarning"
+        )
+
+    def test_root_at_or_above_home_never_redacted(self, tmp_path, monkeypatch):
+        # A root that is the home directory (or above it) would rewrite the
+        # home prefix to `...` and mangle paths that should render as `~`.
+        home = tmp_path / "home" / "dev"
+        home.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        monkeypatch.setenv("PYAUTO_MAIN", str(home))
+        workspace = home / "example_workspace"
+        workspace.mkdir()
+        cleaned = generate_markdown._clean_stream_text(
+            f"cache at {home}/.cache/x",
+            redactions=generate_markdown._redactions_for(workspace),
+        )
+        assert cleaned == "cache at ~/.cache/x"
+
+
+class TestLocalPathGuard:
+    def test_clean_page_passes(self, tmp_path):
+        page = tmp_path / "page.md"
+        page.write_text("Working Directory has been set to `example_workspace`\n")
+        generate_markdown.check_no_local_paths(page)
+
+    def test_leaked_home_path_fails_the_build(self, tmp_path):
+        page = tmp_path / "page.md"
+        page.write_text(
+            "/home/dev/Code/checkouts/PyAutoArray/autoarray/convolver.py:1: Warning\n"
+        )
+        with pytest.raises(RuntimeError, match="absolute local paths"):
+            generate_markdown.check_no_local_paths(page)
+
+    def test_leaked_macos_path_fails_the_build(self, tmp_path):
+        page = tmp_path / "page.md"
+        page.write_text("loaded /Users/dev/Code/checkouts/PyAutoArray/x.py\n")
+        with pytest.raises(RuntimeError, match="/Users/dev"):
+            generate_markdown.check_no_local_paths(page)
+
+    def test_leaked_non_standard_home_fails_the_build(self, tmp_path, monkeypatch):
+        home = tmp_path / "mnt" / "ral" / "dev"
+        home.mkdir(parents=True)
+        monkeypatch.setenv("HOME", str(home))
+        page = tmp_path / "page.md"
+        page.write_text(f"output written to {home}/checkouts/output\n")
+        with pytest.raises(RuntimeError, match="absolute local paths"):
+            generate_markdown.check_no_local_paths(page)

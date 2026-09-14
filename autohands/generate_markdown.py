@@ -20,6 +20,9 @@ Rules this tool enforces:
   PyAutoFit's completed-run resume: the first build pays one full sampling run,
   and regeneration loads the completed result from ``output/`` near-instantly.
 - **Nothing from a ``features/`` folder is rendered.**
+- **No local path ever reaches a published page.** The developer's directory
+  layout is redacted out of the executed output, and a page that still contains
+  an absolute home path after redaction fails the build rather than shipping.
 - **Tracked files outside ``markdown/`` are protected.** Any tracked file that
   *becomes* modified during the build (e.g. a simulator rewriting ``dataset/``
   with a new noise realization) is restored after the script that touched it,
@@ -71,6 +74,7 @@ PROJECT_DISPLAY_NAMES = {
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 PROGRESS_LINE_RE = re.compile(r"^\s*\d+it \[")
+HOME_PATH_RE = re.compile(r"(?:/home/|/Users/)[^\s`'\"<>|]*")
 STREAM_HEAD_LINES = 10
 STREAM_TAIL_LINES = 20
 STREAM_MAX_LINES = STREAM_HEAD_LINES + STREAM_TAIL_LINES + 10
@@ -145,17 +149,105 @@ def script_title(script_path: Path) -> str:
     return script_path.stem
 
 
+def _sibling_checkout_roots(workspace_path: Path):
+    """
+    The directories that hold the sibling repository checkouts whose paths can
+    surface in this workspace's output (library warnings, tracebacks).
+
+    ``workspace_path.parent`` is only one of them, and in a task worktree it is
+    the *wrong* one: the workspace is checked out at
+    ``<root>-wt/<task>/<workspace>`` while the libraries being imported still
+    live in the canonical ``<root>/<library>``. A worktree's git *common*
+    directory
+    points back into the canonical checkout, so it names the canonical
+    workspace root without any assumption about how worktrees are laid out;
+    ``PYAUTO_MAIN`` (the workspace's own answer to "where is the canonical
+    checkout", see PyAutoBrain/bin/worktree.sh) is honoured when set.
+
+    Every root found is redacted, not just one: a worktree render legitimately
+    sees paths from both trees.
+    """
+    roots = [workspace_path.parent]
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            cwd=workspace_path,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        result = None
+    if result is not None and result.returncode == 0:
+        common_dir = Path(result.stdout.strip())
+        # <canonical checkout>/.git -> <canonical checkout> -> the directory
+        # holding it and its siblings.
+        if str(common_dir) and common_dir.is_absolute():
+            roots.append(common_dir.parent.parent)
+
+    main_root = os.environ.get("PYAUTO_MAIN")
+    if main_root:
+        roots.append(Path(main_root))
+
+    home = os.path.expanduser("~")
+    unique = []
+    for root in roots:
+        text = str(root)
+        # A root at (or above) the home directory would rewrite the home prefix
+        # to `...`, mangling paths that should simply render as `~`.
+        if not text or text == os.sep or home.startswith(text):
+            continue
+        if text not in [str(seen) for seen in unique]:
+            unique.append(root)
+    return unique
+
+
 def _redactions_for(workspace_path: Path):
     """
     Substitutions scrubbing the local machine layout out of published output:
     the workspace path becomes its bare name, sibling checkouts (e.g. library
     paths in warnings) become `...`, and any other home path becomes `~`.
+
+    Applied longest path first, so a path that is a prefix of another (the
+    workspace inside its checkout root, a checkout root inside the home
+    directory) cannot win and mangle the longer one.
     """
-    return [
-        (str(workspace_path), workspace_path.name),
-        (str(workspace_path.parent), "..."),
-        (os.path.expanduser("~"), "~"),
+    redactions = [(str(workspace_path), workspace_path.name)]
+    redactions += [
+        (str(root), "...") for root in _sibling_checkout_roots(workspace_path)
     ]
+    redactions.append((os.path.expanduser("~"), "~"))
+
+    deduped = {}
+    for old, new in redactions:
+        if old and old not in deduped:
+            deduped[old] = new
+    return sorted(deduped.items(), key=lambda item: len(item[0]), reverse=True)
+
+
+def check_no_local_paths(md_path: Path):
+    """
+    Refuse to publish a page that still names the developer's machine.
+
+    Redaction is derived from where the checkouts are, so a layout nobody
+    anticipated (a new worktree scheme, a stack installed from somewhere else)
+    silently publishes one contributor's home directory in public
+    documentation. Raising here makes that a loud build failure instead: like
+    every other failure in ``render_script``, it is reported per script and
+    fails the run.
+    """
+    text = md_path.read_text(errors="replace")
+    home = os.path.expanduser("~")
+    leaks = sorted(set(HOME_PATH_RE.findall(text)))
+    if home and home != os.sep and home in text and home not in leaks:
+        leaks.insert(0, home)
+    if leaks:
+        raise RuntimeError(
+            f"{md_path.name} still contains absolute local paths after "
+            f"redaction — a machine layout must never be published: "
+            f"{leaks[:5]}. Fix the redaction roots in _redactions_for() "
+            f"rather than hand-editing the page."
+        )
 
 
 def _collapse_progress_runs(lines):
@@ -446,6 +538,8 @@ def render_script(
 
     md_path = workspace_path / md_dir / script_rel.with_suffix(".md").name
     md_path.write_text(_markdown_header(script_rel, md_dir) + md_path.read_text())
+
+    check_no_local_paths(md_path)
 
     ignored = subprocess.run(
         ["git", "check-ignore", str(md_dir)],
