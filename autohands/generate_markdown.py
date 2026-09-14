@@ -225,7 +225,7 @@ def _redactions_for(workspace_path: Path):
     return sorted(deduped.items(), key=lambda item: len(item[0]), reverse=True)
 
 
-def check_no_local_paths(md_path: Path):
+def check_no_local_paths(md_path: Path, script_path: Path = None):
     """
     Refuse to publish a page that still names the developer's machine.
 
@@ -235,11 +235,28 @@ def check_no_local_paths(md_path: Path):
     documentation. Raising here makes that a loud build failure instead: like
     every other failure in ``render_script``, it is reported per script and
     fails the run.
+
+    **Authored paths are not leaks.** A tutorial may deliberately show an
+    absolute path as teaching material — every ``tutorial_0_visualization``
+    carries a commented ``workspace_path = "/Users/.../<repo>"`` so the reader
+    can see what setting their working directory looks like. That path is in
+    the source, on purpose, and reaches the page as prose rather than through
+    redaction. Only paths the *execution* introduced are leaks, so anything
+    present verbatim in the script being rendered is exempt.
     """
     text = md_path.read_text(errors="replace")
+    authored = script_path.read_text(errors="replace") if script_path else ""
     home = os.path.expanduser("~")
-    leaks = sorted(set(HOME_PATH_RE.findall(text)))
-    if home and home != os.sep and home in text and home not in leaks:
+    leaks = sorted(
+        {m for m in HOME_PATH_RE.findall(text) if m not in authored}
+    )
+    if (
+        home
+        and home != os.sep
+        and home in text
+        and home not in authored
+        and home not in leaks
+    ):
         leaks.insert(0, home)
     if leaks:
         raise RuntimeError(
@@ -539,7 +556,7 @@ def render_script(
     md_path = workspace_path / md_dir / script_rel.with_suffix(".md").name
     md_path.write_text(_markdown_header(script_rel, md_dir) + md_path.read_text())
 
-    check_no_local_paths(md_path)
+    check_no_local_paths(md_path, workspace_path / script_rel)
 
     ignored = subprocess.run(
         ["git", "check-ignore", str(md_dir)],
