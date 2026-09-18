@@ -43,6 +43,11 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+try:  # `python -m autohands.board`
+    from autohands import _workspace
+except ImportError:  # imported flat, with autohands/ itself on sys.path
+    import _workspace
+
 HANDS_HOME = Path(__file__).resolve().parents[1]
 
 # The family look lives once, in the Brain (``board/_theme.py``): the
@@ -55,13 +60,16 @@ BOARD_KEY = "hands"  # this board's entry in the Brain's palette table
 
 
 def _workspace_root() -> Path:
-    """Where the sibling PyAuto checkouts live: `$PYAUTO_ROOT`, else `~/Code`.
+    """Where the sibling PyAuto checkouts live — via `autohands/_workspace.py`.
 
-    The org's own directory name is an instance fact, so it is never written
-    here — a workspace that does not follow the default sets `$PYAUTO_ROOT`
-    (the same variable the dev-flow doors read).
+    The workspace directory's own name is an instance fact, so it is never
+    written here; neither is the `$HOME`-relative path this used to fall back
+    to. That fallback named the directory ABOVE the workspace, so `_workspace_root() /
+    "PyAutoBrain"` pointed at a path that has never existed — masked only
+    because `theme()` tries it last, after the sibling checkout that answers.
+    `$PYAUTO_ROOT` still wins, as the resolver's first rule.
     """
-    return Path(os.environ.get("PYAUTO_ROOT") or Path.home() / "Code")
+    return _workspace.workspace_root()
 
 
 def theme():

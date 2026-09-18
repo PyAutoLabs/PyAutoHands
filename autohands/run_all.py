@@ -33,8 +33,16 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
+try:  # imported flat, with autohands/ itself on sys.path (the usual case)
+    import _workspace
+except ImportError:  # `python -m autohands.run_all`
+    from autohands import _workspace
+
 AUTOHANDS_DIR = Path(__file__).parent
-PYAUTOBASE = AUTOHANDS_DIR.parent.parent  # PyAutoLabs/
+# The workspace root holding the workspace checkouts, via the one shared
+# resolver (autohands/_workspace.py). Counting two directories up from this
+# file is right only while PyAutoHands sits directly under the root.
+PYAUTOBASE = _workspace.workspace_root()
 RESULTS_BASE = AUTOHANDS_DIR.parent / "run_logs"
 DEFAULT_RUN_TYPE = "smoke"
 

@@ -14,10 +14,20 @@ set -e
 
 MINOR_VERSION="${1:-1}"
 
-# Resolve PYAUTOBASE from this script's location (same idiom as bin/autohands)
-# so pre_build.sh works from any checkout — Linux, WSL, anywhere.
+# Resolve PYAUTOBASE — the workspace root holding PyAutoHands and every
+# workspace repo — through the one shared resolver when a PyAutoBrain checkout
+# is in reach, so this script and the agents that drive it agree on the tree
+# (and $PYAUTO_ROOT still points them all at another workspace). With no Brain
+# beside us, fall back to this script's own location, exactly as before:
+# pre_build.sh must keep working from a bare PyAutoHands checkout.
 SELF="$(readlink -f "$0")"
-PYAUTOBASE="$(cd "$(dirname "$SELF")/.." && pwd)"
+HANDS_HOME="$(cd "$(dirname "$SELF")" && pwd)"
+if [ -f "$HANDS_HOME/../PyAutoBrain/bin/_pyauto_root.sh" ]; then
+    . "$HANDS_HOME/../PyAutoBrain/bin/_pyauto_root.sh"
+    PYAUTOBASE="$PYAUTO_ROOT"
+else
+    PYAUTOBASE="$(cd "$HANDS_HOME/.." && pwd)"
+fi
 AUTOHANDS="$PYAUTOBASE/PyAutoHands/autohands"
 PYTHONPATH_EXTRA="$AUTOHANDS"
 
