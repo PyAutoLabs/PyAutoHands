@@ -11,9 +11,7 @@ set -u
 
 SELF="$(readlink -f "$0")"
 REPO="$(cd "$(dirname "$SELF")/.." && pwd)"
-PYAUTOBASE="$(cd "$REPO/.." && pwd)"
 AUTOHANDS_DIR="$REPO/autohands"
-ADMIN_JAMMY="$PYAUTOBASE/admin_jammy"
 
 # ----- subcommand registration -----
 #
