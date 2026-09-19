@@ -80,7 +80,7 @@ def theme():
     """
     for cand in (os.environ.get("PYAUTO_BRAIN"), HANDS_HOME / "PyAutoBrain",
                  HANDS_HOME.parent / "PyAutoBrain",
-                 _workspace_root() / "PyAutoBrain"):
+                 _workspace.repo_path(_workspace_root(), "PyAutoBrain")):
         if not cand:
             continue
         board = Path(cand) / "board"

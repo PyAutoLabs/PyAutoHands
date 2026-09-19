@@ -3,8 +3,9 @@ import os
 from pathlib import Path
 
 import build_util
+import _workspace
 
-WORKSPACE_PATH = f"{os.getcwd()}/../autofit_workspace"
+WORKSPACE_PATH = str(_workspace.repo_path(_workspace.workspace_root(), "autofit_workspace"))
 PROJECTS_ROOT_PATH = f"{WORKSPACE_PATH}/projects"
 
 PROJECTS_FOLDERS_OMIT = ["config", "dataset", "src"]

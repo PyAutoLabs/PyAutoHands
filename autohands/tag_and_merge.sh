@@ -36,13 +36,14 @@ if [ -z "$VERSION" ]; then
     exit 2
 fi
 
-PYAUTOBASE="$(cd "$(dirname "$0")/../.." && pwd)"
+HANDS_HOME="$(cd "$(dirname "$0")/.." && pwd)"
+PYAUTOBASE="$(PYTHONPATH="$HANDS_HOME" python3 -c 'from autohands import _workspace; print(_workspace.workspace_root())')"
 LIB_PROJECTS=(PyAutoNerves PyAutoFit PyAutoArray PyAutoLens PyAutoGalaxy)
 
 for project in "${LIB_PROJECTS[@]}"; do
-    repo="$PYAUTOBASE/$project"
+    repo="$(PYTHONPATH="$HANDS_HOME" python3 -c 'import sys; from pathlib import Path; from autohands import _workspace; print(_workspace.repo_path(Path(sys.argv[1]), sys.argv[2], required=True))' "$PYAUTOBASE" "$project")"
     echo "Tagging $project"
-    if [ ! -d "$repo/.git" ]; then
+    if [ ! -e "$repo/.git" ]; then
         echo "tag_and_merge.sh: $repo is not a git repo" >&2
         exit 1
     fi

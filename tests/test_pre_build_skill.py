@@ -15,7 +15,9 @@ def test_pre_build_skill_checks_every_executor_repo():
     executor_repos = set(
         re.findall(r'^\s+"(\S+)\s+\S+\s+\S+\s+\S+"', script, re.MULTILINE)
     )
-    fixed_dependencies = set(re.findall(r'\$PYAUTOBASE/([^/"$]+)', script))
+    fixed_dependencies = {"PyAutoHands", "PyAutoBrain"}
+    assert 'HANDS_REPO="$HANDS_HOME"' in script
+    assert 'repo_checkout PyAutoBrain' in script
     preflight = body.split("Check that all required repositories exist", 1)[1]
     preflight = preflight.split("For each, verify", 1)[0]
     documented_repos = set(re.findall(r"^- `([^`]+)`", preflight, re.MULTILINE))
