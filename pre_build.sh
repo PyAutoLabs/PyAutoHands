@@ -22,19 +22,25 @@ MINOR_VERSION="${1:-1}"
 # pre_build.sh must keep working from a bare PyAutoHands checkout.
 SELF="$(readlink -f "$0")"
 HANDS_HOME="$(cd "$(dirname "$SELF")" && pwd)"
-if [ -f "$HANDS_HOME/../PyAutoBrain/bin/_pyauto_root.sh" ]; then
-    . "$HANDS_HOME/../PyAutoBrain/bin/_pyauto_root.sh"
-    PYAUTOBASE="$PYAUTO_ROOT"
+if [ -f "$HANDS_HOME/autohands/_workspace.py" ]; then
+    PYAUTOBASE="$(PYTHONPATH="$HANDS_HOME" /usr/bin/python3 -c 'from autohands import _workspace; print(_workspace.workspace_root())')"
 else
     PYAUTOBASE="$(cd "$HANDS_HOME/.." && pwd)"
 fi
-AUTOHANDS="$PYAUTOBASE/PyAutoHands/autohands"
+repo_checkout() {
+    if [ -f "$HANDS_HOME/autohands/_workspace.py" ]; then
+        PYTHONPATH="$HANDS_HOME" /usr/bin/python3 -c 'import sys; from pathlib import Path; from autohands import _workspace; print(_workspace.repo_path(Path(sys.argv[1]), sys.argv[2], required=True))' "$PYAUTOBASE" "$1"
+    else
+        echo "$PYAUTOBASE/$1"
+    fi
+}
+AUTOHANDS="$HANDS_HOME/autohands"
 PYTHONPATH_EXTRA="$AUTOHANDS"
 
 # pre_build produces no files in PyAutoHands itself. Require a clean main before
 # any labels, workspace formatting, commits, pushes, or release dispatch so a
 # release can never sweep unrelated local files into a misleading commit.
-HANDS_REPO="$PYAUTOBASE/PyAutoHands"
+HANDS_REPO="$HANDS_HOME"
 HANDS_BRANCH="$(git -C "$HANDS_REPO" branch --show-current)"
 HANDS_STATUS="$(git -C "$HANDS_REPO" status --porcelain --untracked-files=all)"
 if [ "$HANDS_BRANCH" != "main" ] || [ -n "$HANDS_STATUS" ]; then
@@ -57,7 +63,8 @@ fi
 if command -v gh >/dev/null 2>&1; then
     echo ""
     echo "=== Ensuring pending-release labels ==="
-    bash "$PYAUTOBASE/PyAutoBrain/bin/ensure_workspace_labels.sh"
+    BRAIN_REPO="$(repo_checkout PyAutoBrain)"
+    bash "$BRAIN_REPO/bin/ensure_workspace_labels.sh"
 fi
 
 # Positional fields: repo project [generate=true] [slam=false]
@@ -119,11 +126,11 @@ for spec in "${WORKSPACE_SPECS[@]}"; do
     # `read` rather than `set --`: this loop runs at top level, where `set --`
     # would clobber the script's own positional parameters.
     read -r wip_repo _ <<< "$spec"
-    wip_dir="$PYAUTOBASE/$wip_repo"
+    wip_dir="$(repo_checkout "$wip_repo")"
     # Checked here so a missing checkout fails with a clear message during the
     # preflight, rather than as a bare `cd` error partway through the run once
     # earlier repos have already been committed and pushed.
-    if [ ! -d "$wip_dir/.git" ]; then
+    if [ ! -e "$wip_dir/.git" ]; then
         echo "ABORT: $wip_repo is missing or is not a git repo ($wip_dir)." >&2
         exit 1
     fi
@@ -148,7 +155,8 @@ run_workspace() {
     local project="$2"
     local generate="${3:-true}"
     local slam="${4:-false}"
-    local dir="$PYAUTOBASE/$repo"
+    local dir
+    dir="$(repo_checkout "$repo")"
 
     echo ""
     echo "=== $repo ==="

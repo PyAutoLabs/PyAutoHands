@@ -342,9 +342,9 @@ def main():
         format_report_section,
     )
     ws_dirs_for_scan = [
-        PYAUTOBASE / WORKSPACES[k][0]
+        _workspace.repo_path(PYAUTOBASE, WORKSPACES[k][0])
         for k in workspaces
-        if (PYAUTOBASE / WORKSPACES[k][0]).exists()
+        if (_workspace.repo_path(PYAUTOBASE, WORKSPACES[k][0])).exists()
     ]
     slow_skips = find_slow_skips(ws_dirs_for_scan)
     needs_fix_skips = find_needs_fix_skips(ws_dirs_for_scan)
@@ -355,7 +355,7 @@ def main():
 
     for ws_key in workspaces:
         ws_name, project = WORKSPACES[ws_key]
-        ws_dir = PYAUTOBASE / ws_name
+        ws_dir = _workspace.repo_path(PYAUTOBASE, ws_name)
         if not ws_dir.exists():
             print(f"\nSkipping {ws_key}: {ws_dir} not found")
             continue
