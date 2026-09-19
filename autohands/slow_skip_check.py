@@ -278,13 +278,14 @@ def format_report_section(
 
 if __name__ == "__main__":
     import sys
-    pyautobase = Path(__file__).resolve().parent.parent.parent
+    import _workspace  # direct script entry point puts autohands/ on sys.path
+    pyautobase = _workspace.workspace_root()
     import yaml
 
     cfg = yaml.safe_load(
         (Path(__file__).resolve().parent / "config" / "workspaces.yaml").read_text()
     )
-    default_workspaces = [pyautobase / name for name in cfg["slow_skip_default"]]
+    default_workspaces = [_workspace.repo_path(pyautobase, name) for name in cfg["slow_skip_default"]]
     targets = [Path(p) for p in sys.argv[1:]] or default_workspaces
     slow = find_slow_skips(targets)
     needs_fix = find_needs_fix_skips(targets)
