@@ -1,9 +1,11 @@
 name: Dashboard
 
-# Publishes the PyAutoHands Dashboard — WHAT THE HANDS SHIPPED — three ways from one
-# renderer (autohands/board.py, the Heart-dashboard pattern):
+# Publishes the PyAutoHands Dashboard — WHAT THE HANDS SHIPPED — four ways from
+# one renderer (autohands/board.py, the Heart-dashboard pattern):
 #   * the GitHub Pages page (one-tap 📋 copy prompts for a phone),
 #   * badge.json (the shields endpoint the README badge reads),
+#   * state.json (the organ-cockpit feed the Brain's cockpit polls — contract
+#     v1, owned by PyAutoBrain board/state_schema.json and validated below),
 #   * the one-line README strip between the hands:begin/end markers.
 #
 # Past-tense record only: the board never renders a verdict or a gate —
@@ -67,9 +69,20 @@ jobs:
           render() { PYTHONPATH="$PWD/autohands" python autohands/board.py --snapshot board_snapshot.json "$@"; }
           render --html     > _site/index.html
           render --badge    > _site/badge.json
+          # The organ-cockpit feed (PyAutoBrain#416, contract v1): one small
+          # status document the Brain's cockpit polls. Same snapshot, so it
+          # can never disagree with the page; nothing observed → a grey feed.
+          render --state    > _site/state.json
           render --md       > board.md
           cp board.md _site/dashboard.md
           render --md-brief > readme_strip.md
+
+      - name: Validate the cockpit feed against the Brain contract
+        run: |
+          # The contract is owned by the Brain (board/_state.py +
+          # board/state_schema.json); the Hands only emit it. A feed the
+          # cockpit can not read must fail this job loudly rather than publish.
+          python3 PyAutoBrain/board/_state.py _site/state.json
 
       - name: Write the board to the job step summary
         run: |
