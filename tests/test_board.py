@@ -11,6 +11,7 @@ version scheme drives both ordering and the shipped date.
 
 from __future__ import annotations
 
+import datetime
 import json
 import re
 import sys
@@ -194,3 +195,111 @@ def test_html_wears_the_shared_family_theme():
     assert t.ORGANS[board.BOARD_KEY]["tagline"] in html
     assert t.ORGANS[board.BOARD_KEY]["ink_dark"] in html
     assert "#58a6ff" not in html  # the old hard-coded GitHub blue
+
+
+# --- the organ-cockpit feed (state.json, contract v1) -------------------------
+# The contract is owned by the Brain's board/_state.py; these tests copy its
+# required-key / enum checks instead of importing it, so the Hands suite needs
+# no sibling checkout (release_board.yml runs the real validator in CI).
+_STATE_REQUIRED = ("schema_version", "organ", "repo", "status", "headline",
+                   "updated", "pages_url", "items")
+_STATE_STATUSES = ("green", "yellow", "red", "stale", "grey")
+_STATE_SEVERITIES = ("red", "yellow", "info")
+
+
+def _assert_state_shape(state: dict) -> None:
+    assert all(k in state for k in _STATE_REQUIRED), state
+    assert state["schema_version"] == 1 and state["organ"] == "hands"
+    assert state["status"] in _STATE_STATUSES
+    assert state["headline"].strip() and "\n" not in state["headline"]
+    assert state["pages_url"].strip()
+    for item in state["items"]:
+        assert item["severity"] in _STATE_SEVERITIES
+        assert item["text"].strip() and len(item["text"]) <= 160
+
+
+def _snap(**over) -> dict:
+    return {**json.loads(json.dumps(SNAP)), **over}
+
+
+def _run(status="completed", conclusion="success", url="https://ci.invalid/r"):
+    return {"date": "2026-06-02T03:00:00Z", "status": status,
+            "conclusion": conclusion, "event": "workflow_dispatch",
+            "attempt": 1, "duration_s": 60, "url": url}
+
+
+def test_state_carries_the_contract_keys():
+    state = board.to_state(SNAP)
+    _assert_state_shape(state)
+    assert state["repo"] == "SomeHands"
+    assert state["pages_url"] == "https://someorg.github.io/SomeHands/"
+
+
+def test_state_green_when_the_latest_runs_succeeded():
+    # the older failed train run was superseded by a success: not actionable
+    state = board.to_state(SNAP)
+    assert state["status"] == "green"
+    assert state["items"] == []
+    assert state["headline"].startswith("2026.6.2.1 · ")
+
+
+def test_state_updated_is_whole_second_utc_z():
+    for generated in ("2026-06-03T00:00:00.123456+00:00", "2026-06-03T00:00:00",
+                      "not a timestamp", None):
+        updated = board.to_state(_snap(generated=generated))["updated"]
+        assert updated.endswith("Z") and "." not in updated
+        datetime.datetime.fromisoformat(updated[:-1] + "+00:00")
+    assert board.to_state(SNAP)["updated"] == "2026-06-03T00:00:00Z"
+
+
+def test_state_failed_train_run_is_red_with_url_and_prompt():
+    snap = _snap(train=[_run(conclusion="failure", url="https://ci.invalid/runs/9")])
+    state = board.to_state(snap)
+    _assert_state_shape(state)
+    assert state["status"] == "red"
+    assert state["headline"].startswith("RED — release failed · 2026.6.2.1")
+    red = [i for i in state["items"] if i["severity"] == "red"]
+    assert red[0]["url"] == "https://ci.invalid/runs/9"
+    assert red[0]["prompt"].startswith("/bug Release train: SomeHands release.yml")
+    assert "https://ci.invalid/runs/9" in red[0]["prompt"]
+
+
+def test_state_failed_nightly_run_is_red():
+    snap = _snap(nightly=[_run(conclusion="failure", url="https://ci.invalid/n/9")])
+    state = board.to_state(snap)
+    assert state["status"] == "red"
+    item = state["items"][0]
+    assert item["severity"] == "red" and item["url"] == "https://ci.invalid/n/9"
+    assert "nightly-release.yml" in item["prompt"]
+
+
+def test_state_in_progress_train_run_is_yellow():
+    snap = _snap(train=[_run(status="in_progress", conclusion="",
+                             url="https://ci.invalid/runs/10")] + SNAP["train"])
+    state = board.to_state(snap)
+    assert state["status"] == "yellow"
+    assert state["headline"].startswith("YELLOW — release in progress")
+    assert state["items"] == [{"severity": "yellow",
+                               "text": "release train in_progress since 2026-06-02",
+                               "url": "https://ci.invalid/runs/10", "prompt": None}]
+
+
+def test_state_errors_are_info_items_and_yellow():
+    state = board.to_state(_snap(errors=["nightly runs: boom", "x" * 400]))
+    _assert_state_shape(state)
+    assert state["status"] == "yellow"
+    assert [i["severity"] for i in state["items"]] == ["info", "info"]
+    assert all(i["url"] is None for i in state["items"])
+    assert len(state["items"][1]["text"]) == 160
+
+
+def test_state_empty_snapshot_is_grey_never_green():
+    for snap in ({}, _snap(libraries=[])):
+        state = board.to_state(snap)
+        _assert_state_shape(state)
+        assert state["status"] == "grey"
+
+
+def test_state_render_is_valid_json():
+    for snap in (SNAP, {}):
+        _assert_state_shape(json.loads(board.render(snap, "state")))

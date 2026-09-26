@@ -15,19 +15,20 @@ lives with the Heart, whose board this page links.
 **Shape.** ``collect()`` is the only I/O (GitHub REST via ``gh api`` + the
 PyPI JSON API) and degrades per-section: a source that cannot be fetched
 renders as "unavailable", never as fabricated data. ``render(snapshot, fmt)``
-is pure — ``fmt = md | md-brief | html | json | badge`` — mirroring the
+is pure — ``fmt = md | md-brief | html | json | badge | state`` — mirroring the
 Heart's ``dashboard.py`` (one renderer, many surfaces). The GitHub owner is
 derived from ``git remote`` and the library set from
 ``config/workspaces.yaml`` — organ code carries no instance facts (the
 tenant firewall).
 
 Published by ``.github/workflows/release_board.yml``: the Pages page +
-``badge.json`` after every "PyAuto Release" run and daily, plus the README
+``badge.json`` + ``state.json`` (the organ-cockpit feed, contract v1 owned by
+the Brain) after every "PyAuto Release" run and daily, plus the README
 strip between the ``hands:begin/end`` markers.
 
 Usage:
     python -m autohands.board --collect snapshot.json   # gather, write, exit
-    python -m autohands.board [--snapshot F] --md|--md-brief|--html|--json|--badge
+    python -m autohands.board [--snapshot F] --md|--md-brief|--html|--json|--badge|--state
 """
 
 from __future__ import annotations
@@ -363,9 +364,13 @@ def _last_train(snapshot: dict) -> dict | None:
     return None
 
 
-def _bug_prompt(snapshot: dict, run: dict) -> str:
-    return (f"/bug Release train: {snapshot.get('repo') or 'release'} "
-            f"release.yml run failed on {_day(run.get('date'))} — {run.get('url')}")
+def _bug_prompt(snapshot: dict, run: dict, workflow: str | None = None) -> str:
+    """The copyable /bug payload for a failed run. ``workflow`` names where the
+    run lives; the default is this repo's release train, the nightly driver
+    passes its own so the prompt never points a fix at the wrong workflow."""
+    where = workflow or f"{snapshot.get('repo') or 'release'} release.yml"
+    return (f"/bug Release train: {where} "
+            f"run failed on {_day(run.get('date'))} — {run.get('url')}")
 
 
 # --- renderers ----------------------------------------------------------------
@@ -561,6 +566,144 @@ def badge_endpoint(snapshot: dict) -> dict:
             "color": "blue"}
 
 
+# --- the organ-cockpit feed (PyAutoBrain#416) --------------------------------
+# One small, schema-pinned document per organ that the Brain's cockpit polls
+# (``state.json`` on Pages). It is a PROJECTION of the same snapshot every other
+# surface renders, so the cockpit can never disagree with this board; the
+# contract (v1) is owned by the Brain (``board/state_schema.json``) and the
+# Hands only emit it — never importing the Brain to do so (the validator runs
+# in release_board.yml, against the published file).
+STATE_SCHEMA_VERSION = 1
+STATE_STATUSES = ("green", "yellow", "red", "stale", "grey")
+_STATE_TEXT_MAX = 160
+# GitHub conclusions that mean the run did not do its job. "cancelled" is left
+# out on purpose: a superseded/cancelled train run is a human decision, not a
+# failed execution.
+_FAILED_CONCLUSIONS = ("failure", "timed_out", "startup_failure")
+_NIGHTLY_WORKFLOW = "PyAutoBrain nightly-release.yml"
+# The contract needs a non-empty pages_url, and with no owner in the snapshot
+# (git remote unreadable) the absolute URL cannot be derived — and must not be
+# hardcoded (tenant firewall). state.json is published beside index.html, so
+# the relative board page is still a correct link from where the feed lives.
+_PAGES_FALLBACK = "./"
+
+
+def _iso_z(ts: object) -> str:
+    """``ts`` as ISO-8601 UTC with a ``Z`` suffix, whole seconds.
+
+    ``collect()`` stamps ``datetime.now(utc).isoformat()`` (``+00:00`` with
+    microseconds) and a hand-written snapshot may be naive; the contract wants
+    one clock across organs, so both normalise here. An unparseable or empty
+    stamp becomes *now* — the moment the feed was written — rather than a
+    string the validator would reject.
+    """
+    t = _parse_ts(ts) if ts else None
+    if t is None:
+        t = datetime.datetime.now(datetime.timezone.utc)
+    return t.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _clip(text: object, limit: int = _STATE_TEXT_MAX) -> str:
+    """One line, at most ``limit`` chars — the contract's row shape."""
+    text = " ".join(str(text).split())
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _failed(run: dict | None) -> bool:
+    return bool(run) and run.get("conclusion") in _FAILED_CONCLUSIONS
+
+
+def _in_flight(run: dict) -> bool:
+    """Queued / in progress / waiting: anything not yet completed."""
+    return bool(run.get("status")) and run.get("status") != "completed"
+
+
+def _latest_nightly(snapshot: dict) -> dict | None:
+    for r in snapshot.get("nightly") or []:
+        if r.get("status") == "completed":
+            return r
+    return None
+
+
+def to_state(snapshot: dict) -> dict:
+    """The organ-cockpit feed (fmt='state'): contract v1 of PyAutoBrain#416.
+
+    Status is read off the *current* outcome, not the whole history — an old
+    failure a later success superseded is not something to act on:
+      red    — the last completed train run, or the latest nightly driver run,
+               failed (observed failure outranks everything, even missing
+               library data);
+      grey   — no released version could be read: nothing observed is
+               "unknown", never "fine";
+      yellow — a section could not be collected, or a train run is in flight;
+      green  — otherwise.
+    The headline is the badge message (``<version> · <age>``), prefixed with
+    the state word when not green. Items are the rows that ask something of a
+    human: failed runs (with their /bug prompt), in-flight runs, and each
+    collection error.
+    """
+    latest = _latest(snapshot)
+    last_train = _last_train(snapshot)
+    last_nightly = _latest_nightly(snapshot)
+    errors = [e for e in snapshot.get("errors") or [] if str(e).strip()]
+    in_flight = [r for r in snapshot.get("train") or [] if _in_flight(r)]
+
+    items: list[dict] = []
+    if _failed(last_train):
+        items.append({
+            "severity": "red",
+            "text": _clip(f"release train failed on {_day(last_train.get('date'))}"
+                          f" ({last_train.get('conclusion')})"),
+            "url": last_train.get("url") or None,
+            "prompt": _bug_prompt(snapshot, last_train),
+        })
+    if _failed(last_nightly):
+        items.append({
+            "severity": "red",
+            "text": _clip(f"nightly driver failed on {_day(last_nightly.get('date'))}"
+                          f" ({last_nightly.get('conclusion')})"),
+            "url": last_nightly.get("url") or None,
+            "prompt": _bug_prompt(snapshot, last_nightly, _NIGHTLY_WORKFLOW),
+        })
+    for r in in_flight:
+        items.append({
+            "severity": "yellow",
+            "text": _clip(f"release train {r.get('status')} since {_day(r.get('date'))}"),
+            "url": r.get("url") or None,
+            "prompt": None,
+        })
+    items += [{"severity": "info", "text": _clip(f"unavailable this render: {e}"),
+               "url": None, "prompt": None} for e in errors]
+
+    if _failed(last_train) or _failed(last_nightly):
+        status = "red"
+        what = ("release failed" if _failed(last_train)
+                else "nightly driver failed")
+    elif latest is None:
+        status, what = "grey", "no released version observed"
+    elif in_flight:
+        status, what = "yellow", "release in progress"
+    elif errors:
+        status, what = "yellow", f"{len(errors)} section(s) unavailable"
+    else:
+        status, what = "green", ""
+    message = badge_endpoint(snapshot)["message"] if latest else ""
+    if status == "green":
+        headline = message
+    else:
+        headline = " · ".join(b for b in (f"{status.upper()} — {what}", message) if b)
+    return {
+        "schema_version": STATE_SCHEMA_VERSION,
+        "organ": BOARD_KEY,
+        "repo": snapshot.get("repo") or "PyAutoHands",
+        "status": status,
+        "headline": _clip(headline),
+        "updated": _iso_z(snapshot.get("generated")),
+        "pages_url": pages_url(snapshot) or _PAGES_FALLBACK,
+        "items": items,
+    }
+
+
 def render(snapshot: dict, fmt: str = "md") -> str:
     if fmt == "md":
         return _render_md(snapshot)
@@ -573,6 +716,8 @@ def render(snapshot: dict, fmt: str = "md") -> str:
                           indent=2, sort_keys=True)
     if fmt == "badge":
         return json.dumps(badge_endpoint(snapshot))
+    if fmt == "state":
+        return json.dumps(to_state(snapshot), indent=2)
     raise ValueError(f"unknown board fmt: {fmt!r}")
 
 
@@ -587,6 +732,8 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--html", action="store_true", help="the Pages page")
     g.add_argument("--json", action="store_true", help="the machine surface")
     g.add_argument("--badge", action="store_true", help="shields.io endpoint JSON")
+    g.add_argument("--state", action="store_true",
+                   help="the organ-cockpit state.json feed (PyAutoBrain#416 contract v1)")
     ap.add_argument("--collect", metavar="OUT", default=None,
                     help="collect a snapshot to OUT (json) and exit")
     ap.add_argument("--snapshot", metavar="F", default=None,
@@ -604,7 +751,8 @@ def main(argv: list[str] | None = None) -> int:
     snap = (json.loads(Path(ns.snapshot).read_text()) if ns.snapshot else collect())
     fmt = "md"
     for name, label in (("md", "md"), ("md_brief", "md-brief"),
-                        ("html", "html"), ("json", "json"), ("badge", "badge")):
+                        ("html", "html"), ("json", "json"), ("badge", "badge"),
+                        ("state", "state")):
         if getattr(ns, name):
             fmt = label
             break
