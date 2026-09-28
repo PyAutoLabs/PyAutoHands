@@ -139,9 +139,16 @@ def test_boundary_language_links_the_heart():
     assert "https://someorg.github.io/PyAutoHeart/" in html
 
 
-# The canonical board family, in the order `PyAutoBrain/config/policy.yaml`
-# declares it. This board is `hands`, so its own chip never appears.
-FAMILY_WITHOUT_HANDS = ["brain", "mind", "cortex", "memory", "heart", "organism"]
+def _family_without_hands() -> list[str]:
+    """The canonical board family, in the order `PyAutoBrain/config/policy.yaml`
+    `board: boards:` declares it, minus this board (`hands`).
+
+    Derived from the Brain — the same `_theme.board_links` read the renderer
+    makes — never written out here. A literal in this file pinned the
+    six-board family and went red the day the Nerves and the Gut got boards
+    (PyAutoMind#450); the next organ birth must not re-break it.
+    """
+    return list(board.theme().board_links("", board.BOARD_KEY))
 
 
 def _footer(html: str) -> str:
@@ -157,7 +164,9 @@ def test_the_family_footer_carries_the_cortex_in_the_canonical_order():
     `config/policy.yaml` lights it in every footer at once.
     """
     footer = _footer(board.render(SNAP, "html"))
-    assert re.findall(r'data-organ="(\w+)"', footer) == FAMILY_WITHOUT_HANDS
+    family = _family_without_hands()
+    assert "cortex" in family and board.BOARD_KEY not in family
+    assert re.findall(r'data-organ="(\w+)"', footer) == family
     assert "https://someorg.github.io/PyAutoCortex/" in footer
 
 
