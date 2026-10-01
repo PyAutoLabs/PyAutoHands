@@ -4,9 +4,9 @@ A phone-readable record of **what the Hands shipped**: the released library
 versions (from git tags — the authoritative record; version stamps are
 build-tree-only and never committed), their PyPI liveness, the release train's
 recent runs, and the nightly driver's outcomes. Every actionable item carries
-a one-tap 📋 copy block holding the Claude Code command that drives it
-(``/release``, ``/release rehearse``, ``/release validate``, ``/build``; a
-failed train run copies a ``/bug`` prompt with its run URL).
+a one-tap 📋 copy block holding the AI assistant prompt that drives it
+(``Use the release skill.``, ``Use the release skill. rehearse``, ``Use the release skill. validate``, ``Use the build skill.``; a
+failed train run copies a ``Use the bug skill.`` prompt with its run URL).
 
 **Boundary.** Hands is a pure executor, so this board is a *past-tense record
 of execution* — never a verdict, a score, or a gate. "Is it safe to release?"
@@ -99,13 +99,13 @@ SCHEMA_VERSION = 1
 TRAIN_RUNS_SHOWN = 14
 NIGHTLY_RUNS_SHOWN = 10
 
-# The one-tap chips: the Claude Code doors that drive the Hands. Payload is
-# what 📋 copies into the clipboard, ready to paste into a Claude chat.
+# The one-tap chips: the skill doors that drive the Hands. Payload is
+# what 📋 copies into the clipboard, ready to paste into an AI assistant chat.
 ACTION_CHIPS = (
-    ("release", "/release"),
-    ("rehearse", "/release rehearse"),
-    ("validate", "/release validate"),
-    ("build", "/build"),
+    ("release", "Use the release skill."),
+    ("rehearse", "Use the release skill. rehearse"),
+    ("validate", "Use the release skill. validate"),
+    ("build", "Use the build skill."),
 )
 
 
@@ -365,11 +365,11 @@ def _last_train(snapshot: dict) -> dict | None:
 
 
 def _bug_prompt(snapshot: dict, run: dict, workflow: str | None = None) -> str:
-    """The copyable /bug payload for a failed run. ``workflow`` names where the
+    """The copyable Use the bug skill. payload for a failed run. ``workflow`` names where the
     run lives; the default is this repo's release train, the nightly driver
     passes its own so the prompt never points a fix at the wrong workflow."""
     where = workflow or f"{snapshot.get('repo') or 'release'} release.yml"
-    return (f"/bug Release train: {where} "
+    return (f"Use the bug skill. Release train: {where} "
             f"run failed on {_day(run.get('date'))} — {run.get('url')}")
 
 
@@ -443,7 +443,7 @@ _PYPI_CLS = {"live": "ok", "yanked": "fail", "missing": "warn", "unavailable": "
 # theme's variables, so this board follows the family accent rather than
 # setting a second palette.
 _LEDE = ("What the Hands shipped — a record of execution, newest first. Tap "
-         "\U0001f4cb to put a command on your clipboard for a Claude Code chat.")
+         "\U0001f4cb to put a command on your clipboard for an AI assistant chat.")
 
 _EXTRA_CSS = """
 .chip{display:inline-block;background:var(--btn);border:1px solid var(--line);
@@ -499,7 +499,7 @@ def _render_html(snapshot: dict) -> str:
                 f" <span class='meta'>({_dur(r.get('duration_s'))})</span>")
         if not ok and r.get("conclusion"):
             cell += " " + _copy_btn(_bug_prompt(snapshot, r),
-                                    "copy a fix prompt for a Claude Code chat")
+                                    "copy a fix prompt for an AI assistant chat")
         train_rows.append(f"<tr class='{cls}'><td class='dot'></td>"
                           f"<td colspan='4'>{cell}</td></tr>")
     if not train_rows:
@@ -639,7 +639,7 @@ def to_state(snapshot: dict) -> dict:
       green  — otherwise.
     The headline is the badge message (``<version> · <age>``), prefixed with
     the state word when not green. Items are the rows that ask something of a
-    human: failed runs (with their /bug prompt), in-flight runs, and each
+    human: failed runs (with their Use the bug skill. prompt), in-flight runs, and each
     collection error.
     """
     latest = _latest(snapshot)
