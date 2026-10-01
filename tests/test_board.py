@@ -5,7 +5,7 @@ fixtures — no network. Fixture names are deliberately fake (SomeOrg, RepoA):
 this file is not on the tenant-firewall allowlist, so no instance fact may
 appear. The contract under test: every fmt renders, degraded sections say
 "unavailable" rather than fabricating, failed train runs carry a copyable
-/bug prompt, the html is self-contained (no external assets), and the
+Use the bug skill. prompt, the html is self-contained (no external assets), and the
 version scheme drives both ordering and the shipped date.
 """
 
@@ -71,7 +71,7 @@ def test_shipped_date_comes_from_the_version_scheme():
 def test_failed_train_run_carries_a_bug_prompt():
     html = board.render(SNAP, "html")
     assert "data-cmd=" in html  # the shared copy handler's payload hook
-    assert "/bug Release train: SomeHands release.yml run failed on 2026-06-01" in html
+    assert "Use the bug skill. Release train: SomeHands release.yml run failed on 2026-06-01" in html
     assert "https://ci.invalid/runs/1" in html
     # the action chips are present too
     for _, payload in board.ACTION_CHIPS:
@@ -269,7 +269,7 @@ def test_state_failed_train_run_is_red_with_url_and_prompt():
     assert state["headline"].startswith("RED — release failed · 2026.6.2.1")
     red = [i for i in state["items"] if i["severity"] == "red"]
     assert red[0]["url"] == "https://ci.invalid/runs/9"
-    assert red[0]["prompt"].startswith("/bug Release train: SomeHands release.yml")
+    assert red[0]["prompt"].startswith("Use the bug skill. Release train: SomeHands release.yml")
     assert "https://ci.invalid/runs/9" in red[0]["prompt"]
 
 

@@ -18,8 +18,9 @@ See the **[PyAutoHands Dashboard](https://pyautolabs.github.io/PyAutoHands/)**
 for what shipped: the released library versions and
 their PyPI status, the release train's recent runs, and the nightly cadence —
 each actionable item carrying a one-tap 📋 button that copies a ready-made
-Claude command (`/release`, `/release rehearse`, `/release validate`,
-`/build`; a failed train run copies a `/bug …` prompt with its run link).
+AI assistant prompt (`Use the release skill.` with optional `rehearse` or
+`validate` arguments, or `Use the build skill.`; a failed train run copies a
+`Use the bug skill.` prompt with its run link).
 
 ## Latest release
 
