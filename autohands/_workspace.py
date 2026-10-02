@@ -45,6 +45,7 @@ _SIBLING_ORGANS = (
     "PyAutoEyes",
     "PyAutoHeart",
     "PyAutoHands",
+    "PyAutoPulse",
     "PyAutoNerves",
     "PyAutoGut",
 )
