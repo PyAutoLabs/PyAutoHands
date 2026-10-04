@@ -282,7 +282,7 @@ jobs:
             # have historically silently dropped the dep. Force the install
             # so jax_likelihood_functions / jax_grad / jax_substructure
             # scripts can't fail in 0.1s with ModuleNotFoundError.
-            pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
+            pip install "jax>=0.7,<0.12,!=0.10.*,!=0.11.0" "jaxlib>=0.7,<0.12,!=0.10.*,!=0.11.0"
         - name: Tests
           run: |
             pushd "${{ matrix.project.path }}"
@@ -374,7 +374,7 @@ jobs:
           pip install numba
           # Belt-and-braces JAX install — the [optional] → [jax] chain
           # occasionally silently drops jax from test.pypi resolution.
-          pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
+          pip install "jax>=0.7,<0.12,!=0.10.*,!=0.11.0" "jaxlib>=0.7,<0.12,!=0.10.*,!=0.11.0"
           # The env-aware runner's own dependency (autohands/env_config.py);
           # usually already present transitively, pinned-present here.
           pip install pyyaml
@@ -798,7 +798,7 @@ jobs:
         # matplotlib deliberately unpinned — see the Tests step above.
         pip install numba
         # Belt-and-braces JAX install (same reason as the install steps above).
-        pip install "jax>=0.7,<0.11" "jaxlib>=0.7,<0.11"
+        pip install "jax>=0.7,<0.12,!=0.10.*,!=0.11.0" "jaxlib>=0.7,<0.12,!=0.10.*,!=0.11.0"
         pushd workspace
         python3 autoassistant/audit_skill_apis.py --write-baseline
         git add wiki/core/api_audit_baseline.json
