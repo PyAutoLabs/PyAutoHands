@@ -375,9 +375,7 @@ def _bug_prompt(snapshot: dict, run: dict, workflow: str | None = None) -> str:
 
 # --- renderers ----------------------------------------------------------------
 def _render_md(snapshot: dict) -> str:
-    lines = ["# PyAutoHands Dashboard", "",
-             "_What the Hands shipped — a record of execution. Whether it is "
-             "safe to release lives with the Heart._", ""]
+    lines = ["# PyAutoHands Dashboard", ""]
     latest = _latest(snapshot)
     if latest:
         lines.append(f"**Latest release:** `{latest['version']}` "
@@ -541,8 +539,7 @@ def _render_html(snapshot: dict) -> str:
 <body>
 {hero}
 <p class="verdict"><b>{head}</b><span class="muted">{head_age}</span></p>
-<p class="muted">Whether it is <em>safe</em> to release lives with the
-<a href="{heart}">PyAutoHeart Dashboard</a> — the Hands execute, never gate.
+<p class="muted"><a href="{heart}">Heart</a> ·
 <a href="dashboard.md">markdown version</a>{github_link}</p>
 <p>{chips}</p>
 <h2 id="libraries">Libraries</h2>
