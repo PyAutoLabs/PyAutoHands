@@ -521,7 +521,10 @@ def _render_html(snapshot: dict) -> str:
         errors = (f"<div class='errors'><p class='meta'>unavailable this "
                   f"render:</p><ul class='meta'>{items}</ul></div>")
     heart = _heart_board_url(snapshot)
-    hero = t_.hero(BOARD_KEY, "Dashboard", _LEDE)
+    hero = t_.hero(BOARD_KEY, "Dashboard", _LEDE, navigation=[
+        {"href": "#libraries", "label": "Libraries"},
+        {"href": "#release-train", "label": "Release train"},
+    ])
     # The way back from the Pages board to the repository front door; owner
     # and repo come from the snapshot (the git remote), so nothing is
     # hardcoded and the segment drops out when the origin is unknown.
@@ -542,9 +545,9 @@ def _render_html(snapshot: dict) -> str:
 <a href="{heart}">PyAutoHeart Dashboard</a> — the Hands execute, never gate.
 <a href="dashboard.md">markdown version</a>{github_link}</p>
 <p>{chips}</p>
-<h2>Libraries</h2>
+<h2 id="libraries">Libraries</h2>
 <table class="recent">{''.join(lib_rows)}</table>
-<h2>Release train</h2>
+<h2 id="release-train">Release train</h2>
 <table class="recent">{''.join(train_rows)}</table>
 {nightly}
 {errors}
