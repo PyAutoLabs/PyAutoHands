@@ -115,9 +115,11 @@ def test_html_is_self_contained():
     # Heart board pins).
     assert "src=" not in out and "<link" not in out.lower()
     assert "fetch(" not in out and "XMLHttpRequest" not in out
-    # data-copy payloads are inert clipboard text, not asset loads — strip
-    # them, then every remaining URL must sit in an href.
+    # Clipboard payloads and the exact orchestration preview are inert text,
+    # not asset loads — strip them before checking the remaining URLs.
     stripped = re.sub(r'data-cmd="[^"]*"', "", out)
+    stripped = re.sub(r'<textarea[^>]*data-orchestration-prompt[^>]*>.*?</textarea>',
+                      "", stripped, flags=re.S)
     for m in re.finditer(r"(?:http|https)://", stripped):
         before = stripped[max(0, m.start() - 30):m.start()]
         assert 'href="' in before or "href='" in before, f"non-href URL at {m.start()}"
@@ -312,3 +314,27 @@ def test_state_empty_snapshot_is_grey_never_green():
 def test_state_render_is_valid_json():
     for snap in (SNAP, {}):
         _assert_state_shape(json.loads(board.render(snap, "state")))
+
+
+def test_orchestration_panel_uses_executor_remote_and_preserves_actions():
+    import html as html_module
+
+    page = board.render(SNAP, "html")
+    preview = re.search(r'<textarea id="orchestration-hands-prompt"[^>]*>(.*?)</textarea>',
+                        page, re.S).group(1)
+    assert html_module.unescape(preview) == (
+        board.CHECKIN_PROMPT + "\n\nWork on GitHub:\n"
+        "- SomeHands: https://github.com/SomeOrg/SomeHands")
+    assert page.index('class="board-nav"') < page.index('id="orchestration-hands"')
+    assert page.index('id="orchestration-hands"') < page.index('<p class="verdict">')
+    assert board.theme().prompt_heading("hands", heading_id="orchestration-hands-heading") in page
+    for _, payload in board.ACTION_CHIPS:
+        assert html_module.escape(payload, quote=True) in page
+    assert html_module.escape(board._bug_prompt(SNAP, SNAP["train"][1]), quote=True) in page
+
+
+def test_orchestration_without_remote_reports_unknown_destination():
+    page = board.render({**SNAP, "owner": None, "repo": None}, "html")
+    assert "Work repository unavailable in this snapshot." in page
+    assert "https://github.com/None/None" not in page
+    assert 'data-orchestration-copy' in page
