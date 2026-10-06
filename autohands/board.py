@@ -108,6 +108,17 @@ ACTION_CHIPS = (
     ("build", "Use the build skill."),
 )
 
+CHECKIN_PROMPT = (
+    "Review all release work shown on the Hands board in this chat. Read "
+    "PyAutoHands/AGENTS.md and use the release skill to verify current train, "
+    "nightly, library and workspace evidence. Summarize shipped work, failures, "
+    "blockers and the next bounded step; keep unavailable evidence explicit. "
+    "Apply any direction I provide while retaining the overall review. Preserve "
+    "Brain → Heart → Hands routing and existing human version, readiness, release "
+    "and merge gates. Propose implementation through the development workflow. "
+    "Do not dispatch, publish, tag or merge merely to check in."
+)
+
 
 # --- identity (derived, never hardcoded — tenant firewall) -------------------
 def _owner_repo() -> tuple[str, str]:
@@ -527,6 +538,10 @@ def _render_html(snapshot: dict) -> str:
     # and repo come from the snapshot (the git remote), so nothing is
     # hardcoded and the segment drops out when the origin is unknown.
     gh_owner, gh_repo = snapshot.get("owner"), snapshot.get("repo")
+    work_links = ([{"label": gh_repo, "href": f"https://github.com/{gh_owner}/{gh_repo}"}]
+                  if gh_owner and gh_repo else [])
+    panel = t_.orchestration_panel(
+        "hands", "", "", CHECKIN_PROMPT, work_links=work_links, organ="hands")
     github_link = (f' · <a href="https://github.com/{gh_owner}/{gh_repo}'
                    '/blob/main/README.md">GitHub Page</a>'
                    if gh_owner and gh_repo else "")
@@ -538,7 +553,7 @@ def _render_html(snapshot: dict) -> str:
 </head>
 <body>
 {hero}
-{t_.prompt_heading("hands")}
+{panel}
 <p class="verdict"><b>{head}</b><span class="muted">{head_age}</span></p>
 <p class="muted"><a href="{heart}">Heart</a> ·
 <a href="dashboard.md">markdown version</a>{github_link}</p>
