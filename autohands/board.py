@@ -538,6 +538,7 @@ def _render_html(snapshot: dict) -> str:
 </head>
 <body>
 {hero}
+{t_.prompt_heading("hands")}
 <p class="verdict"><b>{head}</b><span class="muted">{head_age}</span></p>
 <p class="muted"><a href="{heart}">Heart</a> ·
 <a href="dashboard.md">markdown version</a>{github_link}</p>
