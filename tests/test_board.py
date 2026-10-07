@@ -339,3 +339,15 @@ def test_orchestration_without_remote_reports_unknown_destination():
     assert "https://github.com/None/None" not in page
     assert 'data-orchestration-copy' in page
     assert 'manage the organism’s release work' in page
+
+
+def test_panel_refresh_uses_capture_not_release_time(monkeypatch):
+    theme = board.theme()
+    calls = []
+    monkeypatch.setattr(theme, "orchestration_panel", lambda *a, **kw: calls.append(kw) or "")
+    board.render(SNAP, "html")
+    assert calls[0]["refreshed_at"] == SNAP["generated"]
+    assert calls[0]["refresh_url"] == "https://github.com/SomeOrg/SomeHands/actions/workflows/release_board.yml"
+
+    board.render({**SNAP, "errors": ["release collection unavailable"]}, "html")
+    assert calls[-1]["refreshed_at"] is None
