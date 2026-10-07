@@ -559,7 +559,10 @@ def _render_html(snapshot: dict) -> str:
                   if gh_owner and gh_repo else [])
     panel = t_.orchestration_panel(
         "hands", "", "", CHECKIN_PROMPT.format(owner=gh_owner or "the organism’s"),
-        work_links=work_links, organ="hands")
+        work_links=work_links, organ="hands",
+        refreshed_at=snapshot.get("generated") if not snapshot.get("errors") else None,
+        refresh_url=(f"https://github.com/{gh_owner}/{gh_repo}/actions/workflows/release_board.yml"
+                     if gh_owner and gh_repo else None))
     github_link = (f' · <a href="https://github.com/{gh_owner}/{gh_repo}'
                    '/blob/main/README.md">GitHub Page</a>'
                    if gh_owner and gh_repo else "")
