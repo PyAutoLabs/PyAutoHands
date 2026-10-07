@@ -323,7 +323,7 @@ def test_orchestration_panel_uses_executor_remote_and_preserves_actions():
     preview = re.search(r'<textarea id="orchestration-hands-prompt"[^>]*>(.*?)</textarea>',
                         page, re.S).group(1)
     assert html_module.unescape(preview) == (
-        board.CHECKIN_PROMPT + "\n\nWork on GitHub:\n"
+        board.CHECKIN_PROMPT.format(owner=SNAP["owner"]) + "\n\nWork on GitHub:\n"
         "- SomeHands: https://github.com/SomeOrg/SomeHands")
     assert page.index('class="board-nav"') < page.index('id="orchestration-hands"')
     assert page.index('id="orchestration-hands"') < page.index('<p class="verdict">')
@@ -338,3 +338,4 @@ def test_orchestration_without_remote_reports_unknown_destination():
     assert "Work repository unavailable in this snapshot." in page
     assert "https://github.com/None/None" not in page
     assert 'data-orchestration-copy' in page
+    assert 'manage the organism’s release work' in page
