@@ -325,7 +325,7 @@ def test_orchestration_panel_uses_executor_remote_and_preserves_actions():
     assert html_module.unescape(preview) == (
         board.CHECKIN_PROMPT.format(owner=SNAP["owner"]) + "\n\nWork on GitHub:\n"
         "- SomeHands: https://github.com/SomeOrg/SomeHands")
-    assert page.index('class="board-nav"') < page.index('id="orchestration-hands"')
+    assert page.index('class="board-nav"') > page.index('id="orchestration-hands"')
     assert page.index('id="orchestration-hands"') < page.index('<p class="verdict">')
     assert board.theme().prompt_heading("hands", heading_id="orchestration-hands-heading") in page
     for _, payload in board.ACTION_CHIPS:
@@ -351,3 +351,10 @@ def test_panel_refresh_uses_capture_not_release_time(monkeypatch):
 
     board.render({**SNAP, "errors": ["release collection unavailable"]}, "html")
     assert calls[-1]["refreshed_at"] is None
+
+
+def test_failed_collection_does_not_claim_zero_items_in_section_counts():
+    snapshot = dict(SNAP, libraries=[], train=[], errors=['Collection unavailable'])
+    page = board._render_html(snapshot)
+    nav = re.search(r'<nav class="board-nav".*?</nav>', page, re.S).group()
+    assert 'board-nav-count' not in nav

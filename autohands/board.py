@@ -548,8 +548,10 @@ def _render_html(snapshot: dict) -> str:
                   f"render:</p><ul class='meta'>{items}</ul></div>")
     heart = _heart_board_url(snapshot)
     hero = t_.hero(BOARD_KEY, "Dashboard", _LEDE, navigation=[
-        {"href": "#libraries", "label": "Libraries"},
-        {"href": "#release-train", "label": "Release train"},
+        {"href": "#libraries", "label": "Libraries",
+         "count": len(snapshot["libraries"]) if snapshot.get("libraries") is not None and not snapshot.get("errors") else None},
+        {"href": "#release-train", "label": "Release train",
+         "count": len(snapshot["train"][:TRAIN_RUNS_SHOWN]) if snapshot.get("train") is not None and not snapshot.get("errors") else None},
     ])
     # The way back from the Pages board to the repository front door; owner
     # and repo come from the snapshot (the git remote), so nothing is
@@ -566,7 +568,7 @@ def _render_html(snapshot: dict) -> str:
     github_link = (f' · <a href="https://github.com/{gh_owner}/{gh_repo}'
                    '/blob/main/README.md">GitHub Page</a>'
                    if gh_owner and gh_repo else "")
-    return f"""<!doctype html>
+    return t_.section_layout(f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PyAutoHands Dashboard</title>
@@ -590,7 +592,7 @@ def _render_html(snapshot: dict) -> str:
 APIs · generated {_html.escape(str(snapshot.get('generated') or '?'))}.</footer>
 <script>{t_.JS}</script>
 </body></html>
-"""
+""")
 
 
 def badge_endpoint(snapshot: dict) -> dict:
