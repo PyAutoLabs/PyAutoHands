@@ -109,7 +109,7 @@ ACTION_CHIPS = (
 )
 
 CHECKIN_PROMPT = (
-    "Use the release skill and treat this chat as an ongoing place to manage PyAutoLabs "
+    "Use the release skill and treat this chat as an ongoing place to manage {owner} "
     "release work. Read PyAutoHands/AGENTS.md and inspect current release-train, nightly, "
     "library and workspace evidence. Check freshness and distinguish verified outcomes from "
     "missing or unavailable information.\n\n"
@@ -558,7 +558,8 @@ def _render_html(snapshot: dict) -> str:
     work_links = ([{"label": gh_repo, "href": f"https://github.com/{gh_owner}/{gh_repo}"}]
                   if gh_owner and gh_repo else [])
     panel = t_.orchestration_panel(
-        "hands", "", "", CHECKIN_PROMPT, work_links=work_links, organ="hands")
+        "hands", "", "", CHECKIN_PROMPT.format(owner=gh_owner or "the organism’s"),
+        work_links=work_links, organ="hands")
     github_link = (f' · <a href="https://github.com/{gh_owner}/{gh_repo}'
                    '/blob/main/README.md">GitHub Page</a>'
                    if gh_owner and gh_repo else "")
