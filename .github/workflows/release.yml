@@ -621,6 +621,52 @@ jobs:
                --data @payload.json \
                "$SLACK_WEBHOOK_URL"
 
+  # The GitHub half of the pending-release chain (PyAutoMind/REFERENCE.md "The
+  # pending-release chain"): once `release` has published every library and
+  # pushed its tag, drop the `pending-release` label from each published-set PR
+  # the tag CONTAINS (merge commit is an ancestor of the tag; PRs merged after
+  # dispatch keep it). Mind's own verb decides — this job only runs it, without
+  # `--apply`, so Mind files are untouched here: the Mind half (deleting the
+  # ledger lines + regenerating the dashboard) stays with /review_release step 6,
+  # which commits to Mind with a human in the loop. Writing Mind main from this
+  # workflow would race the Mind self-heal bot and other sessions' pushes.
+  # continue-on-error: a label sweep must never turn a published release red.
+  clear_pending_release_labels:
+    runs-on: ubuntu-latest
+    needs:
+      - resolve_mode
+      - version_number
+      - release
+    if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
+    continue-on-error: true
+    steps:
+      - name: Checkout PyAutoMind (owner of the clear-released verb)
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoMind
+          path: PyAutoMind
+          token: ${{ secrets.PAT_PYAUTOLABS }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Drop pending-release labels the release contains
+        env:
+          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+        run: |
+          set -o pipefail
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          python3 PyAutoMind/scripts/lifecycle.py clear-released \
+            --version "$VERSION" --remove-labels | tee clear_released.txt
+          {
+            echo "### pending-release labels — release $VERSION"
+            echo '```'
+            cat clear_released.txt
+            echo '```'
+            echo "Mind lines are cleared by /review_release step 6:"
+            echo "\`python3 scripts/lifecycle.py clear-released --version $VERSION --apply\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   publish_release_notes:
     runs-on: ubuntu-latest
     needs:
