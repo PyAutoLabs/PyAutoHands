@@ -565,9 +565,6 @@ def _render_html(snapshot: dict) -> str:
         refreshed_at=snapshot.get("generated") if not snapshot.get("errors") else None,
         refresh_url=(f"https://github.com/{gh_owner}/{gh_repo}/actions/workflows/release_board.yml"
                      if gh_owner and gh_repo else None))
-    github_link = (f' · <a href="https://github.com/{gh_owner}/{gh_repo}'
-                   '/blob/main/README.md">GitHub Page</a>'
-                   if gh_owner and gh_repo else "")
     return t_.section_layout(f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -579,7 +576,7 @@ def _render_html(snapshot: dict) -> str:
 {panel}
 <p class="verdict"><b>{head}</b><span class="muted">{head_age}</span></p>
 <p class="muted"><a href="{heart}">Heart</a> ·
-<a href="dashboard.md">markdown version</a>{github_link}</p>
+<a href="dashboard.md">markdown version</a></p>
 <p>{chips}</p>
 <h2 id="libraries">Libraries</h2>
 <table class="recent">{''.join(lib_rows)}</table>
