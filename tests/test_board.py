@@ -73,9 +73,8 @@ def test_failed_train_run_carries_a_bug_prompt():
     assert "data-cmd=" in html  # the shared copy handler's payload hook
     assert "Use the bug skill. Release train: SomeHands release.yml run failed on 2026-06-01" in html
     assert "https://ci.invalid/runs/1" in html
-    # the action chips are present too
-    for _, payload in board.ACTION_CHIPS:
-        assert payload in html
+    assert "orchestration-hands-prompt" in html
+    assert "<span class='chip'>release" not in html
 
 
 def test_degraded_sections_say_unavailable_never_fabricate():
@@ -327,8 +326,7 @@ def test_orchestration_panel_uses_executor_remote_and_preserves_actions():
     assert page.index('class="board-nav"') > page.index('id="orchestration-hands"')
     assert page.index('id="orchestration-hands"') < page.index('<p class="verdict">')
     assert board.theme().prompt_heading("hands", heading_id="orchestration-hands-heading") in page
-    for _, payload in board.ACTION_CHIPS:
-        assert html_module.escape(payload, quote=True) in page
+    assert "<span class='chip'>" not in page
     assert html_module.escape(board._bug_prompt(SNAP, SNAP["train"][1]), quote=True) in page
 
 

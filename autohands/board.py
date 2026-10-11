@@ -3,10 +3,8 @@
 A phone-readable record of **what the Hands shipped**: the released library
 versions (from git tags — the authoritative record; version stamps are
 build-tree-only and never committed), their PyPI liveness, the release train's
-recent runs, and the nightly driver's outcomes. Every actionable item carries
-a one-tap 📋 copy block holding the AI assistant prompt that drives it
-(``Use the release skill.``, ``Use the release skill. rehearse``, ``Use the release skill. validate``, ``Use the build skill.``; a
-failed train run copies a ``Use the bug skill.`` prompt with its run URL).
+recent runs, and the nightly driver's outcomes. The check-in prompt is the
+entry point for release work; a failed train run retains its targeted bug prompt.
 
 **Boundary.** Hands is a pure executor, so this board is a *past-tense record
 of execution* — never a verdict, a score, or a gate. "Is it safe to release?"
@@ -98,15 +96,6 @@ CONFIG_PATH = Path(__file__).resolve().parent / "config" / "workspaces.yaml"
 SCHEMA_VERSION = 1
 TRAIN_RUNS_SHOWN = 14
 NIGHTLY_RUNS_SHOWN = 10
-
-# The one-tap chips: the skill doors that drive the Hands. Payload is
-# what 📋 copies into the clipboard, ready to paste into an AI assistant chat.
-ACTION_CHIPS = (
-    ("release", "Use the release skill."),
-    ("rehearse", "Use the release skill. rehearse"),
-    ("validate", "Use the release skill. validate"),
-    ("build", "Use the build skill."),
-)
 
 CHECKIN_PROMPT = (
     "Use the release skill and treat this chat as an ongoing place to manage {owner} "
@@ -496,10 +485,6 @@ def _render_html(snapshot: dict) -> str:
     latest = _latest(snapshot)
     head = (f"{_html.escape(latest['version'])}" if latest else "unavailable")
     head_age = _age(latest.get("date")) if latest else ""
-    chips = " ".join(
-        f"<span class='chip'>{_html.escape(label)} {_copy_btn(payload, f'copy {payload}')}</span>"
-        for label, payload in ACTION_CHIPS
-    )
     lib_rows = []
     for l in snapshot.get("libraries") or []:
         cls = _PYPI_CLS.get(str(l.get("pypi")), "unobs")
@@ -546,7 +531,6 @@ def _render_html(snapshot: dict) -> str:
         items = "".join(f"<li>{_html.escape(e)}</li>" for e in snapshot["errors"])
         errors = (f"<div class='errors'><p class='meta'>unavailable this "
                   f"render:</p><ul class='meta'>{items}</ul></div>")
-    heart = _heart_board_url(snapshot)
     hero = t_.hero(BOARD_KEY, "Dashboard", _LEDE, navigation=[
         {"href": "#libraries", "label": "Libraries",
          "count": len(snapshot["libraries"]) if snapshot.get("libraries") is not None and not snapshot.get("errors") else None},
@@ -575,9 +559,7 @@ def _render_html(snapshot: dict) -> str:
 {hero}
 {panel}
 <p class="verdict"><b>{head}</b><span class="muted">{head_age}</span></p>
-<p class="muted"><a href="{heart}">Heart</a> ·
-<a href="dashboard.md">markdown version</a></p>
-<p>{chips}</p>
+<p><a href="dashboard.md">markdown version</a></p>
 <h2 id="libraries">Libraries</h2>
 <table class="recent">{''.join(lib_rows)}</table>
 <h2 id="release-train">Release train</h2>
