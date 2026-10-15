@@ -293,6 +293,7 @@ def test_installed_mode_ignores_pythonpath(tmp_path, monkeypatch):
         "'autofit_version': 'FROM-PYTHONPATH', 'families': {}, 'searches': []}))\n"
     )
     monkeypatch.setenv("PYTHONPATH", str(tmp_path / "src"))
+    monkeypatch.chdir(tmp_path / "src")  # nor the working directory
     try:
         manifest = search_roster.load_manifest()
     except search_roster.RosterError:

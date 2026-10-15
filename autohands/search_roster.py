@@ -57,6 +57,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 
@@ -112,12 +113,17 @@ def load_manifest(manifest_file: Optional[str] = None, source: Optional[str] = N
             )
         else:
             env.pop("PYTHONPATH", None)
-        proc = subprocess.run(
-            [sys.executable, "-m", "autofit", "search-manifest", "--json"],
-            capture_output=True,
-            text=True,
-            env=env,
-        )
+        # `-m` puts the working directory first on sys.path: run the installed
+        # mode from a neutral directory so a shell sitting inside a source
+        # checkout cannot pass it off as the installed release either.
+        with tempfile.TemporaryDirectory() as neutral:
+            proc = subprocess.run(
+                [sys.executable, "-m", "autofit", "search-manifest", "--json"],
+                capture_output=True,
+                text=True,
+                env=env,
+                cwd=None if source else neutral,
+            )
         if proc.returncode != 0:
             tail = "\n".join(proc.stderr.strip().splitlines()[-5:])
             hint = (
