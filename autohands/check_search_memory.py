@@ -19,8 +19,17 @@ The rule here is deliberately not "batch_size must be small". It is
 point is that the memory decision is typed out where a reviewer sees it, rather
 than arrived at by defaulting.
 
+Which names are guarded: with ``--manifest`` (a saved
+``python -m autofit search-manifest --json`` dump) the guarded set is the
+manifest's ``MultiStart*`` searches, read from the installed release rather
+than hard-coded here, united with the ``MultiStart`` prefix rule below (so a
+source-only sibling newer than the installed release keeps its guard). Without
+it -- the stdlib-only CI leg, which must not depend on installing the science
+stack -- the prefix rule alone applies.
+
 Usage:
     python check_search_memory.py --root <workspace_dir> [--scripts-dir scripts]
+                                  [--manifest manifest.json]
 
 Exit codes:
     0  no unbatched multi-start searches found
@@ -30,13 +39,15 @@ Exit codes:
 
 import argparse
 import ast
+import json
 import sys
 from pathlib import Path
-from typing import List, NamedTuple
+from typing import FrozenSet, List, NamedTuple, Optional
 
-# Any search whose name starts with this is a gradient multi-start search and
-# carries the batch_size knob. Matched by prefix rather than an enumerated list
-# so a new MultiStart* sibling in PyAutoFit is covered the day it lands.
+# Fallback when no manifest is given: any search whose name starts with this is
+# a gradient multi-start search and carries the batch_size knob. Matched by
+# prefix rather than an enumerated list so a new MultiStart* sibling in
+# PyAutoFit is covered the day it lands.
 SEARCH_PREFIX = "MultiStart"
 
 # Not a search: the convergence-criteria object shares the prefix but takes no
@@ -60,9 +71,25 @@ def _called_name(node: ast.Call):
     return None
 
 
-def findings_in_source(source: str, path: Path) -> List[Finding]:
+def guarded_names(manifest: dict) -> FrozenSet[str]:
+    """The manifest's multi-start searches -- the names carrying ``batch_size``."""
+    return frozenset(
+        s["name"] for s in manifest["searches"] if s["name"].startswith(SEARCH_PREFIX)
+    )
+
+
+def _guarded(name: str, names: Optional[FrozenSet[str]]) -> bool:
+    if names is not None and name in names:
+        return True
+    return name.startswith(SEARCH_PREFIX) and name not in NOT_A_SEARCH
+
+
+def findings_in_source(
+    source: str, path: Path, names: Optional[FrozenSet[str]] = None
+) -> List[Finding]:
     """Every multi-start search construction in ``source`` with no explicit
-    ``batch_size``. A syntax error yields nothing — this check is not a linter
+    ``batch_size``. ``names`` (from :func:`guarded_names`) is guarded in
+    addition to the prefix rule. A syntax error yields nothing — this check is not a linter
     and must not be the thing that reports a broken file."""
     try:
         tree = ast.parse(source)
@@ -76,7 +103,7 @@ def findings_in_source(source: str, path: Path) -> List[Finding]:
         name = _called_name(node)
         if name is None:
             continue
-        if not name.startswith(SEARCH_PREFIX) or name in NOT_A_SEARCH:
+        if not _guarded(name, names):
             continue
         # **kwargs may carry batch_size; a splat keyword has arg=None. Treat
         # that as explicit rather than guess at the dict's contents.
@@ -86,7 +113,9 @@ def findings_in_source(source: str, path: Path) -> List[Finding]:
     return found
 
 
-def check_root(root: Path, scripts_dir: str = "scripts") -> List[Finding]:
+def check_root(
+    root: Path, scripts_dir: str = "scripts", names: Optional[FrozenSet[str]] = None
+) -> List[Finding]:
     scripts = root / scripts_dir
     if not scripts.is_dir():
         raise FileNotFoundError(f"scripts directory not found: {scripts}")
@@ -94,7 +123,9 @@ def check_root(root: Path, scripts_dir: str = "scripts") -> List[Finding]:
     found = []
     for file in sorted(scripts.rglob("*.py")):
         found.extend(
-            findings_in_source(file.read_text(encoding="utf-8", errors="replace"), file)
+            findings_in_source(
+                file.read_text(encoding="utf-8", errors="replace"), file, names
+            )
         )
     return found
 
@@ -107,6 +138,10 @@ def main(argv=None) -> int:
         default="scripts",
         help="scripts directory relative to root (default: scripts)",
     )
+    parser.add_argument(
+        "--manifest",
+        help="search-manifest --json dump; guards exactly its MultiStart* searches",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.root)
@@ -114,8 +149,16 @@ def main(argv=None) -> int:
         print(f"error: root not found: {root}", file=sys.stderr)
         return 2
 
+    names = None
+    if args.manifest:
+        try:
+            names = guarded_names(json.loads(Path(args.manifest).read_text(encoding="utf-8")))
+        except (OSError, ValueError, KeyError) as e:
+            print(f"error: unreadable manifest {args.manifest}: {e}", file=sys.stderr)
+            return 2
+
     try:
-        found = check_root(root, args.scripts_dir)
+        found = check_root(root, args.scripts_dir, names)
     except FileNotFoundError as e:
         print(f"error: {e}", file=sys.stderr)
         return 2

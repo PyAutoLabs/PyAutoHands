@@ -142,3 +142,38 @@ def test_main_exit_codes(tmp_path, capsys):
     assert main(["--root", str(clean)]) == 0
 
     assert main(["--root", str(tmp_path / "does_not_exist")]) == 2
+
+
+# --- names read from the search manifest -------------------------------------
+
+
+def _manifest(*names):
+    return {"searches": [{"name": n} for n in names]}
+
+
+def test_guarded_names_are_the_manifest_multi_starts():
+    manifest = _manifest("Nautilus", "MultiStartAdam", "MultiStartProdigy", "LBFGS")
+    assert check_search_memory.guarded_names(manifest) == {
+        "MultiStartAdam",
+        "MultiStartProdigy",
+    }
+
+
+def test_manifest_names_unite_with_the_prefix_rule():
+    # A source-only sibling newer than the installed manifest keeps its guard.
+    names = check_search_memory.guarded_names(_manifest("MultiStartProdigy"))
+    source = "a = af.MultiStartProdigy()\nb = af.MultiStartNotInTheManifest()\n"
+    found = findings_in_source(source, Path("x.py"), names)
+    assert [f.search for f in found] == ["MultiStartProdigy", "MultiStartNotInTheManifest"]
+
+
+def test_main_reads_the_manifest_file(tmp_path, capsys):
+    import json
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps(_manifest("MultiStartAdam")))
+    ws = _workspace(tmp_path, **{"x.py": "s = af.MultiStartProdigy()\n"})
+    # Prodigy is not in this manifest; the prefix rule still guards it.
+    assert main(["--root", str(ws), "--manifest", str(manifest)]) == 1
+    assert main(["--root", str(ws)]) == 1
+    assert main(["--root", str(ws), "--manifest", str(tmp_path / "nope.json")]) == 2
