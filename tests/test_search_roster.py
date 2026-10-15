@@ -239,3 +239,11 @@ def test_navigator_roster_mode_rewrites_only_the_block(tmp_path):
     assert text.startswith("intro\n") and text.endswith("outro\n")
     assert "<!-- search-manifest@1 autofit 1.0.0 -->" in text
     assert navigator.write_roster(root, str(manifest)) == []  # idempotent
+
+
+def test_discovery_skips_nested_checkouts(tmp_path):
+    root, _ = _tree(tmp_path)
+    nested = root / "sources" / "other_repo"
+    (nested / ".git").mkdir(parents=True)
+    (nested / "llms.txt").write_text(BLOCK)
+    assert search_roster.discover_files(root) == [root / "llms.txt"]

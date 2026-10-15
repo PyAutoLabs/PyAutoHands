@@ -317,10 +317,21 @@ def check_text(text: str, manifest: dict, where: str = "<text>") -> List[Drift]:
 
 
 def discover_files(root: Path) -> List[Path]:
-    """Every .md / .txt file under ``root`` that contains a roster block."""
+    """Every .md / .txt file under ``root`` that contains a roster block.
+
+    Nested git checkouts (a directory holding its own ``.git``, e.g. the source
+    clones an assistant's CI places under ``sources/``) are other repositories
+    and are not descended into.
+    """
     found = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not d.startswith("."))
+        dirnames[:] = sorted(
+            d
+            for d in dirnames
+            if d not in SKIP_DIRS
+            and not d.startswith(".")
+            and not (Path(dirpath) / d / ".git").exists()
+        )
         for name in sorted(filenames):
             if not name.endswith(SCAN_SUFFIXES):
                 continue
