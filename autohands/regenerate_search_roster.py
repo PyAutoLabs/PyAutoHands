@@ -40,7 +40,7 @@ def main(argv=None) -> int:
         paths = (
             [root / f for f in args.files] if args.files else search_roster.discover_files(root)
         )
-        changed = search_roster.regenerate_files(paths, manifest)
+        changed = search_roster.regenerate_files(paths, manifest, root)
     except (search_roster.RosterError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

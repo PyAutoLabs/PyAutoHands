@@ -20,11 +20,12 @@ point is that the memory decision is typed out where a reviewer sees it, rather
 than arrived at by defaulting.
 
 Which names are guarded: with ``--manifest`` (a saved
-``python -m autofit search-manifest --json`` dump) the guarded set is exactly
-the manifest's ``MultiStart*`` searches, read from the installed release rather
-than hard-coded here. Without it -- the stdlib-only CI leg, which must not depend
-on installing the science stack -- the ``MultiStart`` prefix rule below stands
-in, which is a superset of every manifest to date.
+``python -m autofit search-manifest --json`` dump) the guarded set is the
+manifest's ``MultiStart*`` searches, read from the installed release rather
+than hard-coded here, united with the ``MultiStart`` prefix rule below (so a
+source-only sibling newer than the installed release keeps its guard). Without
+it -- the stdlib-only CI leg, which must not depend on installing the science
+stack -- the prefix rule alone applies.
 
 Usage:
     python check_search_memory.py --root <workspace_dir> [--scripts-dir scripts]
@@ -78,8 +79,8 @@ def guarded_names(manifest: dict) -> FrozenSet[str]:
 
 
 def _guarded(name: str, names: Optional[FrozenSet[str]]) -> bool:
-    if names is not None:
-        return name in names
+    if names is not None and name in names:
+        return True
     return name.startswith(SEARCH_PREFIX) and name not in NOT_A_SEARCH
 
 
@@ -87,8 +88,8 @@ def findings_in_source(
     source: str, path: Path, names: Optional[FrozenSet[str]] = None
 ) -> List[Finding]:
     """Every multi-start search construction in ``source`` with no explicit
-    ``batch_size``. ``names`` (from :func:`guarded_names`) replaces the prefix
-    rule when given. A syntax error yields nothing — this check is not a linter
+    ``batch_size``. ``names`` (from :func:`guarded_names`) is guarded in
+    addition to the prefix rule. A syntax error yields nothing — this check is not a linter
     and must not be the thing that reports a broken file."""
     try:
         tree = ast.parse(source)

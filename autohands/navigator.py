@@ -379,7 +379,10 @@ def write_roster(workspace_path: Path, manifest_file: Optional[str] = None) -> L
     files rewritten. Text outside the ``search-roster`` markers is untouched, and
     a workspace with no block is a no-op.
     """
-    import search_roster
+    try:
+        from . import search_roster
+    except ImportError:  # run as a script with autohands/ on sys.path
+        import search_roster
 
     workspace_path = Path(workspace_path)
     candidates = [workspace_path / "llms.txt"]
@@ -395,7 +398,7 @@ def write_roster(workspace_path: Path, manifest_file: Optional[str] = None) -> L
         print("Search roster: no search-roster block in llms.txt or scripts READMEs")
         return []
     manifest = search_roster.load_manifest(manifest_file)
-    changed = search_roster.regenerate_files(paths, manifest)
+    changed = search_roster.regenerate_files(paths, manifest, workspace_path)
     print(
         f"Search roster: {len(paths)} file(s), {len(changed)} rewritten "
         f"({search_roster.stamp(manifest)})"

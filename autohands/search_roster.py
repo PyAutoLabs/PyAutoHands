@@ -53,6 +53,7 @@ stack.
 import ast
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -68,6 +69,11 @@ STAMP_RE = re.compile(
 )
 
 STYLES = ("list", "table")
+OPTION_KEYS = {"style", "indent", "link"}
+FENCE_RE = re.compile(r"^[ \t]*(```|~~~)")
+# A `<...>search` variable holds a search; `settings_search` / `grid_search` hold
+# a settings object or a grid-search wrapper, so the name must START with search.
+SEARCH_TARGET_RE = re.compile(r"search(_\w+)?")
 
 # Files scanned for roster blocks when no explicit file list is given. Rosters
 # live in prose and catalogue files, never in scripts.
@@ -91,6 +97,10 @@ def load_manifest(manifest_file: Optional[str] = None, source: Optional[str] = N
     printed by ``python -m autofit search-manifest --json`` in a subprocess of
     the current interpreter -- the installed ``autofit``, or, with ``source``,
     the checkout at that path put first on ``PYTHONPATH``.
+
+    In the default (installed) mode ``PYTHONPATH`` is removed from the
+    subprocess environment: a development shell that puts a source checkout on
+    it would otherwise turn "installed" into "source main" silently.
     """
     if manifest_file:
         text = Path(manifest_file).read_text(encoding="utf-8")
@@ -100,6 +110,8 @@ def load_manifest(manifest_file: Optional[str] = None, source: Optional[str] = N
             env["PYTHONPATH"] = str(Path(source).resolve()) + (
                 os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""
             )
+        else:
+            env.pop("PYTHONPATH", None)
         proc = subprocess.run(
             [sys.executable, "-m", "autofit", "search-manifest", "--json"],
             capture_output=True,
@@ -108,9 +120,15 @@ def load_manifest(manifest_file: Optional[str] = None, source: Optional[str] = N
         )
         if proc.returncode != 0:
             tail = "\n".join(proc.stderr.strip().splitlines()[-5:])
+            hint = (
+                ""
+                if source
+                else "\n(PYTHONPATH is ignored here on purpose: install the autofit release "
+                "into this interpreter, or pass --manifest <saved dump>)"
+            )
             raise RosterError(
                 f"`python -m autofit search-manifest --json` failed "
-                f"(exit {proc.returncode}):\n{tail}"
+                f"(exit {proc.returncode}):\n{tail}{hint}"
             )
         text = proc.stdout
     try:
@@ -150,6 +168,10 @@ def parse_options(opts: str) -> Dict[str, str]:
         key, sep, value = token.partition("=")
         if not sep:
             raise RosterError(f"roster option {token!r} is not key=value")
+        if key not in OPTION_KEYS:
+            raise RosterError(
+                f"unknown roster option {key!r} (choose from {', '.join(sorted(OPTION_KEYS))})"
+            )
         out[key] = value
     style = out.setdefault("style", "list")
     if style not in STYLES:
@@ -159,12 +181,15 @@ def parse_options(opts: str) -> Dict[str, str]:
     return out
 
 
-def _example_ref(anchor: Optional[str], link: Optional[str]) -> Optional[str]:
+def _example_ref(anchor: Optional[str], link: Optional[str], rel_dir: str = "") -> Optional[str]:
+    """``rel_dir`` is the repo-relative folder of the file holding the block;
+    a ``link=`` target is made relative to it so the link resolves in place."""
     if not anchor:
         return None
     repo, path, _ = parse_anchor(anchor)
     if link and repo == link:
-        return f"[{path}]({path})"
+        target = posixpath.relpath(path, rel_dir) if rel_dir not in ("", ".") else path
+        return f"[{path}]({target})"
     return f"`{repo}:{path}`"
 
 
@@ -178,7 +203,7 @@ def _families(manifest: dict) -> List[Tuple[str, str, List[dict]]]:
     return out
 
 
-def _render_list(manifest: dict, link: Optional[str]) -> List[str]:
+def _render_list(manifest: dict, link: Optional[str], rel_dir: str = "") -> List[str]:
     lines = []
     for key, label, members in _families(manifest):
         names = []
@@ -190,7 +215,7 @@ def _render_list(manifest: dict, link: Optional[str]) -> List[str]:
         line = f"- **{label}** (`{key}`): " + ", ".join(names)
         examples = []
         for s in members:
-            ref = _example_ref((s.get("example") or "").partition("#")[0] or None, link)
+            ref = _example_ref((s.get("example") or "").partition("#")[0] or None, link, rel_dir)
             if ref and ref not in examples:
                 examples.append(ref)
         if examples:
@@ -203,7 +228,7 @@ def _yes_no(value) -> str:
     return "yes" if value else "no"
 
 
-def _render_table(manifest: dict, link: Optional[str]) -> List[str]:
+def _render_table(manifest: dict, link: Optional[str], rel_dir: str = "") -> List[str]:
     lines = [
         "| Search | Family | Status | JAX | Gradient | Evidence | Posterior | Example |",
         "|---|---|---|---|---|---|---|---|",
@@ -211,7 +236,7 @@ def _render_table(manifest: dict, link: Optional[str]) -> List[str]:
     for key, _label, members in _families(manifest):
         for s in members:
             c = s["capabilities"]
-            ref = _example_ref((s.get("example") or "").partition("#")[0] or None, link)
+            ref = _example_ref((s.get("example") or "").partition("#")[0] or None, link, rel_dir)
             lines.append(
                 f"| `af.{s['name']}` | {key} | {c.get('status', '')} | "
                 f"{c.get('jax_use', '')} | {c.get('gradient', '')} | "
@@ -221,13 +246,13 @@ def _render_table(manifest: dict, link: Optional[str]) -> List[str]:
     return lines
 
 
-def render_body(manifest: dict, options: Dict[str, str]) -> List[str]:
+def render_body(manifest: dict, options: Dict[str, str], rel_dir: str = "") -> List[str]:
     """The generated lines between the stamp and the end marker."""
     link = options.get("link")
     if options["style"] == "table":
-        lines = _render_table(manifest, link)
+        lines = _render_table(manifest, link, rel_dir)
     else:
-        lines = _render_list(manifest, link)
+        lines = _render_list(manifest, link, rel_dir)
     pad = " " * int(options.get("indent", "0"))
     return [pad + line if line else line for line in lines]
 
@@ -247,9 +272,23 @@ class Block(NamedTuple):
 
 
 def find_blocks(lines: List[str], where: str = "<text>") -> List[Block]:
+    """Roster blocks in ``lines``. Markers inside a fenced code block
+    (```` ``` ```` / ``~~~``) are documentation of the format, not blocks."""
     blocks = []
+    fence = None
     i = 0
     while i < len(lines):
+        fm = FENCE_RE.match(lines[i])
+        if fm:
+            if fence is None:
+                fence = fm.group(1)
+            elif fm.group(1) == fence:
+                fence = None
+            i += 1
+            continue
+        if fence is not None:
+            i += 1
+            continue
         m = BEGIN_RE.match(lines[i])
         if not m:
             if END_RE.match(lines[i]):
@@ -277,14 +316,22 @@ def find_blocks(lines: List[str], where: str = "<text>") -> List[Block]:
     return blocks
 
 
-def regenerate_text(text: str, manifest: dict, where: str = "<text>") -> Tuple[str, int]:
+def _split(text: str) -> Tuple[List[str], str]:
+    """Lines and the file's newline (CRLF files keep CRLF)."""
+    newline = "\r\n" if "\r\n" in text else "\n"
+    return text.replace("\r\n", "\n").split("\n"), newline
+
+
+def regenerate_text(
+    text: str, manifest: dict, where: str = "<text>", rel_dir: str = ""
+) -> Tuple[str, int]:
     """``text`` with every roster block re-rendered; (new text, block count)."""
-    lines = text.split("\n")
+    lines, newline = _split(text)
     blocks = find_blocks(lines, where)
     for block in reversed(blocks):
-        new_inner = [block.lead + stamp(manifest)] + render_body(manifest, block.options)
+        new_inner = [block.lead + stamp(manifest)] + render_body(manifest, block.options, rel_dir)
         lines[block.begin + 1 : block.end] = new_inner
-    return "\n".join(lines), len(blocks)
+    return newline.join(lines), len(blocks)
 
 
 class Drift(NamedTuple):
@@ -294,12 +341,14 @@ class Drift(NamedTuple):
     detail: str
 
 
-def check_text(text: str, manifest: dict, where: str = "<text>") -> List[Drift]:
-    lines = text.split("\n")
+def check_text(
+    text: str, manifest: dict, where: str = "<text>", rel_dir: str = ""
+) -> List[Drift]:
+    lines, _ = _split(text)
     out = []
     installed = manifest["autofit_version"]
     for block in find_blocks(lines, where):
-        expected = render_body(manifest, block.options)
+        expected = render_body(manifest, block.options, rel_dir)
         if block.body != expected:
             out.append(
                 Drift(where, block.begin + 1, "body",
@@ -345,14 +394,32 @@ def discover_files(root: Path) -> List[Path]:
     return found
 
 
-def regenerate_files(paths: Iterable[Path], manifest: dict) -> List[Path]:
-    """Re-render every block in ``paths``; returns the files whose text changed."""
+def _rel_dir(path: Path, root: Optional[Path]) -> str:
+    if root is None:
+        return ""
+    try:
+        return path.resolve().parent.relative_to(Path(root).resolve()).as_posix()
+    except ValueError:
+        return ""
+
+
+def _read(path: Path) -> str:
+    with open(path, encoding="utf-8", newline="") as f:
+        return f.read()
+
+
+def regenerate_files(
+    paths: Iterable[Path], manifest: dict, root: Optional[Path] = None
+) -> List[Path]:
+    """Re-render every block in ``paths``; returns the files whose text changed.
+    ``root`` (the repo root) makes ``link=`` targets relative to each file."""
     changed = []
     for path in paths:
-        old = path.read_text(encoding="utf-8")
-        new, _ = regenerate_text(old, manifest, str(path))
+        old = _read(path)
+        new, _ = regenerate_text(old, manifest, str(path), _rel_dir(path, root))
         if new != old:
-            path.write_text(new, encoding="utf-8")
+            with open(path, "w", encoding="utf-8", newline="") as f:
+                f.write(new)
             changed.append(path)
     return changed
 
@@ -361,7 +428,7 @@ def check_files(paths: Iterable[Path], manifest: dict, root: Optional[Path] = No
     out = []
     for path in paths:
         where = str(path.relative_to(root)) if root and path.is_relative_to(root) else str(path)
-        out.extend(check_text(path.read_text(encoding="utf-8"), manifest, where))
+        out.extend(check_text(_read(path), manifest, where, _rel_dir(path, root)))
     return out
 
 
@@ -408,28 +475,46 @@ def resolve_anchors(manifest: dict, workspace_root: Path) -> List[AnchorResult]:
 
 
 def _is_search_target(target: ast.expr) -> bool:
-    return isinstance(target, ast.Name) and "search" in target.id.lower()
+    if isinstance(target, ast.Name):
+        name = target.id
+    elif isinstance(target, ast.Attribute):  # self.search = ...
+        name = target.attr
+    else:
+        return False
+    return SEARCH_TARGET_RE.fullmatch(name.lower()) is not None
+
+
+def _af_call(value) -> Optional[str]:
+    if not isinstance(value, ast.Call):
+        return None
+    func = value.func
+    if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) and func.value.id == "af":
+        return func.attr
+    return None
 
 
 def named_searches(source: str) -> List[Tuple[int, str]]:
-    """(line, Name) for every ``<…search…> = af.<Name>(...)`` in ``source``."""
+    """(line, Name) for every search constructed as ``af.<Name>(...)`` and held
+    by a ``search`` / ``search_<x>`` name: plain and annotated assignments,
+    ``self.search = ...`` and a ``search=af.<Name>(...)`` keyword argument."""
     try:
         tree = ast.parse(source)
     except SyntaxError:
         return []
     out = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Call):
-            continue
-        if not any(_is_search_target(t) for t in node.targets):
-            continue
-        func = node.value.func
-        if (
-            isinstance(func, ast.Attribute)
-            and isinstance(func.value, ast.Name)
-            and func.value.id == "af"
-        ):
-            out.append((node.lineno, func.attr))
+        if isinstance(node, ast.Assign):
+            name = _af_call(node.value)
+            if name and any(_is_search_target(t) for t in node.targets):
+                out.append((node.lineno, name))
+        elif isinstance(node, ast.AnnAssign):
+            name = _af_call(node.value)
+            if name and _is_search_target(node.target):
+                out.append((node.lineno, name))
+        elif isinstance(node, ast.keyword) and node.arg and SEARCH_TARGET_RE.fullmatch(node.arg):
+            name = _af_call(node.value)
+            if name:
+                out.append((node.value.lineno, name))
     return sorted(out)
 
 

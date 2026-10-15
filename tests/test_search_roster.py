@@ -156,8 +156,14 @@ def test_named_searches_only_reads_search_assignments():
         "search_mle = af.Gone()\n"
         "model = af.Model(Thing)\n"
         '"""prose naming af.UltraNest"""\n'
+        "settings_search = af.SettingsSearch()\n"
+        "grid_search = af.SearchGridSearch()\n"
+        "search: object = af.Annotated()\n"
+        "self.search = af.OnSelf()\n"
+        "chain(search=af.Keyword())\n"
     )
-    assert search_roster.named_searches(source) == [(1, "Nautilus"), (2, "Gone")]
+    assert search_roster.named_searches(source) == [
+        (1, "Nautilus"), (2, "Gone"), (7, "Annotated"), (8, "OnSelf"), (9, "Keyword")]
 
 
 def test_manifest_difference_reports_added_and_changed():
@@ -247,3 +253,51 @@ def test_discovery_skips_nested_checkouts(tmp_path):
     (nested / ".git").mkdir(parents=True)
     (nested / "llms.txt").write_text(BLOCK)
     assert search_roster.discover_files(root) == [root / "llms.txt"]
+
+
+def test_crlf_files_keep_crlf_and_regenerate_cleanly():
+    crlf = BLOCK.replace("\n", "\r\n")
+    text, _ = search_roster.regenerate_text(crlf, _manifest())
+    assert "\r\n" in text and "\n" not in text.replace("\r\n", "")
+    assert search_roster.check_text(text, _manifest()) == []
+
+
+def test_markers_inside_code_fences_are_documentation():
+    doc = "```\n<!-- search-roster:begin style=list -->\n<!-- search-roster:end -->\n```\n"
+    assert search_roster.regenerate_text(doc, _manifest()) == (doc, 0)
+    assert search_roster.regenerate_text("~~~\n<!-- search-roster:end -->\n~~~\n", _manifest())[1] == 0
+
+
+def test_unknown_option_is_rejected():
+    with pytest.raises(search_roster.RosterError):
+        search_roster.regenerate_text(BLOCK.replace("style=list", "stlye=table"), _manifest())
+
+
+def test_link_is_relative_to_the_file_holding_the_block(tmp_path):
+    root = tmp_path / "ws"
+    (root / "scripts" / "searches").mkdir(parents=True)
+    readme = root / "scripts" / "searches" / "README.md"
+    readme.write_text(BLOCK.replace("style=list", "style=list link=ws"))
+    search_roster.regenerate_files([readme], _manifest(), root)
+    assert "[scripts/searches/nest.py](nest.py)" in readme.read_text()
+    assert search_roster.check_files([readme], _manifest(), root) == []
+
+
+def test_installed_mode_ignores_pythonpath(tmp_path, monkeypatch):
+    # A source checkout on PYTHONPATH must not stand in for the installed autofit.
+    fake = tmp_path / "src" / "autofit"
+    fake.mkdir(parents=True)
+    (fake / "__init__.py").write_text("")
+    (fake / "__main__.py").write_text(
+        "import json\nprint(json.dumps({'schema': 'search-manifest@1', "
+        "'autofit_version': 'FROM-PYTHONPATH', 'families': {}, 'searches': []}))\n"
+    )
+    monkeypatch.setenv("PYTHONPATH", str(tmp_path / "src"))
+    try:
+        manifest = search_roster.load_manifest()
+    except search_roster.RosterError:
+        manifest = None  # no installed autofit in this interpreter: also correct
+    assert manifest is None or manifest["autofit_version"] != "FROM-PYTHONPATH"
+    # ...while --against-source deliberately reads the checkout at the path.
+    source = search_roster.load_manifest(source=str(tmp_path / "src"))
+    assert source["autofit_version"] == "FROM-PYTHONPATH"
