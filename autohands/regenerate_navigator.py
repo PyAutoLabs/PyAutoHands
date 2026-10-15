@@ -20,6 +20,14 @@ package)::
 
     python /path/to/PyAutoHands/autohands/regenerate_navigator.py autogalaxy
     NAVIGATOR_PROJECT=autofit python /path/to/PyAutoHands/autohands/regenerate_navigator.py
+
+``--roster`` switches to the search-roster mode instead: it rewrites only the
+fenced ``search-roster`` block(s) in the curated ``llms.txt`` and the
+``scripts/**/README.md`` files from the installed ``autofit`` search manifest
+(``--manifest FILE`` reads a saved ``search-manifest --json`` dump). This mode
+needs ``autofit`` importable unless ``--manifest`` is given::
+
+    python /path/to/PyAutoHands/autohands/regenerate_navigator.py --roster
 """
 
 import os
@@ -28,11 +36,19 @@ from pathlib import Path
 
 
 def main():
-    project = (
-        sys.argv[1]
-        if len(sys.argv) > 1
-        else os.environ.get("NAVIGATOR_PROJECT", "autolens")
-    )
+    args = sys.argv[1:]
+    roster = "--roster" in args
+    manifest_file = None
+    if "--manifest" in args:
+        i = args.index("--manifest")
+        if i + 1 >= len(args):
+            print("error: --manifest needs a file", file=sys.stderr)
+            sys.exit(2)
+        manifest_file = args[i + 1]
+        del args[i : i + 2]
+    args = [a for a in args if a != "--roster"]
+
+    project = args[0] if args else os.environ.get("NAVIGATOR_PROJECT", "autolens")
 
     # navigator.py is a sibling of this file; put its directory on the path so
     # ``import navigator`` resolves regardless of the current working directory
@@ -44,6 +60,10 @@ def main():
     sys.argv = ["generate.py", project]
 
     import navigator
+
+    if roster:
+        navigator.write_roster(Path.cwd(), manifest_file)
+        return
 
     navigator.write_catalogue(Path.cwd(), project)
 

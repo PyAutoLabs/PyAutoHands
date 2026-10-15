@@ -18,8 +18,10 @@ Two artefacts are written into the workspace root:
 - ``llms-full.txt``      — an expanded, human-readable ``llms.txt`` form.
 - ``workspace_index.json`` — the same records as a machine-readable array.
 
-The curated ``llms.txt`` is never read or written here; that file is hand
-maintained routing and is intentionally left alone.
+The curated ``llms.txt`` is hand-maintained routing and is left alone, with one
+exception: :func:`write_roster` (``regenerate_navigator.py --roster``) rewrites
+the fenced search-roster block inside it -- and only that block -- from the
+installed ``autofit`` search manifest (see ``search_roster.py``).
 
 Output is **deterministic**: scripts are sorted lexicographically by their
 repo-relative path, groups follow a fixed order, JSON is serialised with sorted
@@ -368,3 +370,34 @@ def write_catalogue(workspace_path: Path, project: Optional[str] = None) -> List
         f"({len(records)} scripts)"
     )
     return [llms_full_path, index_path]
+
+
+def write_roster(workspace_path: Path, manifest_file: Optional[str] = None) -> List[Path]:
+    """
+    Re-render the search-roster blocks in the workspace's curated ``llms.txt``
+    and ``scripts/**/README.md`` files from the search manifest; returns the
+    files rewritten. Text outside the ``search-roster`` markers is untouched, and
+    a workspace with no block is a no-op.
+    """
+    import search_roster
+
+    workspace_path = Path(workspace_path)
+    candidates = [workspace_path / "llms.txt"]
+    scripts = workspace_path / "scripts"
+    if scripts.is_dir():
+        candidates.extend(sorted(scripts.rglob("README.md")))
+    paths = [
+        p
+        for p in candidates
+        if p.is_file() and "<!-- search-roster:begin" in p.read_text(encoding="utf-8")
+    ]
+    if not paths:
+        print("Search roster: no search-roster block in llms.txt or scripts READMEs")
+        return []
+    manifest = search_roster.load_manifest(manifest_file)
+    changed = search_roster.regenerate_files(paths, manifest)
+    print(
+        f"Search roster: {len(paths)} file(s), {len(changed)} rewritten "
+        f"({search_roster.stamp(manifest)})"
+    )
+    return changed

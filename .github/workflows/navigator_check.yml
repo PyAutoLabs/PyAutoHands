@@ -70,6 +70,71 @@ jobs:
       - name: Check for unbatched multi-start searches
         run: python PyAutoHands/autohands/check_search_memory.py --root workspace
 
+  search_roster:
+    # Search rosters, manifest anchors and named searches against the search
+    # manifest of the INSTALLED autofit release (search-manifest@1) — the
+    # pinned version, never the library's main. The workspace is checked out
+    # under its own repository name so the manifest's `<repo>:<path>` anchors
+    # resolve against it; for the autofit workspace the integration-test
+    # workspace is checked out beside it so both anchor kinds resolve. Other
+    # projects' anchors point into repos not checked out here and are skipped.
+    name: Search roster vs installed manifest
+    runs-on: ubuntu-latest
+    env:
+      NUMBA_CACHE_DIR: /tmp/numba_cache
+      MPLCONFIGDIR: /tmp/matplotlib
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v4
+        with:
+          path: ${{ github.event.repository.name }}
+      - name: Checkout PyAutoHands
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoHands
+          path: PyAutoHands
+      - name: Checkout the integration-test workspace (autofit only)
+        if: inputs.project == 'autofit'
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/autofit_workspace_test
+          path: autofit_workspace_test
+          sparse-checkout: scripts/searches
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Match PyAutoHands branch
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          pushd PyAutoHands
+          if [[ -n "$(git ls-remote --heads origin "$BRANCH")" ]]; then
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+          fi
+          popd
+      - name: Install the released autofit
+        run: pip install --quiet autofit
+      - name: Dump the installed search manifest
+        run: |
+          python -m autofit search-manifest --json > search_manifest.json
+          python -c "import json; d = json.load(open('search_manifest.json')); print(d['schema'], 'autofit', d['autofit_version'], len(d['searches']), 'searches')"
+      - name: Check roster blocks, anchors and named searches
+        run: >
+          python PyAutoHands/autohands/check_search_roster.py
+          --root "${{ github.event.repository.name }}"
+          --manifest search_manifest.json
+          --workspace-root .
+          --names-in "scripts/searches/*.py"
+          --names-in "scripts/cookbooks/search.py"
+          --names-in "scripts/guides/modeling/searches.py"
+      - name: Multi-start batch_size check, names from the manifest
+        run: >
+          python PyAutoHands/autohands/check_search_memory.py
+          --root "${{ github.event.repository.name }}"
+          --manifest search_manifest.json
+
   staleness:
     name: Catalogue staleness
     runs-on: ubuntu-latest

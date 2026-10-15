@@ -35,12 +35,14 @@ SUBCOMMAND_ORDER=(
   generate
   generate_markdown
   regenerate_navigator
+  regenerate_search_roster
   run
   run_python
   run_all
   "# Workspace guards (CI-invoked; runnable locally)"
   check_navigator
   check_search_memory
+  check_search_roster
   check_dataset_allowlist
   validate_env_profiles
   "# Release support"
@@ -76,6 +78,8 @@ declare -A SHORT_DESC=(
   [regenerate_navigator]="Rebuild a workspace's llms-full.txt + workspace_index.json catalogue"
   [check_navigator]="Guard: navigator/instruction path references all resolve on disk"
   [check_search_memory]="Guard: every MultiStart* search in a workspace sets batch_size explicitly"
+  [regenerate_search_roster]="Re-render fenced search-roster blocks from the installed autofit search manifest"
+  [check_search_roster]="Guard: roster blocks, manifest anchors and named searches match the installed manifest"
   [check_dataset_allowlist]="Guard: tracked dataset/ files are covered by the .gitignore allowlist"
   [validate_env_profiles]="Guard: a workspace's smoke/release env profiles parse and resolve"
   [run]="Execute notebooks in a workspace folder"
@@ -249,7 +253,7 @@ cmd_generate_markdown() {
 
 help_regenerate_navigator() {
   cat <<'EOF'
-autohands regenerate_navigator [project]
+autohands regenerate_navigator [project] [--roster [--manifest FILE]]
 
 Rebuild the workspace catalogue — llms-full.txt and workspace_index.json — for
 the workspace in the current directory, without regenerating notebooks and
@@ -260,6 +264,10 @@ Arguments:
 
 This is the entry point the navigator_check.yml staleness job uses, and the one
 to run locally when a catalogue has drifted from its scripts.
+
+--roster instead rewrites only the fenced search-roster block(s) in the curated
+llms.txt and scripts/**/README.md from the installed autofit search manifest
+(--manifest FILE reads a saved search-manifest --json dump).
 EOF
 }
 cmd_regenerate_navigator() {
@@ -381,9 +389,55 @@ cmd_check_navigator() {
   _python_in_autohands check_navigator.py "$@"
 }
 
+help_regenerate_search_roster() {
+  cat <<'EOF'
+autohands regenerate_search_roster [--root DIR] [--files F ...] [--manifest FILE]
+
+Re-render every fenced search-roster block
+(<!-- search-roster:begin style=list|table [indent=N] [link=REPO] --> ...
+<!-- search-roster:end -->) under --root from the search manifest printed by the
+installed autofit (python -m autofit search-manifest --json), stamped
+<!-- search-manifest@1 autofit <version> -->. Only text between the markers is
+written. --manifest reads a saved dump instead of importing autofit.
+
+Arguments:
+  --root      Checkout to scan for .md/.txt files holding a block (default: cwd)
+  --files     Explicit files, relative to --root
+  --manifest  Saved search-manifest --json dump
+EOF
+}
+cmd_regenerate_search_roster() {
+  _python_in_autohands regenerate_search_roster.py "$@"
+}
+
+help_check_search_roster() {
+  cat <<'EOF'
+autohands check_search_roster [--root DIR] [--files F ...] [--manifest FILE]
+                              [--strict-version] [--workspace-root DIR]
+                              [--names-in GLOB ...] [--against-source PATH]
+
+Guard against drift from the installed autofit search manifest:
+  (a) every search-roster block regenerates byte-identically (a changed body
+      fails; an identical body under another version stamp is only noted,
+      unless --strict-version);
+  (b) with --workspace-root, each manifest example / integration_test anchor
+      resolves in DIR/<repo> (repos not checked out are skipped);
+  (c) with --names-in, every `search = af.<Name>(...)` in those scripts names a
+      manifest search.
+--against-source PATH reports how a source checkout's manifest differs from the
+installed one; it never fails.
+
+Runs in CI from .github/workflows/navigator_check.yml (search_roster job) and
+from the assistants' wiki-currency workflows.
+EOF
+}
+cmd_check_search_roster() {
+  _python_in_autohands check_search_roster.py "$@"
+}
+
 help_check_search_memory() {
   cat <<'EOF'
-autohands check_search_memory --root DIR [--scripts-dir DIR]
+autohands check_search_memory --root DIR [--scripts-dir DIR] [--manifest FILE]
 
 Guard: every af.MultiStart* search in a workspace's scripts sets batch_size
 explicitly. The default (batch_size=None) vmaps all 48 starts at once, which
@@ -395,6 +449,8 @@ defaulting.
 Arguments:
   --root         Workspace root (required)
   --scripts-dir  Scripts directory relative to root (default: scripts)
+  --manifest     search-manifest --json dump: guard exactly its MultiStart*
+                 searches instead of the MultiStart prefix rule
 
 Runs in CI from .github/workflows/navigator_check.yml.
 EOF
