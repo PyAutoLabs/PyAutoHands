@@ -360,3 +360,19 @@ releasing" is now exactly what `rehearsal` mode is for.)
 `release.yml` is a **pure executor**: it builds, tests-the-install, publishes to PyPI, tags every library and workspace, and commits generated notebooks + Colab URL bumps to the workspaces (version stamps are build-tree-only since #120 — no `__init__.py` commit-backs to library mains, no workspace version pins). Workspace-integration validation (the old `find_scripts` / `generate_notebooks` / `run_scripts` / `run_notebooks` / `analyze_results` jobs) moved to **PyAutoHeart**'s `workspace-validation.yml`; release readiness is gated upstream by the PyAutoBrain release agent via `pyauto-heart readiness` before this workflow is dispatched. The `script_matrix.py` / `run_python.py` / `run.py` / `aggregate_results.py` primitives remain here and are checked out + reused by the Heart workflow.
 The never-rewrite-history rules live in [`AGENTS.md`](../AGENTS.md) and apply
 here as everywhere.
+
+### Smoke dependency preflight
+
+At `PYAUTO_TEST_MODE=2`, `execute_script` runs `smoke_dependencies.py` inside the
+same script interpreter, environment and process-group timeout. Before executing
+the script, it finds direct constructor calls through `import autofit` aliases
+and `from autofit import Search` aliases, reads that interpreter's public
+`search-manifest@1`, and imports the declared `requires` modules. A missing or
+broken backend becomes an ordinary per-script failure with the script, search
+and module in the report. Autofit `corner_cornerpy()` and plotter `corner_corner()` calls also require
+`corner`. No second sampler dependency registry is maintained in Hands.
+
+This is conservative static detection: dynamically selected constructors and
+alias reassignment are not inferred. Calls in unexecuted branches can therefore
+require a backend. Other test modes retain direct script execution. The script's
+arguments, working directory and sibling-import path are preserved.
