@@ -167,9 +167,10 @@ run_workspace() {
     # Format only the dirs this script stages — black'ing "." reformatted files
     # no staging rule covered (13 files across HowTo*/assistant), leaving them
     # perpetually dirty-local on every release (#156).
-    for d in scripts slam_pipeline; do
-        if [ -d "$d" ]; then black "$d/"; fi
-    done
+    if [ -d "scripts" ]; then black "scripts/"; fi
+    # slam_pipeline/ is staged only for slam=true repos, so black only there —
+    # black'ing it elsewhere re-dirtied autolens_workspace_developer every release.
+    if [ "$slam" = "true" ] && [ -d "slam_pipeline" ]; then black "slam_pipeline/"; fi
 
     if [ "$generate" = "true" ]; then
         echo "  Running generate.py ($project)..."
