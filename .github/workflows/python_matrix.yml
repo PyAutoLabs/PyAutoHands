@@ -58,7 +58,9 @@ jobs:
           if [ "$PYTHON_VERSION" = "3.12" ]; then
             optional="[optional]"
           fi
-          pip install \
+          # Unit tests exercise numba inversions and Zeus on every supported
+          # Python. Keep these outside the broad extras (tfp/dm-tree constraint).
+          pip install numba zeus-mcmc==2.5.4 \
             -e ./PyAutoNerves \
             -e "./PyAutoArray${optional}" \
             -e ./PyAutoFit \

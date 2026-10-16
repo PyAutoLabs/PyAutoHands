@@ -195,3 +195,5 @@ def test_unit_optional_extras_follow_python_version(tmp_path):
         extras = [arg for arg in install if arg.endswith("[optional]")]
         assert len(extras) == (2 if version == "3.12" else 0)
         assert install.count("-e") == 5
+        assert "numba" in install
+        assert "zeus-mcmc==2.5.4" in install
