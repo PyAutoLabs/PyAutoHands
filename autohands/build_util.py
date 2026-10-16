@@ -836,6 +836,9 @@ def execute_notebooks_in_folder(
 
 def execute_script(f, report=None, env=None, extra_args=None):
     args = [BUILD_PYTHON_INTERPRETER, f]
+    effective_env = os.environ if env is None else env
+    if effective_env.get("PYAUTO_TEST_MODE") == "2":
+        args = [BUILD_PYTHON_INTERPRETER, str(BUILD_PATH / "smoke_dependencies.py"), f]
     if extra_args:
         args.extend(extra_args)
     script_name = Path(f).relative_to(Path.cwd()) if Path(f).is_relative_to(Path.cwd()) else Path(f).name

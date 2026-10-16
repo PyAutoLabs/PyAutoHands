@@ -110,6 +110,7 @@ INTERNAL_MODULES=(
   add_notebook_quotes   # docstring->cell transform stage; its __main__ is a debug aid
   run_notebook          # per-notebook worker subprocess spawned by run.py
   navigator             # catalogue library behind regenerate_navigator / check_navigator
+  smoke_dependencies    # smoke subprocess dependency preflight
   build_util            # shared py_to_notebook machinery
   env_config            # env-profile resolution library
   result_collector      # per-run JSON result library
