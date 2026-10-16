@@ -1,4 +1,8 @@
 from pathlib import Path
+import json
+import os
+import subprocess
+import sys
 
 import yaml
 
@@ -123,3 +127,73 @@ def test_declared_session_deps_are_the_ones_the_code_actually_reaches_for():
     declared = _declared_session_deps()
     assert "pillow" in declared, "generate_markdown imports PIL"
     assert "ipynb-py-convert" in declared, "build_util shells out to it"
+
+
+def _matrix_step(job, name):
+    return next(s for s in load_workflow()["jobs"][job]["steps"] if s.get("name") == name)
+
+
+def test_matrix_smoke_uses_workspace_profile_and_branch_harness():
+    job = load_workflow()["jobs"]["smoke_tests"]
+    assert not {"PYAUTO_TEST_MODE", "PYAUTO_SMALL_DATASETS", "PYAUTO_FAST_PLOTS"} & job["env"].keys()
+    checkout = _matrix_step("smoke_tests", "Checkout Hands harness")
+    assert checkout["with"] == {"path": "PyAutoHands"}
+    runner = _matrix_step("smoke_tests", "Run smoke tests")
+    assert runner["env"]["PYTHONPATH"] == "${{ github.workspace }}/PyAutoHands/autohands"
+    assert "continue-on-error" not in runner
+    upload = _matrix_step("smoke_tests", "Upload smoke report")
+    assert upload["if"] == "always()"
+    assert "matrix.workspace.path" in upload["with"]["name"]
+    assert "matrix.python-version" in upload["with"]["name"]
+
+
+def test_matrix_harness_runs_in_workspace_and_propagates_failure(tmp_path):
+    workspace = tmp_path / "workspace with spaces"
+    scripts = workspace / ".github" / "scripts"
+    scripts.mkdir(parents=True)
+    (scripts / "run_smoke.py").write_text(
+        "import os, pathlib, sys\n"
+        "assert pathlib.Path.cwd().name == 'workspace with spaces'\n"
+        "assert sys.argv[1:] == ['--report-dir', 'test-results']\n"
+        "assert os.environ['PYTHONPATH'].endswith('/PyAutoHands/autohands')\n"
+        "pathlib.Path('test-results').mkdir(exist_ok=True)\n"
+        "sys.exit(int(os.environ['RUNNER_RC']))\n"
+    )
+    env = dict(os.environ, WORKSPACE_PATH=str(workspace),
+               PYTHONPATH=str(tmp_path / "PyAutoHands/autohands"))
+    env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env["PATH"]
+    for rc in (0, 7):
+        env["RUNNER_RC"] = str(rc)
+        run = subprocess.run(["bash", "-e", "-c", _matrix_step("smoke_tests", "Run smoke tests")["run"]],
+                             cwd=tmp_path, env=env, capture_output=True, text=True)
+        assert run.returncode == rc, run.stderr
+    assert (workspace / "test-results").is_dir()
+
+
+def test_unit_optional_extras_follow_python_version(tmp_path):
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    # Record argv while executing the actual workflow shell; no install occurs.
+    stub = f"#!{sys.executable}\n" + (
+        "import json, os, sys\n"
+        "with open(os.environ['PIP_LOG'], 'a') as f: f.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+        "if 'list' in sys.argv: print('autofit 9999.0.0')\n"
+    )
+    for name in ("pip", "python"):
+        path = bindir / name
+        path.write_text(stub)
+        path.chmod(0o755)
+    step = _matrix_step("unit_tests", "Install libraries (single combined install — all 5 local)")
+    assert step["env"]["PYTHON_VERSION"] == "${{ matrix.python-version }}"
+    for version in ("3.12", "3.13", "3.14"):
+        log = tmp_path / f"{version}.jsonl"
+        env = dict(os.environ, PATH=str(bindir) + os.pathsep + os.environ["PATH"],
+                   PYTHON_VERSION=version, PIP_LOG=str(log))
+        subprocess.run(["bash", "-e", "-c", step["run"]], cwd=tmp_path, env=env, check=True, capture_output=True)
+        calls = [json.loads(line) for line in log.read_text().splitlines()]
+        install = next(c for c in calls if "-e" in c)
+        extras = [arg for arg in install if arg.endswith("[optional]")]
+        assert len(extras) == (2 if version == "3.12" else 0)
+        assert install.count("-e") == 5
+        assert "numba" in install
+        assert "zeus-mcmc==2.5.4" in install
