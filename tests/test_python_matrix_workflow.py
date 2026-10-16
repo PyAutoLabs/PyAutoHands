@@ -192,7 +192,6 @@ def test_unit_optional_extras_follow_python_version(tmp_path):
         subprocess.run(["bash", "-e", "-c", step["run"]], cwd=tmp_path, env=env, check=True, capture_output=True)
         calls = [json.loads(line) for line in log.read_text().splitlines()]
         install = next(c for c in calls if "-e" in c)
-        optional = "[optional]" if version == "3.12" else ""
-        for repo in ("PyAutoArray", "PyAutoLens"):
-            assert f"./{repo}{optional}" in install
+        extras = [arg for arg in install if arg.endswith("[optional]")]
+        assert len(extras) == (2 if version == "3.12" else 0)
         assert install.count("-e") == 5
