@@ -78,8 +78,12 @@ Phases A→C and is invoked by the workflow — logic stays in the conductor
 Workflow: `PyAutoBrain/.github/workflows/nightly-release.yml`,
 `schedule: 0 2 * * *` (every night — quiet nights exit at step 2 in seconds,
 so weekend scheduling costs nothing and weekend merges release on time) +
-`workflow_dispatch` for manual runs. Secrets: `PAT_PYAUTOLABS` (dispatch/poll
-Build + Heart workflows, read commit history), `PYAUTO_RELEASE_WEBHOOK_URL`.
+`workflow_dispatch` for manual runs. Credentials: a per-job `pyautolabs-bot`
+GitHub App token minted from `vars.APP_CLIENT_ID` / `secrets.APP_PRIVATE_KEY`
+(owner-wide: actions write to dispatch/poll Build + Heart workflows, contents
+read for commits/tags, issues read for `release-blocker`, variables write for the
+`NIGHTLY_LAST_WINDOW_END` anchor; a failed mint fails the job), and
+`PYAUTO_RELEASE_WEBHOOK_URL`.
 
 | Step | Action | On stop |
 |------|--------|---------|
