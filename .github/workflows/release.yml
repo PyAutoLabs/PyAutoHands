@@ -197,6 +197,26 @@ jobs:
             print('OK: no direct-reference URLs in built distribution metadata.')
             PY
             popd
+        # TODO(token-phase-1b): switch when PyPI trusted publishers are registered.
+        # Trusted publishing (OIDC) replaces TWINE_PASSWORD/secrets.TEST_PYPI once
+        # TestPyPI lists PyAutoLabs/PyAutoHands release.yml (environment
+        # `testpypi`) as a trusted publisher for all five projects. Until the
+        # human confirms that, the twine step below stays live — do not enable
+        # this before then or the rehearsal cannot publish. Replacement:
+        #
+        #   release_test_pypi:
+        #     environment: testpypi
+        #     permissions:
+        #       contents: read
+        #       id-token: write
+        #     # (drop the job-level TWINE_* env)
+        #     ...
+        #     - name: Upload to test PyPI
+        #       uses: pypa/gh-action-pypi-publish@release/v1
+        #       with:
+        #         repository-url: https://test.pypi.org/legacy/
+        #         packages-dir: ${{ matrix.project.path }}/dist/
+        #         skip-existing: true
         - name: Upload to test PyPI
           run: |
             set -euo pipefail
@@ -433,39 +453,46 @@ jobs:
         - repository: PyAutoLabs/PyAutoNerves
           ref: main
           path: PyAutoNerves
-          pat: PAT_PYAUTOLABS
         - repository: PyAutoLabs/PyAutoFit
           ref: main
           path: PyAutoFit
-          pat: PAT_PYAUTOLABS
         - repository: PyAutoLabs/PyAutoArray
           ref: main
           path: PyAutoArray
-          pat: PAT_PYAUTOLABS
         - repository: PyAutoLabs/PyAutoGalaxy
           ref: main
           path: PyAutoGalaxy
-          pat: PAT_PYAUTOLABS
         - repository: PyAutoLabs/PyAutoLens
           ref: main
           path: PyAutoLens
-          pat: PAT_PYAUTOLABS
     steps:
     - uses: actions/checkout@v4
       with:
           path: PyAutoHands
     - name: Checkout
-      run: |
-        PAT="${{ secrets[matrix.project.pat] }}"
-        git clone -b "${{ matrix.project.ref }}" "https://$PAT@github.com/${{ matrix.project.repository }}.git" "${{ matrix.project.path }}"
+      # The libraries are public, so the read needs no App token. Full history
+      # (tags included) like the former `git clone`. persist-credentials: false
+      # keeps checkout's GITHUB_TOKEN extraheader out of the clone's config,
+      # where it would shadow the App credential the Tag step pushes with.
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ matrix.project.repository }}
+        ref: ${{ matrix.project.ref }}
+        path: ${{ matrix.project.path }}
+        fetch-depth: 0
+        persist-credentials: false
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
     - name: Configure Git
       run: |
-        git config --global user.email "richard@rghsoftware.co.uk"
-        git config --global user.name "GitHub Actions bot"
+        # Bot-authored commits/tags carry the App's bot identity. The noreply
+        # address is `<bot user id>+<slug>[bot]` — the id of the
+        # `pyautolabs-bot[bot]` USER (gh api 'users/pyautolabs-bot[bot]'), which
+        # is what GitHub attributes on; it differs from the App id.
+        git config --global user.email "346909844+pyautolabs-bot[bot]@users.noreply.github.com"
+        git config --global user.name "pyautolabs-bot[bot]"
     - name: Stamp version in build tree
       # Stamps the wheels only — the stamp is NOT committed back to the library
       # repo. Daily "Update version to X" commits to every library main were the
@@ -504,7 +531,25 @@ jobs:
           echo "::error::No __init__.py carries a __version__ stamp — the sed matched nothing."
           exit 1
         fi
+    - name: Mint App token (tag push)
+      # pyautolabs-bot App token, minted immediately before its only use:
+      # installation tokens live one hour and this job runs long. Scoped to this
+      # row's library (matrix `path` is the bare repository name), contents:
+      # write only.
+      id: app_token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ vars.APP_CLIENT_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+        owner: PyAutoLabs
+        repositories: ${{ matrix.project.path }}
+        permission-contents: write
     - name: Tag
+      # Auth: `gh auth setup-git` installs gh as git's credential helper for
+      # github.com, reading GH_TOKEN. Git looks credentials up by host, so they
+      # survive the redirects that strip URL-embedded tokens (#319).
+      env:
+        GH_TOKEN: ${{ steps.app_token.outputs.token }}
       # Idempotent so "Re-run failed jobs" can recover a partially-failed live
       # release. 2026-07-25: a transient upload.pypi.org connect timeout killed
       # the PyAutoArray twine upload AFTER its tag had been pushed, and every
@@ -516,8 +561,7 @@ jobs:
         set -euo pipefail
         pushd "${{ matrix.project.path }}"
         VERSION="${{ needs.version_number.outputs.version_number }}"
-        PAT="${{ secrets[matrix.project.pat] }}"
-        git remote set-url --push origin "https://$PAT@github.com/${{ matrix.project.repository }}.git"
+        gh auth setup-git
         HEAD_SHA="$(git rev-parse HEAD)"
         # For an annotated tag `refs/tags/<v>` is the tag object and
         # `refs/tags/<v>^{}` the commit it peels to; a lightweight tag has no
@@ -547,6 +591,25 @@ jobs:
         sed -i "s/^\(\s*\"auto[a-z]*\)\(==[0-9][0-9.]*\)\{0,1\}\"/\1==$VERSION\"/g" pyproject.toml
         python3 -m pip install --upgrade build
         python3 -m build
+    # TODO(token-phase-1b): switch when PyPI trusted publishers are registered.
+    # Trusted publishing (OIDC) replaces TWINE_PASSWORD/secrets.PYPI once PyPI
+    # lists PyAutoLabs/PyAutoHands release.yml (environment `pypi`) as a
+    # trusted publisher for autonerves/autofit/autoarray/autogalaxy/autolens.
+    # Until the human confirms that, the twine step below stays live — do not
+    # enable this before then or the release cannot publish. Replacement:
+    #
+    #   release:
+    #     environment: pypi
+    #     permissions:
+    #       contents: read
+    #       id-token: write
+    #     # (drop the job-level TWINE_* env)
+    #     ...
+    #     - name: Upload to PyPI
+    #       uses: pypa/gh-action-pypi-publish@release/v1
+    #       with:
+    #         packages-dir: ${{ matrix.project.path }}/dist/
+    #         skip-existing: true
     - name: Upload to PyPI
       # --skip-existing: a re-run rebuilds artifacts that may already be on
       # PyPI; step over those and publish the ones that are not, instead of
@@ -594,12 +657,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Mint App token (read the PyAutoLens release)
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: PyAutoLabs
+          repositories: PyAutoLens
+          permission-contents: read
       - name: Announce release outcome in Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.PYAUTO_RELEASE_WEBHOOK_URL }}
-          # Cross-repo PAT so `gh release view` can read the PyAutoLens release
-          # (the default GITHUB_TOKEN is scoped to PyAutoHands only).
-          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+          # Cross-repo App token so `gh release view` can read the PyAutoLens
+          # release (the default GITHUB_TOKEN is scoped to PyAutoHands only).
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
           RESULT="${{ needs.release.result }}"
@@ -640,19 +712,32 @@ jobs:
     if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
     continue-on-error: true
     steps:
+      # Mind (read the verb) + the published set (lifecycle.PUBLISHED_REPOS):
+      # read PRs/compare, drop the `pending-release` label (an issues-API write).
+      - name: Mint App token (Mind + published-set labels)
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: PyAutoLabs
+          repositories: PyAutoMind,PyAutoNerves,PyAutoFit,PyAutoArray,PyAutoGalaxy,PyAutoLens
+          permission-contents: read
+          permission-issues: write
+          permission-pull-requests: write
       - name: Checkout PyAutoMind (owner of the clear-released verb)
         uses: actions/checkout@v4
         with:
           repository: PyAutoLabs/PyAutoMind
           path: PyAutoMind
-          token: ${{ secrets.PAT_PYAUTOLABS }}
+          token: ${{ steps.app_token.outputs.token }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Drop pending-release labels the release contains
         env:
-          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           set -o pipefail
           VERSION="${{ needs.version_number.outputs.version_number }}"
@@ -678,14 +763,16 @@ jobs:
       fail-fast: false
       matrix:
         project:
+          # token_repos: the row's repo plus the upstreams whose merged PRs
+          # its notes include (generate_release_notes.UPSTREAM_DEPS).
           - repo: PyAutoLabs/PyAutoFit
-            pat: PAT_PYAUTOLABS
+            token_repos: PyAutoFit
           - repo: PyAutoLabs/PyAutoArray
-            pat: PAT_PYAUTOLABS
+            token_repos: PyAutoArray
           - repo: PyAutoLabs/PyAutoGalaxy
-            pat: PAT_PYAUTOLABS
+            token_repos: PyAutoFit,PyAutoArray,PyAutoGalaxy
           - repo: PyAutoLabs/PyAutoLens
-            pat: PAT_PYAUTOLABS
+            token_repos: PyAutoFit,PyAutoArray,PyAutoGalaxy,PyAutoLens
     steps:
     - uses: actions/checkout@v4
       with:
@@ -694,9 +781,19 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
+    - name: Mint App token (GitHub Release)
+      id: app_token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ vars.APP_CLIENT_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+        owner: PyAutoLabs
+        repositories: ${{ matrix.project.token_repos }}
+        permission-contents: write
+        permission-pull-requests: read
     - name: Publish release notes
       env:
-        GH_TOKEN: ${{ secrets[matrix.project.pat] }}
+        GH_TOKEN: ${{ steps.app_token.outputs.token }}
       run: |
         python3 PyAutoHands/autohands/generate_release_notes.py \
           --version "${{ needs.version_number.outputs.version_number }}" \
@@ -704,11 +801,8 @@ jobs:
 
   release_workspaces:
     runs-on: ubuntu-latest
-    env:
-      TWINE_REPOSITORY: pypi
-      TWINE_USERNAME: __token__
-      TWINE_PASSWORD: ${{ secrets.PYPI }}
-      PAT: ${{ secrets.PAT_PYAUTOLABS }}
+    # (The former job-level TWINE_*/PYPI env is gone: nothing here uploads to
+    # PyPI, so the job no longer carries the PyPI token at all.)
     needs:
       # Validation moved to PyAutoHeart; this job generates notebooks inline and
       # commits them — it no longer gates on the (removed) run_scripts/run_notebooks.
@@ -781,12 +875,28 @@ jobs:
       with:
           path: PyAutoHands
     - name: Checkout
-      run: |
-        git clone -b main "https://$PAT@github.com/${{ matrix.workspace.repository }}.git" workspace
+      # Public repo: anonymous read. persist-credentials: false so checkout's
+      # GITHUB_TOKEN extraheader cannot shadow the App credential used to push.
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ matrix.workspace.repository }}
+        ref: main
+        path: workspace
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Resolve bare repository name (App token scope)
+      id: repo
+      env:
+        REPOSITORY: ${{ matrix.workspace.repository }}
+      run: echo "name=${REPOSITORY#*/}" >> "$GITHUB_OUTPUT"
     - name: Configure Git
       run: |
-        git config --global user.email "richard@rghsoftware.co.uk"
-        git config --global user.name "GitHub Actions bot"
+        # Bot-authored commits/tags carry the App's bot identity. The noreply
+        # address is `<bot user id>+<slug>[bot]` — the id of the
+        # `pyautolabs-bot[bot]` USER (gh api 'users/pyautolabs-bot[bot]'), which
+        # is what GitHub attributes on; it differs from the App id.
+        git config --global user.email "346909844+pyautolabs-bot[bot]@users.noreply.github.com"
+        git config --global user.name "pyautolabs-bot[bot]"
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
@@ -874,7 +984,20 @@ jobs:
         # commit under a misleading message (#156 step 2).
         git add -u
         git commit -m "Release $VERSION: bump Colab URL tag refs" || true
+    - name: Mint App token (push main + tag)
+      # Minted immediately before the push: tokens live one hour and the
+      # notebook/baseline legs above can run long. This workspace only.
+      id: app_token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ vars.APP_CLIENT_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+        owner: PyAutoLabs
+        repositories: ${{ steps.repo.outputs.name }}
+        permission-contents: write
     - name: Tag and push to main
+      env:
+        GH_TOKEN: ${{ steps.app_token.outputs.token }}
       # Same re-run failure mode as the library `Tag` step: a frozen
       # `git tag -a` kills every re-run of a job whose tag already reached the
       # remote. The nuance here is that this job creates commits (notebooks,
@@ -884,6 +1007,7 @@ jobs:
       # this tree and a human must decide, which is exactly the loud-fail case.
       run: |
         set -euo pipefail
+        gh auth setup-git
         cd workspace
         VERSION="${{ needs.version_number.outputs.version_number }}"
         HEAD_SHA="$(git rev-parse HEAD)"
@@ -911,8 +1035,6 @@ jobs:
 
   bump_library_colab_urls:
     runs-on: ubuntu-latest
-    env:
-      PAT: ${{ secrets.PAT_PYAUTOLABS }}
     needs:
       - resolve_mode
       - release
@@ -921,21 +1043,42 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Bare names (owner is PyAutoLabs): the App token's `repositories:`
+        # takes names, not owner/name.
         library:
-          - PyAutoLabs/PyAutoFit
-          - PyAutoLabs/PyAutoGalaxy
-          - PyAutoLabs/PyAutoLens
+          - PyAutoFit
+          - PyAutoGalaxy
+          - PyAutoLens
     steps:
     - uses: actions/checkout@v4
       with:
         path: PyAutoHands
+    - name: Mint App token (push library main)
+      # Short job: minted at the top. checkout's `token:` persists it for the
+      # final `git push origin main`.
+      id: app_token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ vars.APP_CLIENT_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+        owner: PyAutoLabs
+        repositories: ${{ matrix.library }}
+        permission-contents: write
     - name: Checkout library
-      run: |
-        git clone -b main "https://$PAT@github.com/${{ matrix.library }}.git" library
+      uses: actions/checkout@v4
+      with:
+        repository: PyAutoLabs/${{ matrix.library }}
+        ref: main
+        path: library
+        token: ${{ steps.app_token.outputs.token }}
     - name: Configure Git
       run: |
-        git config --global user.email "richard@rghsoftware.co.uk"
-        git config --global user.name "GitHub Actions bot"
+        # Bot-authored commits/tags carry the App's bot identity. The noreply
+        # address is `<bot user id>+<slug>[bot]` — the id of the
+        # `pyautolabs-bot[bot]` USER (gh api 'users/pyautolabs-bot[bot]'), which
+        # is what GitHub attributes on; it differs from the App id.
+        git config --global user.email "346909844+pyautolabs-bot[bot]@users.noreply.github.com"
+        git config --global user.name "pyautolabs-bot[bot]"
     - name: Bump Colab URL tag refs
       run: |
         VERSION="${{ needs.version_number.outputs.version_number }}"
@@ -986,9 +1129,18 @@ jobs:
         with:
           name: wiki-drift-report
           path: drift
+      - name: Mint App token (open the drift issue)
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: PyAutoLabs
+          repositories: autolens_assistant
+          permission-issues: write
       - name: Open wiki-drift issue against autolens_assistant
         env:
-          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
           BODY=drift/drift-report.md
@@ -1031,9 +1183,18 @@ jobs:
         with:
           name: wiki-drift-report-autofit
           path: drift
+      - name: Mint App token (open the drift issue)
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: PyAutoLabs
+          repositories: autofit_assistant
+          permission-issues: write
       - name: Open wiki-drift issue against autofit_assistant
         env:
-          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
           BODY=drift/drift-report.md
@@ -1082,9 +1243,18 @@ jobs:
         with:
           name: wiki-drift-report-autogalaxy
           path: drift
+      - name: Mint App token (open the drift issue)
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: PyAutoLabs
+          repositories: autogalaxy_assistant
+          permission-issues: write
       - name: Open wiki-drift issue against autogalaxy_assistant
         env:
-          GH_TOKEN: ${{ secrets.PAT_PYAUTOLABS }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
           BODY=drift/drift-report.md
