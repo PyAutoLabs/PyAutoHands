@@ -66,6 +66,26 @@ jobs:
         # reads it back out of each built artifact rather than trusting input.
         run: python3 -m twine check dist-tombstone/*.tar.gz
 
+      # TODO(token-phase-1b): switch when PyPI trusted publishers are registered.
+      # Trusted publishing (OIDC) replaces TWINE_PASSWORD/secrets.PYPI|TEST_PYPI
+      # once PyPI and TestPyPI list PyAutoLabs/PyAutoHands publish_tombstone.yml
+      # (environments `pypi` / `testpypi`) as a trusted publisher. Until the
+      # human confirms that, the twine step below stays live. Replacement:
+      #
+      #   publish_tombstone:
+      #     environment: ${{ inputs.repository }}   # pypi | testpypi
+      #     permissions:
+      #       contents: read
+      #       id-token: write
+      #     # (drop the job-level TWINE_USERNAME env)
+      #     ...
+      #     - name: Upload
+      #       uses: pypa/gh-action-pypi-publish@release/v1
+      #       with:
+      #         repository-url: >-
+      #           ${{ inputs.repository == 'pypi' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}
+      #         packages-dir: dist-tombstone/
+      #         skip-existing: true
       - name: Upload
         env:
           TWINE_REPOSITORY: ${{ inputs.repository }}
