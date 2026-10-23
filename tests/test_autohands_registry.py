@@ -112,3 +112,23 @@ def test_subcommands_and_internal_modules_are_disjoint():
         f"names declared as both a subcommand and internal: {both}. "
         "A module is one or the other."
     )
+
+
+def test_dispatcher_is_committed_executable():
+    """The Brain runs bin/autohands directly, so git must record it as 100755.
+
+    bfb4887 (2026-10-16) silently flipped it to 100644 from a checkout with
+    core.fileMode=false, and the release door then failed with "autohands not
+    found" until a local chmod. Read the index mode, not the disk mode, since
+    the disk mode is what core.fileMode=false hides.
+    """
+    import subprocess
+
+    out = subprocess.run(
+        ["git", "ls-files", "-s", "bin/autohands"],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert out.startswith("100755 "), f"bin/autohands is not committed executable: {out!r}"
