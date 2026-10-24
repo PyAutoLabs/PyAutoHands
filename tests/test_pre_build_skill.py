@@ -60,6 +60,6 @@ def test_pre_build_wip_preflight_precedes_every_mutation():
     preflight = script.index("=== Checking workspaces for uncommitted work ===")
     assert preflight < script.index("run_workspace() {")
     # The invocations themselves, not the words — both appear in prose above.
-    assert preflight < script.index('black "$d/"')
+    assert preflight < script.index('black "scripts/"')
     assert preflight < script.index("git add -u --")
     assert "ABORT: uncommitted work" in script
