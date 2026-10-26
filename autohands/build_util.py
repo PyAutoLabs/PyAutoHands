@@ -386,30 +386,30 @@ def inject_colab_setup(notebook_path, project: str):
 # notebook as its active instruction: a release-time snapshot of the skills,
 # which stay single-sourced in the assistant.
 #
-# Project -> the assistant repository holding its mapping. autocti is here
-# although it is not in COLAB_PROJECTS: its workspace is outside the release
-# generate and is stamped with the standalone `autohands gemini_context apply`.
+# Which assistant maps which project's notebooks, the repository those
+# notebooks live in, and the id URL template are instance facts, so they live
+# in config/workspaces.yaml (`colab_gemini:`), not here. The repo name is the
+# "<repo>/" prefix the mapping globs match; it cannot be read from the cwd
+# because the release runner checks every workspace out into `workspace/`.
+# CTI is listed there although it is not in COLAB_PROJECTS: its workspace is
+# outside the release generate and is stamped with `autohands gemini_context apply`.
+def _colab_gemini_config() -> dict:
+    import yaml
+
+    path = BUILD_PATH / "config" / "workspaces.yaml"
+    return (yaml.safe_load(path.read_text()) or {})["colab_gemini"]
+
+
+_COLAB_GEMINI = _colab_gemini_config()
+
+# Project -> the assistant repository holding its mapping.
 COLAB_ASSISTANTS = {
-    "autofit": "autofit_assistant",
-    "autogalaxy": "autogalaxy_assistant",
-    "autolens": "autolens_assistant",
-    "howtofit": "autofit_assistant",
-    "howtogalaxy": "autogalaxy_assistant",
-    "howtolens": "autolens_assistant",
-    "autocti": "autocti_assistant",
+    project: spec["assistant"] for project, spec in _COLAB_GEMINI["projects"].items()
 }
 
-# Project -> the repository its notebooks live in: the "<repo>/" prefix of the
-# names the mapping globs match. Needed because the release runner checks every
-# workspace out into a directory called `workspace/`.
+# Project -> the repository its notebooks live in.
 COLAB_WORKSPACE_REPOS = {
-    "autofit": "autofit_workspace",
-    "autogalaxy": "autogalaxy_workspace",
-    "autolens": "autolens_workspace",
-    "howtofit": "HowToFit",
-    "howtogalaxy": "HowToGalaxy",
-    "howtolens": "HowToLens",
-    "autocti": "autocti_workspace",
+    project: spec["repo"] for project, spec in _COLAB_GEMINI["projects"].items()
 }
 
 GEMINI_CONTEXT_FILE = Path("colab") / "contexts.yaml"
@@ -418,11 +418,12 @@ GEMINI_CONTEXT_FILE = Path("colab") / "contexts.yaml"
 # generation naming the mapping entry; the text is never truncated.
 GEMINI_CONTEXT_CAP = 20_000
 
-# Fixed namespace for the per-project instruction id, so regenerating a notebook
-# rewrites the same `aiContexts` entry rather than adding another. The
-# autolens_assistant's own notebook stamper (autoassistant/colab_contexts.py)
-# derives ids the same way; change both or neither.
-_GEMINI_ID_URL = "https://github.com/PyAutoLabs/colab-gemini/{project}"
+# Fixed URL template for the per-project instruction id (uuid5 over it), so
+# regenerating a notebook rewrites the same `aiContexts` entry rather than
+# adding another. The assistants' own notebook stamper
+# (autoassistant/colab_contexts.py) derives ids from the same URL; change both
+# or neither — ids already committed in notebooks would stop matching.
+_GEMINI_ID_URL = _COLAB_GEMINI["id_url"]
 
 
 def gemini_context_id(project: str) -> str:

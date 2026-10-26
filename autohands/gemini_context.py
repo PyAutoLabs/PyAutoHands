@@ -2,7 +2,7 @@
 Stamp or audit Colab Gemini instructions on a notebooks tree (PyAutoHands#324).
 
 The release's ``generate.py`` stamps every notebook it generates. This is the
-same injector for notebooks outside that path — autocti_workspace, which the
+same injector for notebooks outside that path — the CTI workspace, which the
 release does not generate — plus the coverage report that assistant upkeep and
 PyAutoBroca read.
 

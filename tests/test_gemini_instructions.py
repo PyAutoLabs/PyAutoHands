@@ -6,7 +6,6 @@ these pin the assembly, matching and metadata rules without any real assistant.
 
 import json
 import sys
-import uuid
 from pathlib import Path
 
 import pytest
@@ -15,6 +14,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "autohands"))
 
 import build_util
 import gemini_context
+
+# The autolens project's notebook repo, from config/workspaces.yaml (tests name
+# no instance repo themselves — tenant firewall).
+REPO = build_util.COLAB_WORKSPACE_REPOS["autolens"]
 
 CONTEXTS_YAML = """\
 name: Test assistant
@@ -26,15 +29,15 @@ never_map: [maintainer_skill]
 default:
   skills: [skill_default]
 contexts:
-  - match: autolens_workspace/notebooks/imaging/features/*
+  - match: REPO/notebooks/imaging/features/*
     skills: [skill_feature]
-  - match: autolens_workspace/notebooks/imaging/*
+  - match: REPO/notebooks/imaging/*
     skills: [skill_imaging, skill_default]
-  - match: autolens_workspace/notebooks/big/*
+  - match: REPO/notebooks/big/*
     skills: [skill_big]
-  - match: autolens_workspace/notebooks/broken/*
+  - match: REPO/notebooks/broken/*
     skills: [skill_missing]
-"""
+""".replace("REPO", REPO)
 
 
 @pytest.fixture
@@ -82,16 +85,16 @@ def test_writes_selected_context_with_fixed_uuid5(tmp_path, assistant):
         nb, "autolens", assistant, "notebooks/imaging/modeling.ipynb"
     )
 
-    expected_id = str(uuid.uuid5(
-        uuid.NAMESPACE_URL, "https://github.com/PyAutoLabs/colab-gemini/autolens"
-    ))
+    # Byte-identical to the ids already committed in notebooks (and derived by
+    # the assistants' colab_contexts.py): the config's id_url must never drift.
+    expected_id = "44dc52b3-fd5a-58a2-9ef9-33c87750474e"
     assert build_util.gemini_context_id("autolens") == expected_id
     colab = colab_metadata(nb)
     assert colab["selectedAiContext"] == expected_id
     entry = colab["aiContexts"][expected_id]
     assert entry["id"] == expected_id
     assert entry["name"] == "Test assistant"
-    assert label == "autolens_workspace/notebooks/imaging/*"
+    assert label == f"{REPO}/notebooks/imaging/*"
     assert "Body of skill_imaging." in entry["context"]
     assert "Body of skill_default." in entry["context"]
     assert entry["context"].index("PREFACE") < entry["context"].index("skill_imaging")
@@ -105,7 +108,7 @@ def test_notebook_path_and_repo_appear_in_text(tmp_path, assistant):
     nb = make_notebook(tmp_path / "modeling.ipynb", [code_cell("x = 1")])
     build_util.inject_gemini_instructions(nb, "autolens", assistant, "notebooks/imaging/modeling.ipynb")
     (entry,) = colab_metadata(nb)["aiContexts"].values()
-    assert "notebooks/imaging/modeling.ipynb in autolens_workspace" in entry["context"]
+    assert f"notebooks/imaging/modeling.ipynb in {REPO}" in entry["context"]
 
 
 def test_idempotent(tmp_path, assistant):
@@ -134,9 +137,9 @@ def test_hand_written_setup_notebook_gets_instructions(tmp_path, assistant):
 def test_most_specific_entry_wins(assistant):
     contexts = build_util.load_gemini_contexts(assistant)
     label, skills = build_util.match_gemini_context(
-        contexts, "autolens_workspace/notebooks/imaging/features/pixelization/fit.ipynb"
+        contexts, f"{REPO}/notebooks/imaging/features/pixelization/fit.ipynb"
     )
-    assert label == "autolens_workspace/notebooks/imaging/features/*"
+    assert label == f"{REPO}/notebooks/imaging/features/*"
     assert skills == ["skill_feature"]
 
 
@@ -151,7 +154,7 @@ def test_default_fallback(tmp_path, assistant):
 def test_over_cap_raises_naming_the_entry(tmp_path, assistant):
     nb = make_notebook(tmp_path / "huge.ipynb", [code_cell("x = 1")])
     before = nb.read_text()
-    with pytest.raises(ValueError, match=r"autolens_workspace/notebooks/big/\*.*over the 20000 cap"):
+    with pytest.raises(ValueError, match=rf"{REPO}/notebooks/big/\*.*over the 20000 cap"):
         build_util.inject_gemini_instructions(nb, "autolens", assistant, "notebooks/big/huge.ipynb")
     assert nb.read_text() == before
 
@@ -221,13 +224,13 @@ def test_resolve_assistant_root_skips_workspace_checkout_without_mapping(tmp_pat
 
     monkeypatch.setattr(_workspace, "workspace_root", lambda: tmp_path)
     monkeypatch.setattr(_workspace, "repo_path", lambda root, name: Path(root) / name)
-    (tmp_path / "autogalaxy_assistant").mkdir()
+    (tmp_path / build_util.COLAB_ASSISTANTS["autogalaxy"]).mkdir()
     assert build_util.resolve_assistant_root("autogalaxy") is None
     assert "skipped" in capsys.readouterr().err
 
 
 def test_cli_apply_and_report(tmp_path, assistant, capsys):
-    workspace = tmp_path / "autolens_workspace"
+    workspace = tmp_path / REPO
     make_notebook(workspace / "notebooks" / "imaging" / "modeling.ipynb", [code_cell("x = 1")])
     make_notebook(workspace / "notebooks" / "imaging" / "features" / "a.ipynb", [code_cell("x = 1")])
     make_notebook(workspace / "notebooks" / "weak" / "w.ipynb", [markdown_cell("prose")])
@@ -235,8 +238,8 @@ def test_cli_apply_and_report(tmp_path, assistant, capsys):
 
     applied = gemini_context.apply(workspace / "notebooks", "autolens", assistant)
     assert applied == {
-        "notebooks/imaging/features/a.ipynb": "autolens_workspace/notebooks/imaging/features/*",
-        "notebooks/imaging/modeling.ipynb": "autolens_workspace/notebooks/imaging/*",
+        "notebooks/imaging/features/a.ipynb": f"{REPO}/notebooks/imaging/features/*",
+        "notebooks/imaging/modeling.ipynb": f"{REPO}/notebooks/imaging/*",
         "notebooks/weak/w.ipynb": "default",
     }
 
@@ -250,9 +253,9 @@ def test_cli_apply_and_report(tmp_path, assistant, capsys):
     assert result["default_notebooks"] == ["notebooks/weak/w.ipynb"]
     assert result["default_only_folders"] == ["notebooks/weak"]
     assert result["unused_entries"] == [
-        "autolens_workspace/notebooks/big/*", "autolens_workspace/notebooks/broken/*",
+        f"{REPO}/notebooks/big/*", f"{REPO}/notebooks/broken/*",
     ]
-    assert result["missing_skills"] == {"autolens_workspace/notebooks/broken/*": ["skill_missing"]}
+    assert result["missing_skills"] == {f"{REPO}/notebooks/broken/*": ["skill_missing"]}
     assert result["sizes"]["over_cap"] == []
     assert 0 < result["sizes"]["median"] <= result["sizes"]["max"] < build_util.GEMINI_CONTEXT_CAP
     # The fixture maps a missing skill, so the report fails.
@@ -265,11 +268,11 @@ def test_report_flags_never_map(tmp_path, assistant):
     yaml_path.write_text(
         yaml_path.read_text().replace("skills: [skill_feature]", "skills: [maintainer_skill]")
     )
-    workspace = tmp_path / "autolens_workspace"
+    workspace = tmp_path / REPO
     make_notebook(workspace / "notebooks" / "imaging" / "m.ipynb", [code_cell("x = 1")])
     result = gemini_context.report(workspace, "autolens", assistant)
     assert result["never_map_violations"] == {
-        "autolens_workspace/notebooks/imaging/features/*": ["maintainer_skill"]
+        f"{REPO}/notebooks/imaging/features/*": ["maintainer_skill"]
     }
 
 
@@ -287,9 +290,9 @@ def test_never_map_enforced_at_load(assistant):
 def test_validate_lists_every_failing_notebook(assistant):
     with pytest.raises(ValueError) as info:
         build_util.validate_gemini_contexts(assistant, [
-            "autolens_workspace/notebooks/imaging/ok.ipynb",
-            "autolens_workspace/notebooks/big/a.ipynb",
-            "autolens_workspace/notebooks/broken/b.ipynb",
+            f"{REPO}/notebooks/imaging/ok.ipynb",
+            f"{REPO}/notebooks/big/a.ipynb",
+            f"{REPO}/notebooks/broken/b.ipynb",
         ])
     message = str(info.value)
     assert "2 notebook(s) would fail" in message
