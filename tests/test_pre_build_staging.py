@@ -231,3 +231,32 @@ def test_tracked_deletions_are_staged(base, stub_bin):
 
     assert "notebooks/committed.ipynb" not in _git(work, "ls-files", "notebooks")
     assert "pre build" in _git(work, "log", "--oneline")
+
+
+def test_black_touches_only_what_is_staged(base, stub_bin):
+    """No workspace is left dirty: black runs on exactly the dirs that are staged.
+
+    pre_build black'd `slam_pipeline/` everywhere but staged it only for
+    slam=true repos, so slam=false workspaces were re-dirtied by every
+    release (2026.10.16.2) and Heart reported it as worktree drift.
+    """
+    # A black that really reformats: append a line to every .py it is given.
+    (stub_bin / "black").write_text(
+        "#!/bin/bash\n"
+        'for d in "$@"; do find "$d" -name "*.py" -exec sh -c '
+        "'echo \"# black\" >> \"$1\"' _ {} \\; ; done\n"
+        "exit 0\n"
+    )
+    for repo, _p, _g, _s in SPECS:
+        work = base / repo
+        (work / "slam_pipeline").mkdir()
+        (work / "slam_pipeline" / "pipe.py").write_text("y = 2\n")
+        _commit_all(work, "fixture slam_pipeline")
+        _git(work, "push", "-q", "origin", "main")
+
+    result = _run(base, stub_bin)
+    assert result.returncode == 0, result.stderr
+    for repo, _p, _g, slam in SPECS:
+        assert _git(base / repo, "status", "--porcelain") == "", repo
+        reformatted = "# black" in (base / repo / "slam_pipeline" / "pipe.py").read_text()
+        assert reformatted == (slam == "true"), repo
