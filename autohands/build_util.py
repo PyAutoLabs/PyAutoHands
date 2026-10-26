@@ -415,8 +415,17 @@ COLAB_WORKSPACE_REPOS = {
 GEMINI_CONTEXT_FILE = Path("colab") / "contexts.yaml"
 
 # Human choice (#324): one instruction never exceeds this. Over-cap fails
-# generation naming the mapping entry; the text is never truncated.
+# generation naming the mapping entry; the text is never truncated. An
+# assistant may set its own `cap:` in colab/contexts.yaml (its skills may be
+# longer), up to GEMINI_CONTEXT_CAP_MAX — the size the human verified Colab
+# honours (52k tested, 2026-10-26).
 GEMINI_CONTEXT_CAP = 20_000
+GEMINI_CONTEXT_CAP_MAX = 50_000
+
+
+def gemini_context_cap(contexts: dict) -> int:
+    """The cap in force for a loaded mapping: its `cap:`, else the default."""
+    return contexts.get("cap", GEMINI_CONTEXT_CAP)
 
 # Fixed URL template for the per-project instruction id (uuid5 over it), so
 # regenerating a notebook rewrites the same `aiContexts` entry rather than
@@ -451,6 +460,12 @@ def load_gemini_contexts(assistant_root, enforce_never_map: bool = True) -> dict
             f"pass --assistant-root / PYAUTO_ASSISTANT_ROOT for this project)."
         )
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    cap = data.get("cap", GEMINI_CONTEXT_CAP)
+    if isinstance(cap, bool) or not isinstance(cap, int) or not 0 < cap <= GEMINI_CONTEXT_CAP_MAX:
+        raise ValueError(
+            f"Gemini instructions: {path} sets cap {cap!r}; it must be a positive "
+            f"integer no larger than {GEMINI_CONTEXT_CAP_MAX}."
+        )
     for key in ("preface", "rules", "default", "contexts"):
         if key not in data:
             raise ValueError(f"Gemini instructions: {path} has no '{key}' entry.")
@@ -549,7 +564,8 @@ def gemini_context_from(assistant_root, notebook_name: str, contexts=None):
     Assemble the Gemini instruction for ``notebook_name`` ("<repo>/<relpath>").
 
     Returns ``(entry_label, skills, text)``. Raises if a mapped skill file is
-    missing or the text exceeds ``GEMINI_CONTEXT_CAP`` — never truncates.
+    missing or the text exceeds the mapping's cap (``gemini_context_cap``) —
+    never truncates.
     """
     assistant_root = Path(assistant_root)
     if contexts is None:
@@ -562,11 +578,12 @@ def gemini_context_from(assistant_root, notebook_name: str, contexts=None):
             f"Gemini instructions: mapping entry '{label}' names skill(s) {missing} "
             f"with no file under {assistant_root / 'skills'}."
         )
-    if len(text) > GEMINI_CONTEXT_CAP:
+    cap = gemini_context_cap(contexts)
+    if len(text) > cap:
         raise ValueError(
             f"Gemini instructions for {notebook_name}: mapping entry '{label}' "
             f"(skills {skills}) assembles to {len(text)} characters, over the "
-            f"{GEMINI_CONTEXT_CAP} cap. Map fewer or smaller skills to it in "
+            f"{cap} cap. Map fewer or smaller skills to it in "
             f"{assistant_root / GEMINI_CONTEXT_FILE}; the text is never truncated."
         )
     return label, skills, text
@@ -657,8 +674,8 @@ def resolve_assistant_root(project: str, explicit=None):
     An explicit or environment root is returned as given, and a missing
     ``colab/contexts.yaml`` under it then fails generation loudly. A
     workspace-resolved root without the file is skipped with a warning
-    instead: that is an assistant whose mapping has not landed yet (galaxy and
-    fit until phase 2 of #324), and the release must not break before it does.
+    instead: that is an assistant whose mapping has not landed yet (e.g. a newly
+    added project), and the release must not break before it does.
     """
     if project not in COLAB_ASSISTANTS:
         return None

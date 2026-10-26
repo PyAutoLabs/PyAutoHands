@@ -248,7 +248,8 @@ autohands gemini_context report --workspace W --project P --assistant-root A
 
 Colab Gemini instructions (PyAutoHands#324): each assistant's
 colab/contexts.yaml maps notebook-path globs to skills; the assembled text
-(preface + core rules + mapped skills, at most 20,000 characters) is written
+(preface + core rules + mapped skills, at most 20,000 characters unless the
+mapping sets its own `cap:`, up to 50,000) is written
 into metadata.colab.aiContexts and selected.
 
   apply    Stamp every notebook under <notebooks_dir>. `generate` already does
