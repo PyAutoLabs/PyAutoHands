@@ -237,14 +237,14 @@ def test_black_touches_only_what_is_staged(base, stub_bin):
     """No workspace is left dirty: black runs on exactly the dirs that are staged.
 
     pre_build black'd `slam_pipeline/` everywhere but staged it only for
-    slam=true repos, so autolens_workspace_developer was re-dirtied by every
+    slam=true repos, so slam=false workspaces were re-dirtied by every
     release (2026.10.16.2) and Heart reported it as worktree drift.
     """
     # A black that really reformats: append a line to every .py it is given.
     (stub_bin / "black").write_text(
         "#!/bin/bash\n"
         'for d in "$@"; do find "$d" -name "*.py" -exec sh -c '
-        "'echo \"# black\" >> \"$1\"' _ {} \; ; done\n"
+        "'echo \"# black\" >> \"$1\"' _ {} \\; ; done\n"
         "exit 0\n"
     )
     for repo, _p, _g, _s in SPECS:
