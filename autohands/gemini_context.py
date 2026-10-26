@@ -81,7 +81,7 @@ def report(workspace, project, assistant_root, repo_name=None):
     assistant_root = Path(assistant_root).resolve()
     repo_name = _repo_name(project, repo_name)
     contexts = build_util.load_gemini_contexts(assistant_root, enforce_never_map=False)
-    cap = build_util.GEMINI_CONTEXT_CAP
+    cap = build_util.gemini_context_cap(contexts)
 
     rows = []
     for notebook in iter_notebooks(workspace):

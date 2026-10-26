@@ -818,23 +818,23 @@ jobs:
         python-version: [3.12]
         # `assistant`: the assistant repo whose colab/contexts.yaml stamps each
         # generated notebook's Colab Gemini instructions (PyAutoHands#324).
-        # Empty = no instructions yet: autogalaxy/autofit mappings land in
-        # phase 2, and a root without the file would fail generation loudly.
-        # Merge order: the assistant's colab/contexts.yaml must be on its main
-        # before this is released (PyAutoBrain -> autolens_assistant -> PyAutoHands).
+        # Empty = no instructions; a root without the file fails generation
+        # loudly. Merge order: each named assistant's colab/contexts.yaml must be
+        # on its main before this is released (autolens_assistant, then
+        # autofit_assistant + autogalaxy_assistant, then PyAutoHands).
         workspace:
           - repository: PyAutoLabs/autofit_workspace
             name: autofit
             package: PyAutoFit
             generate_notebooks: true
             bump_colab_urls: true
-            assistant: ""
+            assistant: autofit_assistant
           - repository: PyAutoLabs/autogalaxy_workspace
             name: autogalaxy
             package: PyAutoGalaxy
             generate_notebooks: true
             bump_colab_urls: true
-            assistant: ""
+            assistant: autogalaxy_assistant
           - repository: PyAutoLabs/autolens_workspace
             name: autolens
             package: PyAutoLens
@@ -846,7 +846,7 @@ jobs:
             package: PyAutoGalaxy
             generate_notebooks: true
             bump_colab_urls: true
-            assistant: ""
+            assistant: autogalaxy_assistant
           - repository: PyAutoLabs/HowToLens
             name: howtolens
             package: PyAutoLens
@@ -858,7 +858,7 @@ jobs:
             package: PyAutoFit
             generate_notebooks: true
             bump_colab_urls: true
-            assistant: ""
+            assistant: autofit_assistant
           - repository: PyAutoLabs/euclid_strong_lens_modeling_pipeline
             name: euclid_pipeline
             package: PyAutoLens

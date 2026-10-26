@@ -328,3 +328,56 @@ def test_generate_fails_before_touching_notebooks(tmp_path, assistant, folder):
                             capture_output=True, text=True, check=True)
     assert status.stdout == ""
     assert list(workspace.glob("scripts/**/*.ipynb")) == []
+
+
+def _set_cap(assistant, cap_line):
+    yaml_path = assistant / "colab" / "contexts.yaml"
+    yaml_path.write_text(cap_line + "\n" + yaml_path.read_text())
+
+
+def _add_mid_skill(assistant):
+    # A 25k-character skill mapped by the `big` entry: over the default cap,
+    # within a 30k one.
+    (assistant / "skills" / "skill_big.md").write_text("y" * 25_000)
+
+
+def test_cap_defaults_when_absent(assistant):
+    contexts = build_util.load_gemini_contexts(assistant)
+    assert "cap" not in contexts
+    assert build_util.gemini_context_cap(contexts) == build_util.GEMINI_CONTEXT_CAP == 20_000
+
+
+def test_custom_cap_honoured(tmp_path, assistant):
+    _add_mid_skill(assistant)
+    name = f"{REPO}/notebooks/big/a.ipynb"
+    with pytest.raises(ValueError, match="over the 20000 cap"):
+        build_util.gemini_context_from(assistant, name)
+
+    _set_cap(assistant, "cap: 30000")
+    label, _, text = build_util.gemini_context_from(assistant, name)
+    assert 25_000 < len(text) <= 30_000
+    nb = make_notebook(tmp_path / "a.ipynb", [code_cell("x = 1")])
+    assert build_util.inject_gemini_instructions(nb, "autolens", assistant, "notebooks/big/a.ipynb") == label
+
+
+@pytest.mark.parametrize("cap", ["50001", "0", "-5", "lots", "true"])
+def test_cap_out_of_range_raises_at_load(assistant, cap):
+    _set_cap(assistant, f"cap: {cap}")
+    with pytest.raises(ValueError, match="must be a positive integer no larger than 50000"):
+        build_util.load_gemini_contexts(assistant)
+
+
+def test_cap_at_ceiling_loads(assistant):
+    _set_cap(assistant, f"cap: {build_util.GEMINI_CONTEXT_CAP_MAX}")
+    assert build_util.gemini_context_cap(build_util.load_gemini_contexts(assistant)) == 50_000
+
+
+def test_report_shows_cap_in_force(tmp_path, assistant):
+    _add_mid_skill(assistant)
+    _set_cap(assistant, "cap: 30000")
+    workspace = tmp_path / REPO
+    make_notebook(workspace / "notebooks" / "big" / "a.ipynb", [code_cell("x = 1")])
+    result = gemini_context.report(workspace, "autolens", assistant)
+    assert result["cap"] == 30_000
+    assert result["sizes"]["over_cap"] == []
+    assert "cap 30000" in gemini_context.format_report(result)
