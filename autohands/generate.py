@@ -17,6 +17,14 @@ parser.add_argument(
     default=None,
     help="Directory to write structured JSON generation results to",
 )
+parser.add_argument(
+    "--assistant-root",
+    type=str,
+    default=None,
+    help="Checkout of the project's assistant whose colab/contexts.yaml supplies "
+    "each notebook's Colab Gemini instructions (default: $PYAUTO_ASSISTANT_ROOT, "
+    "then the assistant in this workspace; skipped with a warning if neither).",
+)
 
 args = parser.parse_args()
 
@@ -76,6 +84,46 @@ if __name__ == "__main__":
             f"{sorted(build_util.COLAB_PROJECTS)}. Nothing was modified."
         )
 
+    # The assistant whose mapping stamps each notebook's Colab Gemini
+    # instructions (#324). Resolved before the rmtree so a mapping that cannot
+    # load stops the run with the committed notebooks intact.
+    assistant_root = build_util.resolve_assistant_root(project, args.assistant_root)
+    gemini_contexts = (
+        build_util.load_gemini_contexts(assistant_root) if assistant_root else None
+    )
+
+    # Every notebook name this run will produce, assembled and checked up
+    # front: a missing skill or an over-cap entry fails here, before the
+    # start_here conversion and the notebooks/ rmtree below touch anything.
+    if assistant_root is not None:
+        repo = build_util.COLAB_WORKSPACE_REPOS[project]
+        scripts_path = WORKSPACE_PATH / "scripts"
+        names = [
+            f"{repo}/{f.with_suffix('.ipynb').name}"
+            for f in Path(".").glob("start_here*.py")
+            if f.name != "welcome.py"
+        ]
+        names += [
+            f"{repo}/notebooks/{p.relative_to(scripts_path).with_suffix('.ipynb').as_posix()}"
+            for p in iter_script_paths(scripts_path)
+        ]
+        if project == "autofit":
+            names += [
+                f"{repo}/{p.with_suffix('.ipynb').relative_to(generate_autofit.WORKSPACE_PATH).as_posix()}"
+                for p in generate_autofit.project_scripts()
+            ]
+        try:
+            build_util.validate_gemini_contexts(assistant_root, names, contexts=gemini_contexts)
+        except ValueError as exc:
+            sys.exit(f"generate.py: {exc}")
+
+    def inject_gemini(notebook, notebook_relpath):
+        if assistant_root is not None:
+            build_util.inject_gemini_instructions(
+                notebook, project, assistant_root, notebook_relpath,
+                contexts=gemini_contexts,
+            )
+
     report = None
     if args.report_dir:
         from result_collector import RunReport
@@ -85,7 +133,12 @@ if __name__ == "__main__":
             run_type="generate",
         )
 
-    generate_autofit.generate_project_folders()
+    # autofit's projects/ notebooks are stamped only when autofit itself is
+    # being generated: this step runs for every project, and another project's
+    # assistant mapping does not describe them.
+    generate_autofit.generate_project_folders(
+        inject_gemini=inject_gemini if project == "autofit" else None
+    )
 
     p = Path(".")
 
@@ -102,6 +155,7 @@ if __name__ == "__main__":
         try:
             notebook = build_util.py_to_notebook(start_here_file)
             build_util.inject_colab_setup(notebook, project)
+            inject_gemini(notebook, notebook.name)
             # Checked call, no -f: start_here.ipynb is tracked and unignored in
             # every workspace that has one (measured, #156); a failure here must
             # surface, not vanish into an ignored os.system return.
@@ -140,6 +194,10 @@ if __name__ == "__main__":
         try:
             source_path = build_util.py_to_notebook(script_path)
             build_util.inject_colab_setup(source_path, project)
+            inject_gemini(
+                source_path,
+                Path("notebooks") / script_path.relative_to(scripts_path).with_suffix(".ipynb"),
+            )
             copy_to_notebooks(source_path)
             os.remove(source_path)
             source_path = None

@@ -816,37 +816,49 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.12]
+        # `assistant`: the assistant repo whose colab/contexts.yaml stamps each
+        # generated notebook's Colab Gemini instructions (PyAutoHands#324).
+        # Empty = no instructions yet: autogalaxy/autofit mappings land in
+        # phase 2, and a root without the file would fail generation loudly.
+        # Merge order: the assistant's colab/contexts.yaml must be on its main
+        # before this is released (PyAutoBrain -> autolens_assistant -> PyAutoHands).
         workspace:
           - repository: PyAutoLabs/autofit_workspace
             name: autofit
             package: PyAutoFit
             generate_notebooks: true
             bump_colab_urls: true
+            assistant: ""
           - repository: PyAutoLabs/autogalaxy_workspace
             name: autogalaxy
             package: PyAutoGalaxy
             generate_notebooks: true
             bump_colab_urls: true
+            assistant: ""
           - repository: PyAutoLabs/autolens_workspace
             name: autolens
             package: PyAutoLens
             generate_notebooks: true
             bump_colab_urls: true
+            assistant: autolens_assistant
           - repository: PyAutoLabs/HowToGalaxy
             name: howtogalaxy
             package: PyAutoGalaxy
             generate_notebooks: true
             bump_colab_urls: true
+            assistant: ""
           - repository: PyAutoLabs/HowToLens
             name: howtolens
             package: PyAutoLens
             generate_notebooks: true
             bump_colab_urls: true
+            assistant: autolens_assistant
           - repository: PyAutoLabs/HowToFit
             name: howtofit
             package: PyAutoFit
             generate_notebooks: true
             bump_colab_urls: true
+            assistant: ""
           - repository: PyAutoLabs/euclid_strong_lens_modeling_pipeline
             name: euclid_pipeline
             package: PyAutoLens
@@ -884,6 +896,16 @@ jobs:
         path: workspace
         fetch-depth: 0
         persist-credentials: false
+    - name: Checkout assistant (Colab Gemini instructions)
+      # Public repo: anonymous read-only, like the workspace checkout above. Only
+      # its colab/contexts.yaml and skills/ are read, by generate.py.
+      if: "${{ matrix.workspace.generate_notebooks == true && matrix.workspace.assistant != '' }}"
+      uses: actions/checkout@v4
+      with:
+        repository: PyAutoLabs/${{ matrix.workspace.assistant }}
+        ref: main
+        path: assistant
+        persist-credentials: false
     - name: Resolve bare repository name (App token scope)
       id: repo
       env:
@@ -909,6 +931,9 @@ jobs:
       run: |
         export PYTHONPATH=$PYTHONPATH:$(pwd)/PyAutoHands
         AUTOHANDS_PATH="$(pwd)/PyAutoHands/autohands"
+        if [ -n "${{ matrix.workspace.assistant }}" ]; then
+          export PYAUTO_ASSISTANT_ROOT="$(pwd)/assistant"
+        fi
         pushd workspace
         python3 "$AUTOHANDS_PATH/generate.py" ${{ matrix.workspace.name }}
         # Stage exactly what generate.py produces: the notebooks tree, the

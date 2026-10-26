@@ -36,6 +36,7 @@ SUBCOMMAND_ORDER=(
   generate_markdown
   regenerate_navigator
   regenerate_search_roster
+  gemini_context
   run
   run_python
   run_all
@@ -76,6 +77,7 @@ declare -A SHORT_DESC=(
   [generate]="Convert workspace scripts/ to notebooks/ (run from a workspace root)"
   [generate_markdown]="Render curated workspace scripts to executed markdown pages with figures"
   [regenerate_navigator]="Rebuild a workspace's llms-full.txt + workspace_index.json catalogue"
+  [gemini_context]="Stamp or audit Colab Gemini instructions on a notebooks tree from an assistant mapping"
   [check_navigator]="Guard: navigator/instruction path references all resolve on disk"
   [check_search_memory]="Guard: every MultiStart* search in a workspace sets batch_size explicitly"
   [regenerate_search_roster]="Re-render fenced search-roster blocks from the installed autofit search manifest"
@@ -212,21 +214,57 @@ cmd_bump_colab_urls() {
 
 help_generate() {
   cat <<'EOF'
-autohands generate <project> [--report-dir DIR]
+autohands generate <project> [--report-dir DIR] [--assistant-root DIR]
 
 Convert every script in scripts/ to a Jupyter notebook in notebooks/, run
 from inside the workspace root. The <project> argument selects the Colab
 setup cell injected into each generated notebook.
 
+Each notebook also gets its Colab Gemini instructions from the project's
+assistant (colab/contexts.yaml; see `autohands help gemini_context`).
+
 Arguments:
-  project        Project name (e.g. autofit, autogalaxy, autolens, howtolens)
-  --report-dir   Directory to write structured JSON generation results to
+  project          Project name (e.g. autofit, autogalaxy, autolens, howtolens)
+  --report-dir     Directory to write structured JSON generation results to
+  --assistant-root The assistant checkout supplying the instructions (default:
+                   $PYAUTO_ASSISTANT_ROOT, then the assistant in this workspace).
+                   A root given here or in the env var must have
+                   colab/contexts.yaml; one found in the workspace without it
+                   is skipped with a warning (mapping not landed yet).
 
 Run from the workspace root, not from PyAutoHands.
 EOF
 }
 cmd_generate() {
   _python_in_autohands generate.py "$@"
+}
+
+help_gemini_context() {
+  cat <<'EOF'
+autohands gemini_context apply <notebooks_dir> --project P --assistant-root A
+                               [--repo-name R] [--repo-root DIR]
+autohands gemini_context report --workspace W --project P --assistant-root A
+                                [--repo-name R] [--json FILE]
+
+Colab Gemini instructions (PyAutoHands#324): each assistant's
+colab/contexts.yaml maps notebook-path globs to skills; the assembled text
+(preface + core rules + mapped skills, at most 20,000 characters) is written
+into metadata.colab.aiContexts and selected.
+
+  apply    Stamp every notebook under <notebooks_dir>. `generate` already does
+           this for the workspaces it builds; use apply for notebooks outside
+           the release generate (e.g. autocti_workspace).
+  report   Deterministic coverage report for a workspace: notebooks/folders
+           reached only by `default`, entries matching nothing, missing or
+           never_map skills, size max/median vs the cap. JSON to --json (else
+           stdout). Exits 1 on a missing skill, never_map skill or over-cap.
+
+Notebooks are matched as "<repo>/<path relative to the repo root>"; the repo
+name defaults from the project (autolens -> autolens_workspace, ...).
+EOF
+}
+cmd_gemini_context() {
+  _python_in_autohands gemini_context.py "$@"
 }
 
 help_generate_markdown() {

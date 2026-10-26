@@ -10,6 +10,7 @@ import sys
 import tempfile
 import time
 import traceback
+import uuid
 from pathlib import Path
 from typing import List
 
@@ -374,6 +375,317 @@ def inject_colab_setup(notebook_path, project: str):
         json.dump(notebook, f, indent=1)
 
     return True
+
+
+# Colab Gemini instructions (PyAutoHands#324). Colab's Gemini sidebar cannot
+# read a repository, but it honours per-notebook instructions stored in
+# `metadata.colab.aiContexts` + `selectedAiContext` (verified in Colab
+# 2026-10-26, contexts up to at least 52k characters). Each project's assistant
+# owns `colab/contexts.yaml` — notebook-path globs mapped to skills, plus a
+# preface and core rules — and generation writes the assembled text into every
+# notebook as its active instruction: a release-time snapshot of the skills,
+# which stay single-sourced in the assistant.
+#
+# Project -> the assistant repository holding its mapping. autocti is here
+# although it is not in COLAB_PROJECTS: its workspace is outside the release
+# generate and is stamped with the standalone `autohands gemini_context apply`.
+COLAB_ASSISTANTS = {
+    "autofit": "autofit_assistant",
+    "autogalaxy": "autogalaxy_assistant",
+    "autolens": "autolens_assistant",
+    "howtofit": "autofit_assistant",
+    "howtogalaxy": "autogalaxy_assistant",
+    "howtolens": "autolens_assistant",
+    "autocti": "autocti_assistant",
+}
+
+# Project -> the repository its notebooks live in: the "<repo>/" prefix of the
+# names the mapping globs match. Needed because the release runner checks every
+# workspace out into a directory called `workspace/`.
+COLAB_WORKSPACE_REPOS = {
+    "autofit": "autofit_workspace",
+    "autogalaxy": "autogalaxy_workspace",
+    "autolens": "autolens_workspace",
+    "howtofit": "HowToFit",
+    "howtogalaxy": "HowToGalaxy",
+    "howtolens": "HowToLens",
+    "autocti": "autocti_workspace",
+}
+
+GEMINI_CONTEXT_FILE = Path("colab") / "contexts.yaml"
+
+# Human choice (#324): one instruction never exceeds this. Over-cap fails
+# generation naming the mapping entry; the text is never truncated.
+GEMINI_CONTEXT_CAP = 20_000
+
+# Fixed namespace for the per-project instruction id, so regenerating a notebook
+# rewrites the same `aiContexts` entry rather than adding another. The
+# autolens_assistant's own notebook stamper (autoassistant/colab_contexts.py)
+# derives ids the same way; change both or neither.
+_GEMINI_ID_URL = "https://github.com/PyAutoLabs/colab-gemini/{project}"
+
+
+def gemini_context_id(project: str) -> str:
+    """The deterministic `aiContexts` id for ``project``'s notebooks."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, _GEMINI_ID_URL.format(project=project)))
+
+
+def load_gemini_contexts(assistant_root, enforce_never_map: bool = True) -> dict:
+    """
+    Read and validate ``<assistant_root>/colab/contexts.yaml``.
+
+    A missing file raises: callers only pass a root when the project's
+    assistant is meant to supply instructions, so silence would ship
+    notebooks without them. An entry mapping a skill on the file's own
+    ``never_map`` list raises too, unless ``enforce_never_map`` is False (the
+    coverage report lists such entries instead of stopping at the first).
+    """
+    import yaml
+
+    path = Path(assistant_root) / GEMINI_CONTEXT_FILE
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"Gemini instructions: no mapping at {path}. An assistant root was given, "
+            f"so its colab/contexts.yaml must exist (add it to the assistant, or do not "
+            f"pass --assistant-root / PYAUTO_ASSISTANT_ROOT for this project)."
+        )
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    for key in ("preface", "rules", "default", "contexts"):
+        if key not in data:
+            raise ValueError(f"Gemini instructions: {path} has no '{key}' entry.")
+    if not data["default"].get("skills"):
+        raise ValueError(f"Gemini instructions: {path} 'default' maps no skills.")
+    for entry in data["contexts"]:
+        if not entry.get("match") or not entry.get("skills"):
+            raise ValueError(
+                f"Gemini instructions: {path} has an entry without 'match' and 'skills': {entry}"
+            )
+    never_map = set(data.get("never_map") or [])
+    if enforce_never_map and never_map:
+        entries = [("default", data["default"]["skills"])] + [
+            (e["match"], e["skills"]) for e in data["contexts"]
+        ]
+        for label, skills in entries:
+            banned = sorted(never_map.intersection(skills))
+            if banned:
+                raise ValueError(
+                    f"Gemini instructions: {path} entry '{label}' maps never_map "
+                    f"skill(s) {banned}."
+                )
+    return data
+
+
+def validate_gemini_contexts(assistant_root, notebook_names, contexts=None) -> None:
+    """
+    Assemble every name in ``notebook_names`` ("<repo>/<relpath>") and raise
+    one error listing each that would fail (missing skill, over the cap).
+
+    ``generate.py`` calls this before it clears ``notebooks/``, so a bad
+    mapping stops the run with the committed notebooks intact rather than
+    halfway through regenerating them.
+    """
+    if contexts is None:
+        contexts = load_gemini_contexts(assistant_root)
+    problems = []
+    for name in notebook_names:
+        try:
+            gemini_context_from(assistant_root, name, contexts=contexts)
+        except (FileNotFoundError, ValueError) as exc:
+            problems.append(str(exc))
+    if problems:
+        raise ValueError(
+            f"Gemini instructions: {len(problems)} notebook(s) would fail; nothing was "
+            f"modified.\n" + "\n".join(problems)
+        )
+
+
+def match_gemini_context(contexts: dict, notebook_name: str):
+    """
+    Return ``(entry_label, skills)`` for ``notebook_name`` ("<repo>/<relpath>").
+
+    The first `contexts` entry whose fnmatch glob matches wins (the file lists
+    them most specific first); otherwise the `default` entry applies.
+    """
+    import fnmatch
+
+    for entry in contexts["contexts"]:
+        if fnmatch.fnmatchcase(notebook_name, entry["match"]):
+            return entry["match"], list(entry["skills"])
+    return "default", list(contexts["default"]["skills"])
+
+
+def assemble_gemini_context(assistant_root, notebook_name: str, contexts: dict):
+    """
+    Assemble the Gemini instruction for ``notebook_name`` ("<repo>/<relpath>")
+    without enforcing anything — the coverage report needs sizes and missing
+    skills reported, not raised. ``gemini_context_from`` is the enforcing door.
+
+    Preface + rules (``{notebook}`` / ``{repo}`` filled in) + the text of each
+    mapped skill, in mapping order. Returns
+    ``(entry_label, skills, text, missing_skills)``.
+    """
+    assistant_root = Path(assistant_root)
+    label, skills = match_gemini_context(contexts, notebook_name)
+    repo, _, relpath = notebook_name.partition("/")
+
+    sections = [
+        contexts["preface"].strip(),
+        contexts["rules"].replace("{notebook}", relpath).replace("{repo}", repo).strip(),
+        "# Reference material: assistant skills",
+    ]
+    missing = []
+    for skill in skills:
+        skill_path = assistant_root / "skills" / f"{skill}.md"
+        if not skill_path.is_file():
+            missing.append(skill)
+            continue
+        sections.append(f"## Skill: {skill}\n\n{skill_path.read_text(encoding='utf-8').strip()}")
+    return label, skills, "\n\n".join(sections) + "\n", missing
+
+
+def gemini_context_from(assistant_root, notebook_name: str, contexts=None):
+    """
+    Assemble the Gemini instruction for ``notebook_name`` ("<repo>/<relpath>").
+
+    Returns ``(entry_label, skills, text)``. Raises if a mapped skill file is
+    missing or the text exceeds ``GEMINI_CONTEXT_CAP`` — never truncates.
+    """
+    assistant_root = Path(assistant_root)
+    if contexts is None:
+        contexts = load_gemini_contexts(assistant_root)
+    label, skills, text, missing = assemble_gemini_context(
+        assistant_root, notebook_name, contexts
+    )
+    if missing:
+        raise FileNotFoundError(
+            f"Gemini instructions: mapping entry '{label}' names skill(s) {missing} "
+            f"with no file under {assistant_root / 'skills'}."
+        )
+    if len(text) > GEMINI_CONTEXT_CAP:
+        raise ValueError(
+            f"Gemini instructions for {notebook_name}: mapping entry '{label}' "
+            f"(skills {skills}) assembles to {len(text)} characters, over the "
+            f"{GEMINI_CONTEXT_CAP} cap. Map fewer or smaller skills to it in "
+            f"{assistant_root / GEMINI_CONTEXT_FILE}; the text is never truncated."
+        )
+    return label, skills, text
+
+
+def dump_notebook_like(original_text: str, notebook: dict) -> str:
+    """
+    Serialise ``notebook`` in the JSON layout ``original_text`` was written in.
+
+    Notebooks reach here from several writers (ipynb-py-convert, json.dump with
+    indent=1, nbformat's sorted keys), so the layout that reproduces the
+    original byte-for-byte is reused, and a metadata write stays a metadata-only
+    diff. Falls back to nbformat's own layout when none reproduces it.
+    """
+    import itertools
+    import json
+
+    original = json.loads(original_text)
+    newline = "\n" if original_text.endswith("\n") else ""
+    for indent, ensure_ascii, sort_keys in itertools.product((1, 2, 4), (False, True), (False, True)):
+        kwargs = dict(indent=indent, ensure_ascii=ensure_ascii, sort_keys=sort_keys)
+        if json.dumps(original, **kwargs) + newline == original_text:
+            return json.dumps(notebook, **kwargs) + newline
+    return json.dumps(notebook, indent=1, ensure_ascii=False, sort_keys=True) + "\n"
+
+
+def inject_gemini_instructions(
+    notebook_path, project: str, assistant_root, notebook_relpath, repo_name=None, contexts=None
+):
+    """
+    Write the project's assistant instructions into a notebook's Colab metadata.
+
+    Sets ``metadata.colab.aiContexts[<id>] = {id, name, context}`` and makes it
+    the ``selectedAiContext``; any other keys under ``metadata.colab`` (and any
+    other `aiContexts` entries) are kept. The id is fixed per project
+    (``gemini_context_id``), so rerunning rewrites the same entry. Applies to
+    every notebook, prose-only and hand-written-setup ones included.
+
+    Parameters
+    ----------
+    notebook_relpath
+        The notebook's path relative to its repository root, e.g.
+        ``notebooks/imaging/modeling.ipynb`` or ``start_here.ipynb``.
+    repo_name
+        The repository the notebook lives in; defaults to the project's entry
+        in ``COLAB_WORKSPACE_REPOS``.
+
+    Returns the mapping entry that matched.
+    """
+    import json
+
+    if project not in COLAB_ASSISTANTS:
+        raise ValueError(
+            f"inject_gemini_instructions: unknown project '{project}' — add it to "
+            f"COLAB_ASSISTANTS in build_util.py. Known: {sorted(COLAB_ASSISTANTS)}"
+        )
+    if contexts is None:
+        contexts = load_gemini_contexts(assistant_root)
+    repo_name = repo_name or COLAB_WORKSPACE_REPOS[project]
+    notebook_name = f"{repo_name}/{Path(notebook_relpath).as_posix()}"
+    label, _, text = gemini_context_from(assistant_root, notebook_name, contexts=contexts)
+
+    original_text = Path(notebook_path).read_text(encoding="utf-8")
+    notebook = json.loads(original_text)
+    context_id = gemini_context_id(project)
+    colab = notebook.setdefault("metadata", {}).setdefault("colab", {})
+    colab.setdefault("aiContexts", {})[context_id] = {
+        "id": context_id,
+        "name": contexts.get("name") or f"{COLAB_ASSISTANTS[project]} instructions",
+        "context": text,
+    }
+    colab["selectedAiContext"] = context_id
+
+    new_text = dump_notebook_like(original_text, notebook)
+    if new_text != original_text:
+        Path(notebook_path).write_text(new_text, encoding="utf-8")
+    return label
+
+
+def resolve_assistant_root(project: str, explicit=None):
+    """
+    The assistant checkout whose mapping stamps ``project``'s notebooks, or None.
+
+    Order: ``explicit`` (``--assistant-root``), then ``$PYAUTO_ASSISTANT_ROOT``,
+    then — local runs only — the project's assistant in this workspace, found
+    through the Brain's repo-path resolver (``_workspace.repo_path``).
+
+    An explicit or environment root is returned as given, and a missing
+    ``colab/contexts.yaml`` under it then fails generation loudly. A
+    workspace-resolved root without the file is skipped with a warning
+    instead: that is an assistant whose mapping has not landed yet (galaxy and
+    fit until phase 2 of #324), and the release must not break before it does.
+    """
+    if project not in COLAB_ASSISTANTS:
+        return None
+    given = explicit or os.environ.get("PYAUTO_ASSISTANT_ROOT")
+    if given:
+        return Path(given).resolve()
+
+    assistant = COLAB_ASSISTANTS[project]
+    try:
+        import _workspace
+
+        candidate = Path(_workspace.repo_path(_workspace.workspace_root(), assistant))
+    except Exception as exc:  # no Brain / no workspace root in reach (e.g. CI)
+        print(
+            f"WARNING: Gemini instructions skipped for '{project}': no --assistant-root or "
+            f"PYAUTO_ASSISTANT_ROOT, and {assistant} could not be resolved locally ({exc}).",
+            file=sys.stderr,
+        )
+        return None
+    if not (candidate / GEMINI_CONTEXT_FILE).is_file():
+        print(
+            f"WARNING: Gemini instructions skipped for '{project}': no "
+            f"{GEMINI_CONTEXT_FILE} in {candidate} (pass --assistant-root or set "
+            f"PYAUTO_ASSISTANT_ROOT to require one).",
+            file=sys.stderr,
+        )
+        return None
+    return candidate
 
 
 def uncomment_jupyter_magic(f):
