@@ -34,3 +34,20 @@ slow_skip_default:
   - autolens_workspace
   - autofit_workspace_test
   - autolens_workspace_test
+
+# colab_gemini: Colab Gemini instructions (PyAutoHands#324). Per project, the
+# repository its notebooks live in (the "<repo>/" prefix the assistant's
+# colab/contexts.yaml globs match) and the assistant owning that mapping.
+# id_url is the uuid5 seed of each project's instruction id; it must stay
+# byte-identical (ids are committed in notebooks, and the assistants derive the
+# same ids in autoassistant/colab_contexts.py).
+colab_gemini:
+  id_url: "https://github.com/PyAutoLabs/colab-gemini/{project}"
+  projects:
+    autofit: {repo: autofit_workspace, assistant: autofit_assistant}
+    autogalaxy: {repo: autogalaxy_workspace, assistant: autogalaxy_assistant}
+    autolens: {repo: autolens_workspace, assistant: autolens_assistant}
+    howtofit: {repo: HowToFit, assistant: autofit_assistant}
+    howtogalaxy: {repo: HowToGalaxy, assistant: autogalaxy_assistant}
+    howtolens: {repo: HowToLens, assistant: autolens_assistant}
+    autocti: {repo: autocti_workspace, assistant: autocti_assistant}
