@@ -1,3 +1,4 @@
+import ast
 import datetime
 import logging
 import os
@@ -129,7 +130,6 @@ def _timeout_output(e: subprocess.TimeoutExpired) -> str:
         if text:
             parts.append(f"--- last {label} before timeout ---\n{text}")
     return "\n".join(parts)
-
 
 
 # The SIGABRT below leaves the child dying of a core-dumping signal. Nothing
@@ -293,15 +293,44 @@ COLAB_PROJECTS = {
 
 COLAB_SETUP_MARKDOWN = """__Google Colab Setup__
 
-This cell sets up the environment when the notebook is run on Google Colab: it installs the
-required PyAuto packages, clones the workspace (configuration files and example datasets) and
-points the configuration at it. If you are running the notebook elsewhere (e.g. locally via
-your own installation) it does nothing, and you can run it safely.
+Run this cell to install {name} and download the files needed for this notebook on Google Colab.
+If you’re running locally or in HTML, it leaves your installation unchanged."""
 
-Colab tip: model-fits run much faster on a GPU — enable one via "Runtime" -> "Change runtime
-type" -> "Hardware accelerator" before running the notebook."""
+_COLAB_INTRO_NOTEBOOKS = {
+    "autofit": "autofit_workspace/blob/main/notebooks/overview/overview_1_the_basics.ipynb",
+    "autogalaxy": "autogalaxy_workspace/blob/main/start_here.ipynb",
+    "autolens": "autolens_workspace/blob/main/start_here.ipynb",
+    "howtofit": "HowToFit/blob/main/notebooks/chapter_1_introduction/tutorial_1_models.ipynb",
+    "howtogalaxy": "HowToGalaxy/blob/main/notebooks/chapter_1_introduction/tutorial_1_grids_and_galaxies.ipynb",
+    "howtolens": "HowToLens/blob/main/notebooks/chapter_1_introduction/tutorial_1_grids_and_galaxies.ipynb",
+}
 
-COLAB_SETUP_CODE = '''try:
+
+def _colab_setup_markdown(notebook_path, project):
+    """Introduce setup once; later examples link to their project's introduction."""
+    path = Path(notebook_path)
+    introductory = (
+        path.stem in {"start_here", "overview_1_the_basics"}
+        or (
+            "chapter_1_introduction" in path.parts
+            and path.stem.startswith("tutorial_1_")
+        )
+        or (project == "autolens" and path.stem == "cosmos_web_ring_colab")
+    )
+    if introductory:
+        name = {
+            "autofit": "PyAutoFit",
+            "autogalaxy": "PyAutoGalaxy",
+            "autolens": "PyAutoLens",
+        }[COLAB_PROJECTS[project]]
+        return COLAB_SETUP_MARKDOWN.format(name=name)
+    return (
+        "__Google Colab Setup__\n\nSet up Google Colab as in "
+        f"[the introductory notebook](https://github.com/PyAutoLabs/{_COLAB_INTRO_NOTEBOOKS[project]})."
+    )
+
+
+COLAB_SETUP_CODE = """try:
     import google.colab
 except ImportError:
     from {package} import setup_colab as _setup_colab
@@ -315,19 +344,81 @@ else:
     )
     _setup_colab = importlib.import_module("autonerves.setup_colab")
 
-_setup_colab.setup("{project}")'''
+_setup_colab.setup("{project}")"""
+
+
+def _compact_setup_cell(cell):
+    """Use Colab's form view and Jupyter's collapsed input without hiding outputs."""
+    source = "".join(cell["source"])
+    title = '# @title Set up Google Colab { display-mode: "form" }\n'
+    if not source.startswith(title):
+        cell["source"] = (title + source).splitlines(keepends=True)
+    metadata = cell.setdefault("metadata", {})
+    metadata["cellView"] = "form"
+    metadata.setdefault("jupyter", {})["source_hidden"] = True
+
+
+def _expand_setup_cell(cell, project):
+    """Recognize the maintained import/call or legacy bootstrap, never arbitrary code.
+
+    Return a fresh bootstrap and optional science-code tail. Unknown custom setup
+    is left untouched rather than changing its meaning or hiding science code.
+    """
+    source = "".join(cell.get("source", []))
+    try:
+        nodes = ast.parse(source).body
+    except SyntaxError:
+        return None
+    if len(nodes) < 2:
+        return None
+    first, second = nodes[:2]
+    if first.end_lineno >= second.lineno or (
+        len(nodes) > 2 and second.end_lineno >= nodes[2].lineno
+    ):
+        return None
+    package = COLAB_PROJECTS[project]
+    if (
+        isinstance(first, ast.ImportFrom)
+        and first.module == package
+        and len(first.names) == 1
+    ):
+        imported = first.names[0]
+        if imported.name != "setup_colab":
+            return None
+        alias = imported.asname or imported.name
+    else:
+        legacy = ast.parse(
+            COLAB_SETUP_CODE.format(package=package, project=project)
+        ).body[0]
+        if ast.dump(first) != ast.dump(legacy):
+            return None
+        alias = "_setup_colab"
+    if not isinstance(second, ast.Expr) or not isinstance(second.value, ast.Call):
+        return None
+    call = second.value
+    if not (
+        isinstance(call.func, ast.Attribute)
+        and isinstance(call.func.value, ast.Name)
+        and call.func.value.id == alias
+        and call.func.attr in {"setup", *(f"for_{p}" for p in COLAB_PROJECTS)}
+    ):
+        return None
+    # Preserve the original call, including CPU/GPU options and inline comments.
+    lines = source.splitlines(keepends=True)
+    call_source = "".join(lines[second.lineno - 1 : second.end_lineno])
+    bootstrap = COLAB_SETUP_CODE.format(package=package, project=project)
+    bootstrap = bootstrap.rsplit("_setup_colab.setup(", 1)[0].replace(
+        "_setup_colab", alias
+    )
+    tail = "".join(lines[second.end_lineno :])
+    return bootstrap + call_source, tail if tail.strip() else ""
 
 
 def inject_colab_setup(notebook_path, project: str):
     """
-    Prepend the standard Google Colab setup cell pair (markdown explainer +
-    code cell) to a generated notebook containing code, so runnable notebooks
-    can bootstrap themselves on Colab. Prose-only notebooks need no setup.
-
-    The cells are inserted after the notebook's leading markdown cell (the
-    script's intro docstring) so the title stays on top. Notebooks whose
-    source already calls ``setup_colab`` (hand-written setup sections) are
-    left untouched. Returns True if cells were injected.
+    Insert or normalize a compact, self-contained setup cell. Preserve supported
+    handwritten setup options and keep subsequent science code visible. Unknown
+    custom setup is left untouched. Return True only when the notebook changes.
     """
     import json
 
@@ -349,14 +440,65 @@ def inject_colab_setup(notebook_path, project: str):
     ):
         return False
 
-    for cell in cells:
-        if "setup_colab" in "".join(cell.get("source", [])):
+    original = json.dumps(notebook, sort_keys=True)
+    setup_markdown = _colab_setup_markdown(notebook_path, project) + "\n"
+    for index, cell in enumerate(cells):
+        if cell["cell_type"] != "code":
+            continue
+        expanded = _expand_setup_cell(cell, project)
+        if expanded is None:
+            if "setup_colab" in "".join(cell.get("source", [])):
+                return False
+            continue
+        setup, tail = expanded
+        cell["source"] = setup.splitlines(keepends=True)
+        _compact_setup_cell(cell)
+        if tail:
+            # Never collapse unrelated science code along with the setup.
+            cells.insert(
+                index + 1,
+                {
+                    "cell_type": "code",
+                    "metadata": {},
+                    "execution_count": None,
+                    "outputs": [],
+                    "source": tail.splitlines(keepends=True),
+                },
+            )
+        # A source introduction may include the setup heading in its last section.
+        previous = cells[index - 1] if index else None
+        if (
+            previous
+            and previous["cell_type"] == "markdown"
+            and "__Google Colab Setup__" in "".join(previous["source"])
+        ):
+            text = "".join(previous["source"])
+            text = re.sub(
+                r"__Google Colab Setup__.*?(?=\n(?:__[^\n]+__|#{1,6} |[^\n]+\n[=-]{3,}\s*(?:\n|$))|\Z)",
+                setup_markdown,
+                text,
+                flags=re.S,
+            )
+            previous["source"] = text.splitlines(keepends=True)
+        else:
+            cells.insert(
+                index,
+                {
+                    "cell_type": "markdown",
+                    "metadata": {},
+                    "source": setup_markdown.splitlines(keepends=True),
+                },
+            )
+        if json.dumps(notebook, sort_keys=True) == original:
             return False
+        with open(notebook_path, "w") as f:
+            json.dump(notebook, f, indent=1)
+        return True
 
     markdown_cell = {
         "cell_type": "markdown",
         "metadata": {},
-        "source": COLAB_SETUP_MARKDOWN.splitlines(keepends=True),
+        "source": setup_markdown.splitlines(keepends=True),
     }
     code_cell = {
         "cell_type": "code",
@@ -368,6 +510,7 @@ def inject_colab_setup(notebook_path, project: str):
         ).splitlines(keepends=True),
     }
 
+    _compact_setup_cell(code_cell)
     insert_at = 1 if cells and cells[0]["cell_type"] == "markdown" else 0
     cells[insert_at:insert_at] = [markdown_cell, code_cell]
 
@@ -1066,7 +1209,6 @@ def execute_notebook(f, report=None, env=None, write_back=True,
     return _run_notebook_once(
         regenerated, report=report, env=env, recorded=recorded, write_back=True
     )
-
 
 
 def execute_notebooks_in_folder(
