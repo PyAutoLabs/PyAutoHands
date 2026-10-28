@@ -35,6 +35,34 @@ slow_skip_default:
   - autofit_workspace_test
   - autolens_workspace_test
 
+# Colab setup copy and canonical introductions. Root/topic start_here notebooks
+# are introductory too; intro_patterns adds each project's other entry points.
+colab_setup:
+  autofit:
+    name: PyAutoFit
+    intro_url: https://github.com/PyAutoLabs/autofit_workspace/blob/main/notebooks/overview/overview_1_the_basics.ipynb
+    intro_patterns: [overview_1_the_basics.ipynb]
+  autogalaxy:
+    name: PyAutoGalaxy
+    intro_url: https://github.com/PyAutoLabs/autogalaxy_workspace/blob/main/start_here.ipynb
+    intro_patterns: []
+  autolens:
+    name: PyAutoLens
+    intro_url: https://github.com/PyAutoLabs/autolens_workspace/blob/main/start_here.ipynb
+    intro_patterns: [cosmos_web_ring_colab.ipynb]
+  howtofit:
+    name: PyAutoFit
+    intro_url: https://github.com/PyAutoLabs/HowToFit/blob/main/notebooks/chapter_1_introduction/tutorial_1_models.ipynb
+    intro_patterns: [chapter_1_introduction/tutorial_1_*.ipynb]
+  howtogalaxy:
+    name: PyAutoGalaxy
+    intro_url: https://github.com/PyAutoLabs/HowToGalaxy/blob/main/notebooks/chapter_1_introduction/tutorial_1_grids_and_galaxies.ipynb
+    intro_patterns: [chapter_1_introduction/tutorial_1_*.ipynb]
+  howtolens:
+    name: PyAutoLens
+    intro_url: https://github.com/PyAutoLabs/HowToLens/blob/main/notebooks/chapter_1_introduction/tutorial_1_grids_and_galaxies.ipynb
+    intro_patterns: [chapter_1_introduction/tutorial_1_*.ipynb]
+
 # colab_gemini: Colab Gemini instructions (PyAutoHands#324). Per project, the
 # repository its notebooks live in (the "<repo>/" prefix the assistant's
 # colab/contexts.yaml globs match) and the assistant owning that mapping.

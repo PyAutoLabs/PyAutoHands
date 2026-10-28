@@ -296,37 +296,32 @@ COLAB_SETUP_MARKDOWN = """__Google Colab Setup__
 Run this cell to install {name} and download the files needed for this notebook on Google Colab.
 If you’re running locally or in HTML, it leaves your installation unchanged."""
 
+def _colab_setup_config():
+    """Read project names and entry points from the adopter-owned workspace config."""
+    import yaml
+
+    path = BUILD_PATH / "config" / "workspaces.yaml"
+    return (yaml.safe_load(path.read_text()) or {})["colab_setup"]
+
+
+_COLAB_SETUP = _colab_setup_config()
 _COLAB_INTRO_NOTEBOOKS = {
-    "autofit": "autofit_workspace/blob/main/notebooks/overview/overview_1_the_basics.ipynb",
-    "autogalaxy": "autogalaxy_workspace/blob/main/start_here.ipynb",
-    "autolens": "autolens_workspace/blob/main/start_here.ipynb",
-    "howtofit": "HowToFit/blob/main/notebooks/chapter_1_introduction/tutorial_1_models.ipynb",
-    "howtogalaxy": "HowToGalaxy/blob/main/notebooks/chapter_1_introduction/tutorial_1_grids_and_galaxies.ipynb",
-    "howtolens": "HowToLens/blob/main/notebooks/chapter_1_introduction/tutorial_1_grids_and_galaxies.ipynb",
+    project: config["intro_url"] for project, config in _COLAB_SETUP.items()
 }
 
 
 def _colab_setup_markdown(notebook_path, project):
     """Introduce setup once; later examples link to their project's introduction."""
     path = Path(notebook_path)
-    introductory = (
-        path.stem in {"start_here", "overview_1_the_basics"}
-        or (
-            "chapter_1_introduction" in path.parts
-            and path.stem.startswith("tutorial_1_")
-        )
-        or (project == "autolens" and path.stem == "cosmos_web_ring_colab")
+    config = _COLAB_SETUP[project]
+    introductory = path.stem == "start_here" or any(
+        path.match(pattern) for pattern in config["intro_patterns"]
     )
     if introductory:
-        name = {
-            "autofit": "PyAutoFit",
-            "autogalaxy": "PyAutoGalaxy",
-            "autolens": "PyAutoLens",
-        }[COLAB_PROJECTS[project]]
-        return COLAB_SETUP_MARKDOWN.format(name=name)
+        return COLAB_SETUP_MARKDOWN.format(name=config["name"])
     return (
         "__Google Colab Setup__\n\nSet up Google Colab as in "
-        f"[the introductory notebook](https://github.com/PyAutoLabs/{_COLAB_INTRO_NOTEBOOKS[project]})."
+        f"[the introductory notebook]({_COLAB_INTRO_NOTEBOOKS[project]})."
     )
 
 
