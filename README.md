@@ -27,7 +27,7 @@ AI assistant prompt (`Use the release skill.` with optional `rehearse` or
 <!-- The line below is auto-updated by .github/workflows/release_board.yml (everything -->
 <!-- between the hands:begin/hands:end markers is replaced with the rendered strip). -->
 <!-- hands:begin -->
-📦 **2026.10.26.1** · shipped 2026-10-26 (3d ago) · last train run ✓ [2026-10-29](https://github.com/PyAutoLabs/PyAutoHands/actions/runs/40930445824) · [dashboard →](https://pyautolabs.github.io/PyAutoHands/)
+📦 **2026.10.29.1** · shipped 2026-10-29 (20h ago) · last train run ✓ [2026-10-29](https://github.com/PyAutoLabs/PyAutoHands/actions/runs/40942273933) · [dashboard →](https://pyautolabs.github.io/PyAutoHands/)
 <!-- hands:end -->
 
 ## How PyAutoHands works
