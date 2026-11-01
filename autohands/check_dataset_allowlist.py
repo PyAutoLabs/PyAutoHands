@@ -19,7 +19,8 @@ failing, until that repo opts in.
 
 Leg 2 — the mirror-image failure. The check above asserts that
 nothing *generated* got committed. This one asserts that nothing *committed* gets
-deleted: `should_simulate()` ends in `shutil.rmtree`, so a script that reaches an
+deleted: `should_simulate()` (and its one-line wrapper `simulate_if_needed()`)
+ends in `shutil.rmtree`, so a script that reaches an
 allowlisted dataset directory while `PYAUTO_SMALL_DATASETS=1` is still in force
 destroys data the allowlist exists to protect. The library-side stamp guard
 (`_is_capped_at_the_current_cap`) cannot cover this in general — it reads
@@ -235,8 +236,31 @@ def _normalise(path_str: str) -> str:
     return "/".join(parts)
 
 
+# Library calls that can end in ``shutil.rmtree`` of their dataset-path
+# argument. ``simulate_if_needed(dataset_path, simulator)`` (PyAutoArray) is the
+# one-line wrapper around ``should_simulate`` + the simulator subprocess, so a
+# script swept onto it reaches the same rmtree and must stay covered.
+DELETING_CALLS = ("should_simulate", "simulate_if_needed")
+
+
+def _dataset_path_arg(node):
+    """The dataset-path argument of a deleting call: first positional, else the
+    ``dataset_path=`` keyword. ``None`` if neither is present."""
+    if node.args:
+        return node.args[0]
+    for kw in node.keywords:
+        if kw.arg == "dataset_path":
+            return kw.value
+    return None
+
+
 def should_simulate_sites(py_files):
-    """Yield ``(file, lineno, resolved_path_or_None)`` per ``should_simulate`` call."""
+    """Yield ``(file, lineno, resolved_path_or_None)`` per deleting call site.
+
+    Matches every name in ``DELETING_CALLS`` -- ``should_simulate(...)`` and its
+    one-line wrapper ``simulate_if_needed(...)`` -- since both delete the
+    dataset path under the capped regime.
+    """
     for f in py_files:
         try:
             tree = ast.parse(Path(f).read_text(encoding="utf-8", errors="replace"))
@@ -248,9 +272,12 @@ def should_simulate_sites(py_files):
                 continue
             func = node.func
             fname = func.attr if isinstance(func, ast.Attribute) else getattr(func, "id", "")
-            if fname != "should_simulate" or not node.args:
+            if fname not in DELETING_CALLS:
                 continue
-            resolved = _resolve(node.args[0], _names_before(assignments, node.lineno))
+            arg = _dataset_path_arg(node)
+            if arg is None:
+                continue
+            resolved = _resolve(arg, _names_before(assignments, node.lineno))
             yield f, node.lineno, (
                 _normalise(resolved) if resolved is not UNRESOLVED else UNRESOLVED
             )
@@ -264,7 +291,8 @@ def tracked_python_files():
 
 
 def check_capped_deletion(prefixes, tracked) -> int:
-    """Leg 2 — allowlisted datasets reachable from a capped ``should_simulate``.
+    """Leg 2 — allowlisted datasets reachable from a capped ``should_simulate``
+    (or ``simulate_if_needed``) call.
 
     ``prefixes``/``tracked`` are leg 1's already-computed allowlist and tracked
     file list, so this adds no extra git calls beyond the Python file listing.
@@ -308,7 +336,7 @@ def check_capped_deletion(prefixes, tracked) -> int:
 
     if violations:
         print(
-            f"[capped-deletion] FAIL — should_simulate() would delete COMMITTED "
+            f"[capped-deletion] FAIL — should_simulate()/simulate_if_needed() would delete COMMITTED "
             f"files without releasing PYAUTO_SMALL_DATASETS ({len(violations)}):",
             file=sys.stderr,
         )
@@ -316,7 +344,8 @@ def check_capped_deletion(prefixes, tracked) -> int:
             declared = " ".join(tokens) if tokens else "<no __Env__ declaration>"
             print(f"    {f}:{lineno} -> {resolved}   [ENV: {declared}]", file=sys.stderr)
         print(
-            "\nshould_simulate() ends in shutil.rmtree, and each path above holds "
+            "\nshould_simulate() (and simulate_if_needed(), which wraps it) ends in "
+            "shutil.rmtree, and each path above holds "
             "git-tracked files kept by design (they carry an `!dataset/...` allowlist "
             "line). Under PYAUTO_SMALL_DATASETS=1 those files are deleted and replaced "
             "with capped-simulator output. Add a releasing token to the script's "
@@ -326,7 +355,8 @@ def check_capped_deletion(prefixes, tracked) -> int:
         return 1
 
     print(
-        f"[capped-deletion] OK — no capped should_simulate() call site would delete "
+        f"[capped-deletion] OK — no capped should_simulate()/simulate_if_needed() "
+        f"call site would delete "
         f"any of the {len(tracked)} committed dataset file(s)."
     )
     return 0

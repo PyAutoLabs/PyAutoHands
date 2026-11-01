@@ -221,6 +221,69 @@ def test_unresolvable_call_site_is_reported_and_skipped(
     assert "script.py:3" in captured.out
 
 
+# --- simulate_if_needed (one-line wrapper) ---------------------------------
+
+
+def _sites(tmp_path, src):
+    from autohands.check_dataset_allowlist import should_simulate_sites
+
+    f = tmp_path / "script.py"
+    f.write_text(src)
+    return [(lineno, resolved) for _, lineno, resolved in should_simulate_sites([f])]
+
+
+def test_simulate_if_needed_call_site_is_found_like_should_simulate(tmp_path):
+    """Sweeping the 8-line ``should_simulate`` + ``subprocess.run`` block onto
+    ``simulate_if_needed`` must not drop the call site out of the guard: both
+    forms yield the same resolved dataset path."""
+    old = (
+        'from pathlib import Path\n'
+        'dataset_path = Path("dataset", "imaging", "lens_x2")\n'
+        'if al.util.dataset.should_simulate(str(dataset_path)):\n'
+        '    import subprocess\n'
+        '    import sys\n'
+        '    subprocess.run([sys.executable, "scripts/simulator/lens_x2.py"], check=True)\n'
+    )
+    new = (
+        'from pathlib import Path\n'
+        'dataset_path = Path("dataset", "imaging", "lens_x2")\n'
+        'al.util.dataset.simulate_if_needed(\n'
+        '    dataset_path, simulator="scripts/simulator/lens_x2.py"\n'
+        ')\n'
+    )
+    assert _sites(tmp_path, old) == [(3, "dataset/imaging/lens_x2")]
+    assert _sites(tmp_path, new) == [(3, "dataset/imaging/lens_x2")]
+
+
+def test_simulate_if_needed_dataset_path_keyword_is_resolved(tmp_path):
+    src = (
+        'simulate_if_needed(simulator="scripts/sim.py", dataset_path="dataset/x")\n'
+    )
+    assert _sites(tmp_path, src) == [(1, "dataset/x")]
+
+
+def test_simulate_if_needed_without_a_dataset_path_is_ignored(tmp_path):
+    assert _sites(tmp_path, "simulate_if_needed()\n") == []
+
+
+def test_simulate_if_needed_reaching_tracked_files_fails(
+    tmp_path, monkeypatch, capsys
+):
+    """End to end: the swept form of the originating bug still fails the gate."""
+    src = (
+        '"""\n__Env__\n\nENV: real_plots\n"""\n'
+        'from pathlib import Path\n'
+        'p = Path("dataset", "overview")\n'
+        'aa.util.dataset.simulate_if_needed(p, simulator="scripts/sim.py")\n'
+    )
+    tracked = ["dataset/overview/ccd.gif"]
+
+    code, captured = _run_check(tmp_path, monkeypatch, src, tracked, capsys)
+
+    assert code == 1
+    assert "script.py:8 -> dataset/overview" in captured.err
+
+
 # --- dual invocation context ------------------------------------------------
 
 
