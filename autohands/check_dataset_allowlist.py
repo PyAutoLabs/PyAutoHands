@@ -237,7 +237,7 @@ def _normalise(path_str: str) -> str:
 
 
 # Library calls that can end in ``shutil.rmtree`` of their dataset-path
-# argument. ``simulate_if_needed(dataset_path, simulator)`` (PyAutoArray) is the
+# argument. ``simulate_if_needed(dataset_path, simulator)`` is the
 # one-line wrapper around ``should_simulate`` + the simulator subprocess, so a
 # script swept onto it reaches the same rmtree and must stay covered.
 DELETING_CALLS = ("should_simulate", "simulate_if_needed")
