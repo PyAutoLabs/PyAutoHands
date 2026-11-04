@@ -84,10 +84,32 @@ if __name__ == "__main__":
             f"{sorted(build_util.COLAB_PROJECTS)}. Nothing was modified."
         )
 
+    # The converter must be on PATH before anything is deleted: the root
+    # `start_here*.ipynb` is removed below before `build_util.py_to_notebook`
+    # shells out to `ipynb-py-convert`, so a missing converter used to fail
+    # mid-run with start_here.ipynb deleted and a stray temp.py left behind
+    # (PyAutoHands#330).
+    if shutil.which(build_util.NOTEBOOK_CONVERTER) is None:
+        sys.exit(
+            f"generate.py: '{build_util.NOTEBOOK_CONVERTER}' is not on PATH — install it "
+            f"in this environment (pip install ipynb-py-convert). Nothing was modified."
+        )
+
     # The assistant whose mapping stamps each notebook's Colab Gemini
     # instructions (#324). Resolved before the rmtree so a mapping that cannot
     # load stops the run with the committed notebooks intact.
     assistant_root = build_util.resolve_assistant_root(project, args.assistant_root)
+    # A stale assistant checkout silently rewrites every notebook's Gemini
+    # context (239 spurious notebook diffs on 2026-11-04), so say so loudly.
+    if assistant_root is not None:
+        behind = build_util.assistant_behind_origin(assistant_root)
+        if behind:
+            print(
+                f"WARNING: assistant checkout {assistant_root} is {behind} commit(s) behind "
+                f"origin/main — the Gemini instructions it stamps may be stale. "
+                f"Pull it before generating.",
+                file=sys.stderr,
+            )
     gemini_contexts = (
         build_util.load_gemini_contexts(assistant_root) if assistant_root else None
     )
