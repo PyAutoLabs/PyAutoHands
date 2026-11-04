@@ -263,6 +263,32 @@ def run_capped(args, timeout, check=False, stdout=None, stderr=None,
     return subprocess.CompletedProcess(args, proc.returncode, output, errs)
 
 
+NOTEBOOK_CONVERTER = "ipynb-py-convert"
+
+
+def assistant_behind_origin(root):
+    """
+    How many commits the assistant checkout at ``root`` is behind its local
+    ``origin/main`` ref, or None when that cannot be told (not a git checkout,
+    no such ref). Reads local refs only — it never fetches.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), "rev-list", "--count", "HEAD..origin/main"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    try:
+        return int(result.stdout.strip())
+    except ValueError:
+        return None
+
+
 def py_to_notebook(filename: Path):
     subprocess.run(
         ["python3", f"{BUILD_PATH}/add_notebook_quotes.py", filename, "temp.py"],
@@ -270,7 +296,7 @@ def py_to_notebook(filename: Path):
     )
     new_filename = filename.with_suffix(".ipynb")
     subprocess.run(
-        ["ipynb-py-convert", "temp.py", new_filename],
+        [NOTEBOOK_CONVERTER, "temp.py", new_filename],
         check=True,
     )
     os.remove("temp.py")
