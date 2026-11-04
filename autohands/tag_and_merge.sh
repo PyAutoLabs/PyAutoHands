@@ -4,7 +4,7 @@
 # Usage: tag_and_merge.sh --version <VERSION>
 #
 # For each library repo (PyAutoNerves, PyAutoFit, PyAutoArray, PyAutoGalaxy,
-# PyAutoLens), commits pending changes with message "Update version to
+# PyAutoLens, PyAutoCTI), commits pending changes with message "Update version to
 # <VERSION>" and tags HEAD as v<VERSION>. Stops on the first failing repo.
 
 set -euo pipefail
@@ -38,7 +38,7 @@ fi
 
 HANDS_HOME="$(cd "$(dirname "$0")/.." && pwd)"
 PYAUTOBASE="$(PYTHONPATH="$HANDS_HOME" python3 -c 'from autohands import _workspace; print(_workspace.workspace_root())')"
-LIB_PROJECTS=(PyAutoNerves PyAutoFit PyAutoArray PyAutoLens PyAutoGalaxy)
+LIB_PROJECTS=(PyAutoNerves PyAutoFit PyAutoArray PyAutoLens PyAutoGalaxy PyAutoCTI)
 
 for project in "${LIB_PROJECTS[@]}"; do
     repo="$(PYTHONPATH="$HANDS_HOME" python3 -c 'import sys; from pathlib import Path; from autohands import _workspace; print(_workspace.repo_path(Path(sys.argv[1]), sys.argv[2], required=True))' "$PYAUTOBASE" "$project")"

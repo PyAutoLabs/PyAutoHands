@@ -312,6 +312,7 @@ COLAB_PROJECTS = {
     "autofit": "autofit",
     "autogalaxy": "autogalaxy",
     "autolens": "autolens",
+    "autocti": "autocti",
     "howtofit": "autofit",
     "howtogalaxy": "autogalaxy",
     "howtolens": "autolens",

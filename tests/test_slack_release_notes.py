@@ -68,12 +68,12 @@ def test_md_to_mrkdwn_keeps_blockquote_and_code():
     assert "`pip install autolens`" in out
 
 
-def test_release_links_all_four():
+def test_release_links_all_five():
     links = release_links("2026.7.9.1")
-    for name in ("PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens"):
+    for name in ("PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens", "PyAutoCTI"):
         assert f"|{name}>" in links
     assert "releases/tag/2026.7.9.1" in links
-    assert links.count("·") == 3
+    assert links.count("·") == 4
 
 
 def test_build_success_text_embeds_notes_and_links():

@@ -67,6 +67,7 @@ PROJECT_DISPLAY_NAMES = {
     "autofit": "PyAutoFit",
     "autogalaxy": "PyAutoGalaxy",
     "autolens": "PyAutoLens",
+    "autocti": "PyAutoCTI",
     "howtofit": "HowToFit",
     "howtogalaxy": "HowToGalaxy",
     "howtolens": "HowToLens",

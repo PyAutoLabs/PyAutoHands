@@ -92,6 +92,8 @@ WORKSPACE_SPECS=(
     "autofit_workspace_test               autofit      false  false"
     "autogalaxy_workspace_test            autogalaxy   false  false"
     "autolens_workspace_test              autolens     false  false"
+    "autocti_workspace                    autocti      true   false"
+    "autocti_workspace_test               autocti      false  false"
     "euclid_strong_lens_modeling_pipeline -            false  false"
     "HowToGalaxy                          howtogalaxy  true   false"
     "HowToLens                            howtolens    true   false"

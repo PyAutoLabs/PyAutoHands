@@ -20,6 +20,8 @@ Check that all required repositories exist under the workspace root:
 - `autofit_workspace_test`
 - `autogalaxy_workspace_test`
 - `autolens_workspace_test`
+- `autocti_workspace`
+- `autocti_workspace_test`
 - `euclid_strong_lens_modeling_pipeline`
 - `HowToGalaxy`
 - `HowToLens`

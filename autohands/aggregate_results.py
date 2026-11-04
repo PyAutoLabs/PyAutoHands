@@ -36,7 +36,8 @@ def classify_failure(result: dict) -> str:
         return "environment"
 
     lib_patterns = ["PyAutoFit", "PyAutoArray", "PyAutoGalaxy", "PyAutoLens", "PyAutoNerves",
-                    "autofit/", "autoarray/", "autogalaxy/", "autolens/", "autonerves/"]
+                    "PyAutoCTI", "autofit/", "autoarray/", "autogalaxy/", "autolens/",
+                    "autonerves/", "autocti/"]
     if any(p in tb for p in lib_patterns):
         return "source_code_bug"
 
@@ -53,9 +54,11 @@ def fetch_merged_prs() -> list:
         "PyAutoLabs/PyAutoArray",
         "PyAutoLabs/PyAutoGalaxy",
         "PyAutoLabs/PyAutoLens",
+        "PyAutoLabs/PyAutoCTI",
         "PyAutoLabs/autofit_workspace",
         "PyAutoLabs/autogalaxy_workspace",
         "PyAutoLabs/autolens_workspace",
+        "PyAutoLabs/autocti_workspace",
     ]
     prs = []
     for repo in repos:

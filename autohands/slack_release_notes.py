@@ -32,6 +32,7 @@ RELEASE_REPOS = [
     ("PyAutoArray", "PyAutoLabs/PyAutoArray"),
     ("PyAutoGalaxy", "PyAutoLabs/PyAutoGalaxy"),
     ("PyAutoLens", "PyAutoLabs/PyAutoLens"),
+    ("PyAutoCTI", "PyAutoLabs/PyAutoCTI"),
 ]
 
 # Slack's per-message `text` ceiling is 40000 chars; stay under it with headroom

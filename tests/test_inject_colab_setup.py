@@ -124,6 +124,7 @@ def test_all_projects_accepted(tmp_path):
         "autofit": "autofit",
         "autogalaxy": "autogalaxy",
         "autolens": "autolens",
+        "autocti": "autocti",
         "howtofit": "autofit",
         "howtogalaxy": "autogalaxy",
         "howtolens": "autolens",

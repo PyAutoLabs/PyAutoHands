@@ -56,10 +56,16 @@ def _run_generate(workspace: Path, project: str):
     )
 
 
+# A project name no registry knows. This was "autocti" until CTI joined
+# COLAB_PROJECTS (cti-upkeep phase 1, PyAutoHands#332); any unregistered name
+# exercises the same validate-before-rmtree ordering.
+UNKNOWN_PROJECT = "notaproject"
+
+
 def test_unknown_project_exits_nonzero_without_touching_notebooks(tmp_path):
     workspace = _make_workspace(tmp_path)
 
-    result = _run_generate(workspace, "autocti")
+    result = _run_generate(workspace, UNKNOWN_PROJECT)
 
     assert result.returncode != 0
 
@@ -83,9 +89,9 @@ def test_unknown_project_exits_nonzero_without_touching_notebooks(tmp_path):
 def test_unknown_project_message_names_the_project_and_both_registries(tmp_path):
     workspace = _make_workspace(tmp_path)
 
-    message = _run_generate(workspace, "autocti").stderr
+    message = _run_generate(workspace, UNKNOWN_PROJECT).stderr
 
-    assert "autocti" in message
+    assert UNKNOWN_PROJECT in message
     assert "COLAB_PROJECTS" in message
     assert "setup_colab" in message
     assert "Nothing was modified" in message
