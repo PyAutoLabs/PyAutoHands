@@ -26,6 +26,7 @@ libraries:
   - {name: PyAutoArray, package: autoarray}
   - {name: PyAutoGalaxy, package: autogalaxy}
   - {name: PyAutoLens, package: autolens}
+  - {name: PyAutoCTI, package: autocti}
 
 # slow_skip_check: the default audit targets when none are given on the CLI.
 slow_skip_default:
@@ -50,6 +51,10 @@ colab_setup:
     name: PyAutoLens
     intro_url: https://github.com/PyAutoLabs/autolens_workspace/blob/main/start_here.ipynb
     intro_patterns: [cosmos_web_ring_colab.ipynb]
+  autocti:
+    name: PyAutoCTI
+    intro_url: https://github.com/PyAutoLabs/autocti_workspace/blob/main/notebooks/overview/overview_1_what_is_cti.ipynb
+    intro_patterns: [overview_1_what_is_cti.ipynb]
   howtofit:
     name: PyAutoFit
     intro_url: https://github.com/PyAutoLabs/HowToFit/blob/main/notebooks/chapter_1_introduction/tutorial_1_models.ipynb
@@ -75,6 +80,7 @@ colab_gemini:
     autofit: {repo: autofit_workspace, assistant: autofit_assistant}
     autogalaxy: {repo: autogalaxy_workspace, assistant: autogalaxy_assistant}
     autolens: {repo: autolens_workspace, assistant: autolens_assistant}
+    autocti: {repo: autocti_workspace, assistant: autocti_assistant}
     howtofit: {repo: HowToFit, assistant: autofit_assistant}
     howtogalaxy: {repo: HowToGalaxy, assistant: autogalaxy_assistant}
     howtolens: {repo: HowToLens, assistant: autolens_assistant}

@@ -107,6 +107,9 @@ jobs:
               - repository: PyAutoLabs/PyAutoLens
                 ref: main
                 path: PyAutoLens
+              - repository: PyAutoLabs/PyAutoCTI
+                ref: main
+                path: PyAutoCTI
         steps:
         - uses: actions/checkout@v4
           with:
@@ -200,7 +203,7 @@ jobs:
         # TODO(token-phase-1b): switch when PyPI trusted publishers are registered.
         # Trusted publishing (OIDC) replaces TWINE_PASSWORD/secrets.TEST_PYPI once
         # TestPyPI lists PyAutoLabs/PyAutoHands release.yml (environment
-        # `testpypi`) as a trusted publisher for all five projects. Until the
+        # `testpypi`) as a trusted publisher for all six projects. Until the
         # human confirms that, the twine step below stays live — do not enable
         # this before then or the rehearsal cannot publish. Replacement:
         #
@@ -243,7 +246,7 @@ jobs:
             popd
         - name: Wait for packages and install
           run: |
-            export PACKAGES=("autonerves" "autoarray" "autofit" "autogalaxy" "autolens")
+            export PACKAGES=("autonerves" "autoarray" "autofit" "autogalaxy" "autolens" "autocti")
             export VERSION="${{ needs.version_number.outputs.version_number }}"
 
             # Wait for each package to become available on test PyPI.
@@ -270,7 +273,7 @@ jobs:
             done
 
             echo "All packages available. Installing with pinned versions..."
-            # Install all 5 PyAuto packages in a single command with all versions
+            # Install all 6 PyAuto packages in a single command with all versions
             # pinned. This prevents pip from substituting unrelated packages with
             # the same names from production PyPI (e.g. autonerves 0.7.7, autofit 0.73.1)
             # during dependency resolution.
@@ -288,7 +291,8 @@ jobs:
                   "autoarray[optional]==$VERSION" \
                   "autofit[optional]==$VERSION" \
                   "autogalaxy[optional]==$VERSION" \
-                  "autolens[optional]==$VERSION"; do
+                  "autolens[optional]==$VERSION" \
+                  "autocti[optional]==$VERSION"; do
               ((install_cnt=install_cnt+1))
               if [[ $install_cnt -ge 30 ]]; then
                 echo "ERROR: Install failed after 30 attempts (5min)"
@@ -303,6 +307,12 @@ jobs:
             # so jax_likelihood_functions / jax_grad / jax_substructure
             # scripts can't fail in 0.1s with ModuleNotFoundError.
             pip install "jax>=0.7,<0.12,!=0.10.*,!=0.11.0" "jaxlib>=0.7,<0.12,!=0.10.*,!=0.11.0"
+        # autocti imports arcticpy, a source-only C++ build that is not a pip
+        # dependency; PyAutoHeart's action is the single home of its recipe and
+        # pin. Only the CTI leg's tests import autocti.
+        - name: Install arcticpy (CTI leg only)
+          if: "${{ matrix.project.path == 'PyAutoCTI' }}"
+          uses: PyAutoLabs/PyAutoHeart/.github/actions/install-arcticpy@main
         - name: Tests
           run: |
             pushd "${{ matrix.project.path }}"
@@ -334,6 +344,7 @@ jobs:
           - { repo: PyAutoLabs/autofit_workspace,    path: autofit_workspace }
           - { repo: PyAutoLabs/autogalaxy_workspace, path: autogalaxy_workspace }
           - { repo: PyAutoLabs/autolens_workspace,   path: autolens_workspace }
+          - { repo: PyAutoLabs/autocti_workspace,    path: autocti_workspace }
     env:
       # PYAUTO_* behaviour is owned by the workspace's release profile
       # (config/build/profile_release.yaml), resolved per script by the runner
@@ -371,6 +382,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install arcticpy (autocti_workspace only)
+        if: "${{ matrix.workspace.path == 'autocti_workspace' }}"
+        uses: PyAutoLabs/PyAutoHeart/.github/actions/install-arcticpy@main
       - name: Install from TestPyPI at pinned version
         run: |
           export VERSION="${{ needs.version_number.outputs.version_number }}"
@@ -382,7 +396,8 @@ jobs:
                 "autoarray[optional]==$VERSION" \
                 "autofit[optional]==$VERSION" \
                 "autogalaxy[optional]==$VERSION" \
-                "autolens[optional]==$VERSION"; do
+                "autolens[optional]==$VERSION" \
+                "autocti[optional]==$VERSION"; do
             ((install_cnt=install_cnt+1))
             if [[ $install_cnt -ge 30 ]]; then
               echo "ERROR: Install failed after 30 attempts"
@@ -465,6 +480,9 @@ jobs:
         - repository: PyAutoLabs/PyAutoLens
           ref: main
           path: PyAutoLens
+        - repository: PyAutoLabs/PyAutoCTI
+          ref: main
+          path: PyAutoCTI
     steps:
     - uses: actions/checkout@v4
       with:
@@ -594,7 +612,7 @@ jobs:
     # TODO(token-phase-1b): switch when PyPI trusted publishers are registered.
     # Trusted publishing (OIDC) replaces TWINE_PASSWORD/secrets.PYPI once PyPI
     # lists PyAutoLabs/PyAutoHands release.yml (environment `pypi`) as a
-    # trusted publisher for autonerves/autofit/autoarray/autogalaxy/autolens.
+    # trusted publisher for autonerves/autofit/autoarray/autogalaxy/autolens/autocti.
     # Until the human confirms that, the twine step below stays live — do not
     # enable this before then or the release cannot publish. Replacement:
     #
@@ -721,7 +739,7 @@ jobs:
           client-id: ${{ vars.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: PyAutoLabs
-          repositories: PyAutoMind,PyAutoNerves,PyAutoFit,PyAutoArray,PyAutoGalaxy,PyAutoLens
+          repositories: PyAutoMind,PyAutoNerves,PyAutoFit,PyAutoArray,PyAutoGalaxy,PyAutoLens,PyAutoCTI
           permission-contents: read
           permission-issues: write
           permission-pull-requests: write
@@ -773,6 +791,8 @@ jobs:
             token_repos: PyAutoFit,PyAutoArray,PyAutoGalaxy
           - repo: PyAutoLabs/PyAutoLens
             token_repos: PyAutoFit,PyAutoArray,PyAutoGalaxy,PyAutoLens
+          - repo: PyAutoLabs/PyAutoCTI
+            token_repos: PyAutoFit,PyAutoArray,PyAutoCTI
     steps:
     - uses: actions/checkout@v4
       with:
@@ -841,6 +861,12 @@ jobs:
             generate_notebooks: true
             bump_colab_urls: true
             assistant: autolens_assistant
+          - repository: PyAutoLabs/autocti_workspace
+            name: autocti
+            package: PyAutoCTI
+            generate_notebooks: true
+            bump_colab_urls: true
+            assistant: autocti_assistant
           - repository: PyAutoLabs/HowToGalaxy
             name: howtogalaxy
             package: PyAutoGalaxy
@@ -1238,12 +1264,8 @@ jobs:
   # unique per run (upload-artifact@v4 names must not collide with the autolens
   # check's wiki-drift-report or the autofit check's -autofit in the same run).
   #
-  # autocti_assistant is deliberately NOT wired here: `autocti` on PyPI is
-  # 2024.11.13.2, so the `autocti==$VERSION` install this contract implies cannot
-  # resolve, and the baseline step below installs only the five release-train
-  # packages (autocti is not one). Its own wiki-currency.yml records the same
-  # constraint — "the CTI release train is not yet wired". Wire the CTI release
-  # train first; this comment is the pointer for whoever does.
+  # autocti_assistant has its own pair, wiki_currency_check_autocti below
+  # (PyAutoHands#332 wired autocti into the release train).
   # ---------------------------------------------------------------------------
   wiki_currency_check_autogalaxy:
     needs:
@@ -1300,7 +1322,66 @@ jobs:
   # is the terminal step that records the resolved TestPyPI version so the caller
   # (the Brain Release Agent / Heart) can `pip install` exactly those wheels.
   #
-  # Gating on `release_test_pypi` means the artifact exists IFF all five wheels
+  # Gating on `release_test_pypi` means the artifact exists IFF all six wheels
+  # built, uploaded, and became installable on TestPyPI at this version — so the
+  # artifact's presence is itself the "rehearsal succeeded" signal.
+  # ---------------------------------------------------------------------------
+  wiki_currency_check_autocti:
+    needs:
+      - resolve_mode
+      - version_number
+      - release_workspaces
+    if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
+    uses: PyAutoLabs/autocti_assistant/.github/workflows/wiki-currency.yml@main
+    with:
+      stack_version: ${{ needs.version_number.outputs.version_number }}
+      assistant_ref: main
+
+  wiki_drift_issue_autocti:
+    needs:
+      - version_number
+      - wiki_currency_check_autocti
+    if: "${{ always() && needs.wiki_currency_check_autocti.result == 'failure' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download drift report
+        uses: actions/download-artifact@v4
+        with:
+          name: wiki-drift-report  # autocti_assistant uploads it unsuffixed (wiki-currency.yml)
+          path: drift
+      - name: Mint App token (open the drift issue)
+        id: app_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: PyAutoLabs
+          repositories: autocti_assistant
+          permission-issues: write
+      - name: Open wiki-drift issue against autocti_assistant
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          VERSION="${{ needs.version_number.outputs.version_number }}"
+          BODY=drift/drift-report.md
+          if [ ! -f "$BODY" ]; then
+            printf '# Wiki-currency drift at release %s\n\nThe check failed but no drift-report artifact was found; see the run logs.\n' "$VERSION" > "$BODY"
+          fi
+          gh issue create \
+            --repo PyAutoLabs/autocti_assistant \
+            --title "wiki drift detected at release $VERSION" \
+            --body-file "$BODY" \
+          || echo "::warning::could not open wiki-drift issue (non-fatal)"
+
+  # ---------------------------------------------------------------------------
+  # Rehearsal version emitter (rehearsal mode only).
+  #
+  # M1 of the Brain->Health->Heart release-validation redesign. In rehearsal mode
+  # the workflow builds + publishes every package to TestPyPI and STOPS; this job
+  # is the terminal step that records the resolved TestPyPI version so the caller
+  # (the Brain Release Agent / Heart) can `pip install` exactly those wheels.
+  #
+  # Gating on `release_test_pypi` means the artifact exists IFF all six wheels
   # built, uploaded, and became installable on TestPyPI at this version — so the
   # artifact's presence is itself the "rehearsal succeeded" signal.
   # ---------------------------------------------------------------------------
@@ -1323,7 +1404,7 @@ jobs:
             "mode": "rehearsal",
             "index": "testpypi",
             "version": "$VERSION",
-            "packages": ["autonerves", "autoarray", "autofit", "autogalaxy", "autolens"],
+            "packages": ["autonerves", "autoarray", "autofit", "autogalaxy", "autolens", "autocti"],
             "run_id": "${{ github.run_id }}",
             "run_attempt": "${{ github.run_attempt }}",
             "build_sha": "${{ github.sha }}"
@@ -1336,14 +1417,14 @@ jobs:
           {
             echo "## TestPyPI rehearsal complete"
             echo ""
-            echo "Published \`autonerves / autoarray / autofit / autogalaxy / autolens == $VERSION\` to TestPyPI."
+            echo "Published \`autonerves / autoarray / autofit / autogalaxy / autolens / autocti == $VERSION\` to TestPyPI."
             echo "Halted before PyPI upload, git tags, and workspace notebook commits."
             echo ""
             echo "Install exactly these wheels with:"
             echo '```bash'
             echo "pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple \\"
             echo "  autonerves[optional]==$VERSION autoarray[optional]==$VERSION autofit[optional]==$VERSION \\"
-            echo "  autogalaxy[optional]==$VERSION autolens[optional]==$VERSION"
+            echo "  autogalaxy[optional]==$VERSION autolens[optional]==$VERSION autocti[optional]==$VERSION"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload rehearsal version artifact

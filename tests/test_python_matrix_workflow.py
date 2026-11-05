@@ -68,7 +68,25 @@ def test_python_314_is_a_required_leg_not_an_isolated_experiment():
         assert "3.14" in jobs[name]["strategy"]["matrix"]["python-version"]
         assert "continue-on-error" not in jobs[name]
 
-    assert sorted(jobs["summary"]["needs"]) == ["smoke_tests", "unit_tests"]
+    assert sorted(jobs["summary"]["needs"]) == [
+        "cti_smoke_tests", "cti_unit_tests", "smoke_tests", "unit_tests"
+    ]
+
+
+def test_cti_legs_are_required_and_skip_314_until_arcticpy_builds():
+    """The CTI library joined the matrix on 2026-11-04 (cti-upkeep phase 1). Its jobs
+    are required (no continue-on-error) but run 3.12/3.13 only: arcticpy, a C++
+    source build, does not build on 3.14 yet (cti-upkeep ruling R4). Both jobs
+    take arcticpy from PyAutoHeart's action, the single home of its pin."""
+    jobs = load_workflow()["jobs"]
+    for name in ("cti_unit_tests", "cti_smoke_tests"):
+        assert jobs[name]["strategy"]["matrix"]["python-version"] == ["3.12", "3.13"]
+        assert "continue-on-error" not in jobs[name]
+        uses = [s.get("uses", "") for s in jobs[name]["steps"]]
+        assert any(
+            u.endswith("/PyAutoHeart/.github/actions/install-arcticpy@main") for u in uses
+        )
+        assert not any("arcticpy==" in str(s) for s in jobs[name]["steps"])
 
 
 def test_no_below_floor_success_or_banner_contract_remains():

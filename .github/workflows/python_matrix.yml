@@ -15,6 +15,7 @@ env:
   SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AUTOFIT: "9999.0.0"
   SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AUTOGALAXY: "9999.0.0"
   SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AUTOLENS: "9999.0.0"
+  SETUPTOOLS_SCM_PRETEND_VERSION_FOR_AUTOCTI: "9999.0.0"
 
 jobs:
   unit_tests:
@@ -135,9 +136,106 @@ jobs:
           path: ${{ matrix.workspace.path }}/test-results/
           if-no-files-found: warn
 
+  # PyAutoCTI (cti-upkeep phase 1). Its own jobs rather than a sixth row in
+  # the jobs above: autocti needs arcticpy, a source-only C++ build owned by
+  # PyAutoHeart's install-arcticpy action (the single home of its pin), and its
+  # chain is Nerves/Fit/Array only. 3.12 and 3.13 only: arcticpy does not build
+  # on 3.14 yet (cti-upkeep ruling R4, 2026-11-04).
+  cti_unit_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoNerves, path: PyAutoNerves }
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoArray, path: PyAutoArray }
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoFit, path: PyAutoFit }
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoCTI, path: PyAutoCTI }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install arcticpy (source-only C++ sdist)
+        uses: PyAutoLabs/PyAutoHeart/.github/actions/install-arcticpy@main
+      - name: Install libraries (single combined install — all 4 local)
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install numba \
+            -e ./PyAutoNerves \
+            -e "./PyAutoArray[optional]" \
+            -e ./PyAutoFit \
+            -e ./PyAutoCTI
+          pip install pytest pytest-cov
+          pip list | grep -iE "^(autonerves|autoarray|autofit|autocti|arcticpy|numpy|scipy)"
+      - name: Run tests
+        env:
+          NUMBA_CACHE_DIR: /tmp/numba_cache
+          MPLCONFIGDIR: /tmp/matplotlib
+        run: |
+          cd PyAutoCTI
+          python -m pytest test_autocti/ --tb=short
+
+  cti_smoke_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
+        workspace:
+          - { repo: PyAutoLabs/autocti_workspace,      path: autocti_workspace }
+          - { repo: PyAutoLabs/autocti_workspace_test, path: autocti_workspace_test }
+    env:
+      NUMBA_CACHE_DIR: /tmp/numba_cache
+      MPLCONFIGDIR: /tmp/matplotlib
+    steps:
+      - name: Checkout Hands harness
+        uses: actions/checkout@v4
+        with:
+          path: PyAutoHands
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoNerves, path: PyAutoNerves }
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoArray, path: PyAutoArray }
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoFit, path: PyAutoFit }
+      - uses: actions/checkout@v4
+        with: { repository: PyAutoLabs/PyAutoCTI, path: PyAutoCTI }
+      - uses: actions/checkout@v4
+        with: { repository: "${{ matrix.workspace.repo }}", path: "${{ matrix.workspace.path }}" }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install arcticpy (source-only C++ sdist)
+        uses: PyAutoLabs/PyAutoHeart/.github/actions/install-arcticpy@main
+      - name: Install workspace smoke environment
+        env:
+          WORKSPACE_PATH: ${{ matrix.workspace.path }}
+        run: |
+          python -m pip install --upgrade pip wheel
+          python -m pip install pyyaml
+          bash "$WORKSPACE_PATH/.github/scripts/smoke_install.sh"
+      - name: Run smoke tests
+        env:
+          WORKSPACE_PATH: ${{ matrix.workspace.path }}
+          PYTHONPATH: ${{ github.workspace }}/PyAutoHands/autohands
+        run: |
+          cd "$WORKSPACE_PATH"
+          python .github/scripts/run_smoke.py --report-dir test-results
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-matrix-${{ matrix.workspace.path }}-${{ matrix.python-version }}
+          path: ${{ matrix.workspace.path }}/test-results/
+          if-no-files-found: warn
+
   summary:
     runs-on: ubuntu-latest
-    needs: [unit_tests, smoke_tests]
+    needs: [unit_tests, smoke_tests, cti_unit_tests, cti_smoke_tests]
     if: always()
     steps:
       - name: Post summary
@@ -149,7 +247,9 @@ jobs:
             echo "|--------------|---------------------------------|"
             echo "| unit_tests   | ${{ needs.unit_tests.result }}  |"
             echo "| smoke_tests  | ${{ needs.smoke_tests.result }} |"
+            echo "| cti_unit_tests  | ${{ needs.cti_unit_tests.result }}  |"
+            echo "| cti_smoke_tests | ${{ needs.cti_smoke_tests.result }} |"
             echo ""
-            echo "**Required and supported:** 3.12, 3.13, 3.14."
+            echo "**Required and supported:** 3.12, 3.13, 3.14 (PyAutoCTI: 3.12, 3.13 until arcticpy builds on 3.14)."
             echo "**Current source metadata rejects:** Python 3.11 and older."
           } >> "$GITHUB_STEP_SUMMARY"

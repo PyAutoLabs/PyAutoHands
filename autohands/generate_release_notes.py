@@ -30,6 +30,10 @@ UPSTREAM_DEPS = {
         "PyAutoLabs/PyAutoArray",
         "PyAutoLabs/PyAutoGalaxy",
     ],
+    "PyAutoLabs/PyAutoCTI": [
+        "PyAutoLabs/PyAutoFit",
+        "PyAutoLabs/PyAutoArray",
+    ],
 }
 
 # Human-readable short names
@@ -39,6 +43,7 @@ REPO_NAMES = {
     "PyAutoLabs/PyAutoArray": "PyAutoArray",
     "PyAutoLabs/PyAutoGalaxy": "PyAutoGalaxy",
     "PyAutoLabs/PyAutoLens": "PyAutoLens",
+    "PyAutoLabs/PyAutoCTI": "PyAutoCTI",
 }
 
 # Base branches per repo
@@ -47,6 +52,7 @@ BASE_BRANCHES = {
     "PyAutoLabs/PyAutoArray": "main",
     "PyAutoLabs/PyAutoGalaxy": "main",
     "PyAutoLabs/PyAutoLens": "main",
+    "PyAutoLabs/PyAutoCTI": "main",
 }
 
 
