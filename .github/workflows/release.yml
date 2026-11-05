@@ -203,7 +203,7 @@ jobs:
         # TODO(token-phase-1b): switch when PyPI trusted publishers are registered.
         # Trusted publishing (OIDC) replaces TWINE_PASSWORD/secrets.TEST_PYPI once
         # TestPyPI lists PyAutoLabs/PyAutoHands release.yml (environment
-        # `testpypi`) as a trusted publisher for all five projects. Until the
+        # `testpypi`) as a trusted publisher for all six projects. Until the
         # human confirms that, the twine step below stays live — do not enable
         # this before then or the rehearsal cannot publish. Replacement:
         #
@@ -1322,7 +1322,7 @@ jobs:
   # is the terminal step that records the resolved TestPyPI version so the caller
   # (the Brain Release Agent / Heart) can `pip install` exactly those wheels.
   #
-  # Gating on `release_test_pypi` means the artifact exists IFF all five wheels
+  # Gating on `release_test_pypi` means the artifact exists IFF all six wheels
   # built, uploaded, and became installable on TestPyPI at this version — so the
   # artifact's presence is itself the "rehearsal succeeded" signal.
   # ---------------------------------------------------------------------------
@@ -1381,7 +1381,7 @@ jobs:
   # is the terminal step that records the resolved TestPyPI version so the caller
   # (the Brain Release Agent / Heart) can `pip install` exactly those wheels.
   #
-  # Gating on `release_test_pypi` means the artifact exists IFF all five wheels
+  # Gating on `release_test_pypi` means the artifact exists IFF all six wheels
   # built, uploaded, and became installable on TestPyPI at this version — so the
   # artifact's presence is itself the "rehearsal succeeded" signal.
   # ---------------------------------------------------------------------------
