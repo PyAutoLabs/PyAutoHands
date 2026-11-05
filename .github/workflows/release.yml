@@ -273,7 +273,7 @@ jobs:
             done
 
             echo "All packages available. Installing with pinned versions..."
-            # Install all 5 PyAuto packages in a single command with all versions
+            # Install all 6 PyAuto packages in a single command with all versions
             # pinned. This prevents pip from substituting unrelated packages with
             # the same names from production PyPI (e.g. autonerves 0.7.7, autofit 0.73.1)
             # during dependency resolution.
@@ -612,7 +612,7 @@ jobs:
     # TODO(token-phase-1b): switch when PyPI trusted publishers are registered.
     # Trusted publishing (OIDC) replaces TWINE_PASSWORD/secrets.PYPI once PyPI
     # lists PyAutoLabs/PyAutoHands release.yml (environment `pypi`) as a
-    # trusted publisher for autonerves/autofit/autoarray/autogalaxy/autolens.
+    # trusted publisher for autonerves/autofit/autoarray/autogalaxy/autolens/autocti.
     # Until the human confirms that, the twine step below stays live — do not
     # enable this before then or the release cannot publish. Replacement:
     #
@@ -1264,12 +1264,8 @@ jobs:
   # unique per run (upload-artifact@v4 names must not collide with the autolens
   # check's wiki-drift-report or the autofit check's -autofit in the same run).
   #
-  # autocti_assistant is deliberately NOT wired here: `autocti` on PyPI is
-  # 2024.11.13.2, so the `autocti==$VERSION` install this contract implies cannot
-  # resolve, and the baseline step below installs only the five release-train
-  # packages (autocti is not one). Its own wiki-currency.yml records the same
-  # constraint — "the CTI release train is not yet wired". Wire the CTI release
-  # train first; this comment is the pointer for whoever does.
+  # autocti_assistant has its own pair, wiki_currency_check_autocti below
+  # (PyAutoHands#332 wired autocti into the release train).
   # ---------------------------------------------------------------------------
   wiki_currency_check_autogalaxy:
     needs:
@@ -1408,7 +1404,7 @@ jobs:
             "mode": "rehearsal",
             "index": "testpypi",
             "version": "$VERSION",
-            "packages": ["autonerves", "autoarray", "autofit", "autogalaxy", "autolens"],
+            "packages": ["autonerves", "autoarray", "autofit", "autogalaxy", "autolens", "autocti"],
             "run_id": "${{ github.run_id }}",
             "run_attempt": "${{ github.run_attempt }}",
             "build_sha": "${{ github.sha }}"
@@ -1421,14 +1417,14 @@ jobs:
           {
             echo "## TestPyPI rehearsal complete"
             echo ""
-            echo "Published \`autonerves / autoarray / autofit / autogalaxy / autolens == $VERSION\` to TestPyPI."
+            echo "Published \`autonerves / autoarray / autofit / autogalaxy / autolens / autocti == $VERSION\` to TestPyPI."
             echo "Halted before PyPI upload, git tags, and workspace notebook commits."
             echo ""
             echo "Install exactly these wheels with:"
             echo '```bash'
             echo "pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple \\"
             echo "  autonerves[optional]==$VERSION autoarray[optional]==$VERSION autofit[optional]==$VERSION \\"
-            echo "  autogalaxy[optional]==$VERSION autolens[optional]==$VERSION"
+            echo "  autogalaxy[optional]==$VERSION autolens[optional]==$VERSION autocti[optional]==$VERSION"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload rehearsal version artifact
