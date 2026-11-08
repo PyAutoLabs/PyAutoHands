@@ -1,7 +1,7 @@
 """Guard the release wiki-currency checks against PyPI index propagation (#334).
 
 The 2026.11.6.1 and 2026.11.7.1 releases shipped completely but ended red:
-autolens_assistant's wiki-currency check ran `pip install autolens==<version>`
+one assistant's wiki-currency check ran `pip install autolens==<version>`
 about 3 minutes after the upload, before PyPI's simple index listed it. The drift
 issue job then failed downloading a report that was never written, and its
 fallback would have titled an install failure as "drift".
