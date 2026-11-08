@@ -1144,6 +1144,50 @@ jobs:
         fi
 
   # ---------------------------------------------------------------------------
+  # Wait for the released stack to be installable from production PyPI.
+  #
+  # The wiki-currency checks below `pip install <lib>==<version>` from PyPI a
+  # few minutes after the upload. PyPI's simple index can lag that upload, and
+  # on 2026-11-06 and 2026-11-07 the autolens check ran before
+  # `autolens==<version>` was listed ("No matching distribution found"), which
+  # turned two fully shipped releases red (PyAutoHands#334). This job polls the
+  # index for every package, bypassing pip's cache, with a bounded wait, and
+  # fails loudly if a version never appears. It never falls back to an older or
+  # unpinned install.
+  # ---------------------------------------------------------------------------
+  wait_for_released_stack:
+    needs:
+      - resolve_mode
+      - version_number
+      - release_workspaces
+    if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Wait for every released package on PyPI
+        env:
+          VERSION: ${{ needs.version_number.outputs.version_number }}
+        run: |
+          PACKAGES=(autonerves autoarray autofit autogalaxy autolens autocti)
+          # 60 attempts x 10s = 10 min per package, far beyond the ~3 min lag seen.
+          for PACKAGE in "${PACKAGES[@]}"; do
+            cnt=0
+            until python3 -m pip download --no-deps --no-cache-dir --dest /tmp/pyauto-stack \
+                  --index-url https://pypi.org/simple/ "$PACKAGE==$VERSION" >/dev/null 2>&1; do
+              cnt=$((cnt+1))
+              if [ "$cnt" -ge 60 ]; then
+                echo "::error::$PACKAGE==$VERSION not installable from PyPI after 10 min"
+                exit 1
+              fi
+              echo "  waiting for $PACKAGE==$VERSION on PyPI (attempt $cnt)"
+              sleep 10
+            done
+            echo "found $PACKAGE==$VERSION"
+          done
+
+  # ---------------------------------------------------------------------------
   # Wiki-currency check (autolens_assistant).
   #
   # PyAutoHands only orchestrates and reports here — it calls into the assistant's
@@ -1159,6 +1203,7 @@ jobs:
       - resolve_mode
       - version_number
       - release_workspaces
+      - wait_for_released_stack
     if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
     uses: PyAutoLabs/autolens_assistant/.github/workflows/wiki-currency.yml@main
     with:
@@ -1176,6 +1221,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download drift report
+        id: drift_report
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: wiki-drift-report
@@ -1194,13 +1241,19 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BODY=drift/drift-report.md
+          TITLE="wiki drift detected at release $VERSION"
           if [ ! -f "$BODY" ]; then
-            printf '# Wiki-currency drift at release %s\n\nThe check failed but no drift-report artifact was found; see the run logs.\n' "$VERSION" > "$BODY"
+            # No report means the check failed before grading anything (e.g. the
+            # released stack would not install), so this is not drift.
+            mkdir -p drift
+            printf '# Wiki-currency check could not complete at release %s\n\nThe check failed before producing a drift report, so no drift was graded. See the run: %s\n' "$VERSION" "$RUN_URL" > "$BODY"
+            TITLE="wiki-currency check could not complete at release $VERSION"
           fi
           gh issue create \
             --repo PyAutoLabs/autolens_assistant \
-            --title "wiki drift detected at release $VERSION" \
+            --title "$TITLE" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
 
@@ -1216,6 +1269,7 @@ jobs:
       - resolve_mode
       - version_number
       - release_workspaces
+      - wait_for_released_stack
     if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
     uses: PyAutoLabs/autofit_assistant/.github/workflows/wiki-currency.yml@main
     with:
@@ -1230,6 +1284,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download drift report
+        id: drift_report
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: wiki-drift-report-autofit
@@ -1248,13 +1304,19 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BODY=drift/drift-report.md
+          TITLE="wiki drift detected at release $VERSION"
           if [ ! -f "$BODY" ]; then
-            printf '# Wiki-currency drift at release %s\n\nThe check failed but no drift-report artifact was found; see the run logs.\n' "$VERSION" > "$BODY"
+            # No report means the check failed before grading anything (e.g. the
+            # released stack would not install), so this is not drift.
+            mkdir -p drift
+            printf '# Wiki-currency check could not complete at release %s\n\nThe check failed before producing a drift report, so no drift was graded. See the run: %s\n' "$VERSION" "$RUN_URL" > "$BODY"
+            TITLE="wiki-currency check could not complete at release $VERSION"
           fi
           gh issue create \
             --repo PyAutoLabs/autofit_assistant \
-            --title "wiki drift detected at release $VERSION" \
+            --title "$TITLE" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
 
@@ -1272,6 +1334,7 @@ jobs:
       - resolve_mode
       - version_number
       - release_workspaces
+      - wait_for_released_stack
     if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
     uses: PyAutoLabs/autogalaxy_assistant/.github/workflows/wiki-currency.yml@main
     with:
@@ -1286,6 +1349,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download drift report
+        id: drift_report
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: wiki-drift-report-autogalaxy
@@ -1304,13 +1369,19 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BODY=drift/drift-report.md
+          TITLE="wiki drift detected at release $VERSION"
           if [ ! -f "$BODY" ]; then
-            printf '# Wiki-currency drift at release %s\n\nThe check failed but no drift-report artifact was found; see the run logs.\n' "$VERSION" > "$BODY"
+            # No report means the check failed before grading anything (e.g. the
+            # released stack would not install), so this is not drift.
+            mkdir -p drift
+            printf '# Wiki-currency check could not complete at release %s\n\nThe check failed before producing a drift report, so no drift was graded. See the run: %s\n' "$VERSION" "$RUN_URL" > "$BODY"
+            TITLE="wiki-currency check could not complete at release $VERSION"
           fi
           gh issue create \
             --repo PyAutoLabs/autogalaxy_assistant \
-            --title "wiki drift detected at release $VERSION" \
+            --title "$TITLE" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
 
@@ -1331,6 +1402,7 @@ jobs:
       - resolve_mode
       - version_number
       - release_workspaces
+      - wait_for_released_stack
     if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
     uses: PyAutoLabs/autocti_assistant/.github/workflows/wiki-currency.yml@main
     with:
@@ -1345,6 +1417,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download drift report
+        id: drift_report
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: wiki-drift-report  # autocti_assistant uploads it unsuffixed (wiki-currency.yml)
@@ -1363,13 +1437,19 @@ jobs:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BODY=drift/drift-report.md
+          TITLE="wiki drift detected at release $VERSION"
           if [ ! -f "$BODY" ]; then
-            printf '# Wiki-currency drift at release %s\n\nThe check failed but no drift-report artifact was found; see the run logs.\n' "$VERSION" > "$BODY"
+            # No report means the check failed before grading anything (e.g. the
+            # released stack would not install), so this is not drift.
+            mkdir -p drift
+            printf '# Wiki-currency check could not complete at release %s\n\nThe check failed before producing a drift report, so no drift was graded. See the run: %s\n' "$VERSION" "$RUN_URL" > "$BODY"
+            TITLE="wiki-currency check could not complete at release $VERSION"
           fi
           gh issue create \
             --repo PyAutoLabs/autocti_assistant \
-            --title "wiki drift detected at release $VERSION" \
+            --title "$TITLE" \
             --body-file "$BODY" \
           || echo "::warning::could not open wiki-drift issue (non-fatal)"
 
