@@ -107,7 +107,10 @@ def stub_bin(tmp_path):
     # check_dataset_allowlist.py; generate.py is asked to create a notebook so
     # the "new file this run produced" path is covered.
     (bindir / "black").write_text("#!/bin/bash\nexit 0\n")
-    (bindir / "gh").write_text("#!/bin/bash\nexit 0\n")
+    # gh records each call's argv so the dispatch fields can be asserted.
+    (bindir / "gh").write_text(
+        '#!/bin/bash\nprintf "%s\\n" "$*" >> "$(dirname "$0")/gh_calls.log"\nexit 0\n'
+    )
     stub_python = (
         "#!/bin/bash\n"
         'case "$*" in\n'
@@ -124,8 +127,10 @@ def stub_bin(tmp_path):
     return bindir
 
 
-def _run(base, stub_bin):
+def _run(base, stub_bin, args=("1", "123"), extra_env=None):
     env = dict(os.environ)
+    env.pop("REHEARSAL_RUN_ID", None)
+    env.update(extra_env or {})
     env["PATH"] = f"{stub_bin}:{env['PATH']}"
     # pre_build only runs ensure_workspace_labels.sh when gh is on PATH; it is
     # stubbed, so give it a real (no-op) script to find.
@@ -136,7 +141,9 @@ def _run(base, stub_bin):
     labels.chmod(0o755)
 
     return subprocess.run(
-        ["bash", str(base / "PyAutoHands" / "pre_build.sh")],
+        # Default: minor version 1, rehearsal run 123. A live release must name
+        # its rehearsal (M2.4) — the rehearsal tests at the bottom cover it.
+        ["bash", str(base / "PyAutoHands" / "pre_build.sh"), *args],
         capture_output=True,
         text=True,
         env=env,
@@ -260,3 +267,46 @@ def test_black_touches_only_what_is_staged(base, stub_bin):
         assert _git(base / repo, "status", "--porcelain") == "", repo
         reformatted = "# black" in (base / repo / "slam_pipeline" / "pipe.py").read_text()
         assert reformatted == (slam == "true"), repo
+
+
+# --- M2.4 (PyAutoHands#337): a release names the rehearsal it publishes -----
+
+
+def _dispatches(stub_bin):
+    log = stub_bin / "gh_calls.log"
+    calls = log.read_text().splitlines() if log.exists() else []
+    return [c for c in calls if c.startswith("workflow run release.yml")]
+
+
+def test_pre_build_refuses_without_a_rehearsal_before_touching_anything(base, stub_bin):
+    result = _run(base, stub_bin, args=("1",))
+
+    assert result.returncode != 0
+    assert "needs the rehearsal run id" in result.stderr
+    assert _dispatches(stub_bin) == []
+    for repo, *_ in SPECS:
+        assert "pre build" not in _git(base / repo, "log", "--oneline")
+
+
+def test_pre_build_dispatches_the_named_rehearsal(base, stub_bin, tmp_path):
+    manifest = tmp_path / "commit_shas.json"
+    # Any key does: pre_build passes the manifest through; release.yml judges it.
+    manifest.write_text('{"lib": "' + "a" * 40 + '"}')
+
+    result = _run(base, stub_bin, args=("2", "456"),
+                  extra_env={"COMMIT_SHAS_FILE": str(manifest)})
+
+    assert result.returncode == 0, result.stderr
+    (dispatch,) = _dispatches(stub_bin)
+    assert "minor_version=2" in dispatch
+    assert "rehearsal_run_id=456" in dispatch
+    assert "commit_shas=" in dispatch and "a" * 40 in dispatch
+
+
+def test_pre_build_reads_the_rehearsal_from_the_environment(base, stub_bin):
+    result = _run(base, stub_bin, args=("1",), extra_env={"REHEARSAL_RUN_ID": "789"})
+
+    assert result.returncode == 0, result.stderr
+    (dispatch,) = _dispatches(stub_bin)
+    assert "rehearsal_run_id=789" in dispatch
+    assert "commit_shas=" not in dispatch

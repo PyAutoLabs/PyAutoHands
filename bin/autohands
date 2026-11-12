@@ -117,6 +117,7 @@ INTERNAL_MODULES=(
   env_config            # env-profile resolution library
   result_collector      # per-run JSON result library
   generate_autofit      # generate.py's autofit-specific branch
+  rehearsed_commits     # release.yml helper: pins/resolves the rehearsed library commits (#337)
 )
 
 # _python_in_autohands <script> [args...]
@@ -135,14 +136,19 @@ _python_in_autohands() {
 
 help_pre_build() {
   cat <<'EOF'
-autohands pre_build [minor_version]
+autohands pre_build [minor_version] [rehearsal_run_id]
 
 Require a clean PyAutoHands main, then run black + generate notebooks + commit
 and push for every workspace repo before dispatching release.yml. PyAutoHands
 itself is never staged or committed by this command.
 
 Arguments:
-  minor_version  Minor version suffix appended to YYYY.M.D (default: 1)
+  minor_version     Minor version suffix appended to YYYY.M.D (default: 1)
+  rehearsal_run_id  The successful rehearsal run of release.yml whose recorded
+                    library commits this release publishes (or
+                    $REHEARSAL_RUN_ID). Required: release.yml builds only
+                    rehearsed commits (PyAutoHands#337). An optional
+                    $COMMIT_SHAS_FILE manifest is cross-checked against it.
 
 This is the bash entry point wrapped by the pre_build skill.
 EOF

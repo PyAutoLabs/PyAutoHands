@@ -121,7 +121,7 @@ All scripts in `autohands/` are run from within a checked-out workspace director
 - **`script_matrix.py <project1> [project2 ...]`** — Outputs a JSON matrix of `{name, directory}` pairs for GitHub Actions matrix strategy
 - **`tag_and_merge.sh --version <version>`** — Commits pending changes and tags library repos (PyAutoNerves, PyAutoFit, PyAutoArray, PyAutoGalaxy, PyAutoLens) for release
 - **`url_check`** — URL hygiene moved to PyAutoHeart (Heart owns all health checking). `autohands url_check` is now a thin shim to `pyauto-heart url_check`; the ecosystem-wide sweep runs from PyAutoHeart's central `url-check.yml` workflow (replacing the old per-repo `url_check.yml` workflows). The runnable scripts live at `PyAutoHeart/heart/checks/url_check*.{sh,py}`.
-- **`bump_colab_urls.sh <new-tag>`** — Rewrites every `colab.research.google.com/github/PyAutoLabs/<repo>/blob/<old-tag>/...` URL in cwd to use `<new-tag>`, where `<repo>` is one of `autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace`, `HowToFit`, `HowToGalaxy`, `HowToLens`. Called by the `release_workspaces` and `bump_library_colab_urls` jobs in `release.yml` so README/docs Colab links always pin to the just-released tag. Idempotent; skips URLs not in canonical PyAutoLabs/date-tagged form.
+- **`bump_colab_urls.sh <new-tag>`** — Rewrites every `colab.research.google.com/github/PyAutoLabs/<repo>/blob/<old-tag>/...` URL in cwd to use `<new-tag>`, where `<repo>` is one of `autofit_workspace`, `autogalaxy_workspace`, `autolens_workspace`, `HowToFit`, `HowToGalaxy`, `HowToLens`. Called by the `release_workspaces` and `bump_library_colab_urls` jobs in `release.yml` so README/docs Colab links pin to the just-released tag (workspaces on their `main` + tag; libraries on a `release/<version>` branch, never `main` — #337). Idempotent; skips URLs not in canonical PyAutoLabs/date-tagged form.
 
 ### What `--report-dir` contains
 
@@ -351,6 +351,25 @@ The workflow (`release.yml`) is manually dispatched with inputs:
   resolved version as the `testpypi-rehearsal-version` artifact, then STOP (no PyPI upload, no git
   tag, no notebook/version commits, no Colab bumps). This is the mode the Heart/Brain
   release-validation gate dispatches so it can install and validate the built wheels.
+- `rehearsal_run_id` / `commit_shas` — which library commits the run builds (PyAutoHands#337).
+  The `resolve_commits` job settles this once, before anything builds, and every library
+  checkout uses its output; `main` is never re-read for what to publish.
+  - Rehearsal: each library's `main` HEAD is pinned at run start (or the `commit_shas` JSON is
+    built verbatim), and the `testpypi-rehearsal-version` artifact's `rehearsal.json` records
+    them as `commit_shas`. That artifact is the rehearsal record.
+  - Live: the commits come from a rehearsal record: the run named by `rehearsal_run_id`, or,
+    with only `commit_shas`, a recent successful rehearsal that recorded exactly those. The run
+    refuses before building when no rehearsal is named, the run has no record (failed, not a
+    rehearsal, artifact expired, or recorded before #337), or the record and `commit_shas`
+    disagree. `main` having moved since the rehearsal is reported, not refused: the rehearsed
+    commits ship and later merges wait for the next release. Each library leg logs the
+    rehearsed commit, the commit checked out and how far `main` is ahead, and after tagging
+    confirms the tag on origin peels to the rehearsed commit (`identical`).
+  - The library Colab URL bump (`bump_library_colab_urls`) is committed on top of the released
+    commit and pushed as `release/<version>` — never to `main` — so the tag stays the rehearsed
+    commit and the release never moves a library `main`. `main` takes it by PR. Workspace
+    notebooks and Colab bumps (`release_workspaces`) are unchanged.
+  - Logic and tests: `autohands/rehearsed_commits.py`, `tests/test_rehearsed_commits.py`.
 
 (The legacy `skip_scripts` / `skip_notebooks` / `skip_release` force-through knobs and the
 `update_notebook_visualisations` path were removed with the Heart/Build split — Build is a pure

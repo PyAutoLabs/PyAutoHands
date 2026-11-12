@@ -77,7 +77,7 @@ step and say so; it is a signal, not a precondition.
 Invoke the bash entry point directly:
 
 ```bash
-bash $HOME/Code/PyAutoLabs/PyAutoHands/bin/autohands pre_build <minor_version>
+bash $HOME/Code/PyAutoLabs/PyAutoHands/bin/autohands pre_build <minor_version> <rehearsal_run_id>
 ```
 
 The script handles every mechanical step of the pre-build flow:
@@ -87,7 +87,7 @@ The script handles every mechanical step of the pre-build flow:
 3. Ensures the canonical `pending-release` label exists on each release-window repo.
 4. For every workspace, runs black on the staged dirs (`scripts/`, `slam_pipeline/`), runs `generate.py` for projects with a notebook target, and stages only what the run itself produced (`notebooks/`, `scripts/`, plus `slam_pipeline/` for `autolens_workspace`) — tracked edits and deletions via `git add -u`, plus newly created files by explicit path. It never runs `git add <dir>/`, which also sweeps in untracked files; that is what committed and pushed a human's uncommitted script during the 2026-08-07 release rehearsal, and is the same leak class as #126. It does not stage `dataset/` or `config/` — nothing in the run modifies them. Root-level artifacts and README Colab URLs are committed by `release.yml` on the runner, not here. `generate.py` also writes each notebook's Colab Gemini instructions from the project's assistant (`colab/contexts.yaml`), found locally via `$PYAUTO_ASSISTANT_ROOT` or else the assistant checkout in this workspace; one without that file is skipped with a warning.
 5. Commits and pushes each workspace (skipping if no changes are staged).
-6. Dispatches `gh workflow run release.yml --repo PyAutoLabs/PyAutoHands --field minor_version=<N>`.
+6. Dispatches `gh workflow run release.yml --repo PyAutoLabs/PyAutoHands --field minor_version=<N> --field rehearsal_run_id=<run>` (plus `commit_shas` when `$COMMIT_SHAS_FILE` is set). The release builds exactly the library commits that rehearsal recorded, even if `main` has moved since, and refuses if the run has no record (PyAutoHands#337). Without a rehearsal run id the script stops before step 2.
 
 Release-readiness — including the version-skew check that used to run here
 (`verify_workspace_versions.sh`) — is gated **upstream by PyAutoHeart**
