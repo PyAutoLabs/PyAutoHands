@@ -31,7 +31,9 @@ on:
       # what the rehearsal built. A live run therefore REFUSES unless it can
       # name a rehearsal record: the `testpypi-rehearsal-version` artifact of a
       # successful rehearsal run, which now records the commit of every library
-      # it built. See the resolve_commits job.
+      # it built. See the resolve_commits job. The exact caller contract (input
+      # names, where rehearsal.json lives in the artifact, its schema, and what
+      # to feed Heart) is docs/internals.md "Caller contract".
       rehearsal_run_id:
         description: 'Live release: the run id of the successful rehearsal (rehearsal=true run of this workflow) whose recorded commits to release. Ignored in rehearsal mode.'
         required: false
@@ -226,6 +228,19 @@ jobs:
             repository: "${{ matrix.project.repository }}"
             ref: "${{ fromJSON(needs.resolve_commits.outputs.commit_shas)[matrix.project.path] }}"
             path: "${{ matrix.project.path }}"
+            # Full history: the next step proves the commit is on origin/main.
+            fetch-depth: 0
+            persist-credentials: false
+        - name: Confirm the pinned commit is on main
+          # Both modes. A `commit_shas` input can name any fetchable commit (a
+          # PR head, a side branch); refusing here means such a commit never
+          # becomes a rehearsal record, so it can never be released either.
+          env:
+            PINNED_SHA: "${{ fromJSON(needs.resolve_commits.outputs.commit_shas)[matrix.project.path] }}"
+          run: |
+            set -euo pipefail
+            python3 PyAutoHands/autohands/rehearsed_commits.py verify \
+              --repo-dir "${{ matrix.project.path }}" --expected "$PINNED_SHA"
         - name: Set up Python ${{ matrix.python-version }}
           uses: actions/setup-python@v5
           with:
@@ -605,8 +620,9 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - name: Confirm the checkout is the rehearsed commit
-      # Refuses if HEAD is not the rehearsed commit; reports (does not refuse)
-      # `main` having moved since — the ruling is to release what was rehearsed.
+      # Refuses if HEAD is not the rehearsed commit or is not on origin/main
+      # (merge-base --is-ancestor); reports (does not refuse) `main` having
+      # moved since — the ruling is to release what was rehearsed.
       run: |
         set -euo pipefail
         python3 PyAutoHands/autohands/rehearsed_commits.py verify \
@@ -1265,6 +1281,8 @@ jobs:
         owner: PyAutoLabs
         repositories: ${{ matrix.library }}
         permission-contents: write
+        # Open/update the PR that merges release/<version> back into main.
+        permission-pull-requests: write
     - name: Checkout library (the released commit, not main)
       uses: actions/checkout@v4
       with:
@@ -1281,19 +1299,24 @@ jobs:
         git config --global user.email "346909844+pyautolabs-bot[bot]@users.noreply.github.com"
         git config --global user.name "pyautolabs-bot[bot]"
     - name: Bump Colab URL tag refs onto release/<version>
+      id: bump
       run: |
         set -euo pipefail
         VERSION="${{ needs.version_number.outputs.version_number }}"
         BRANCH="release/$VERSION"
+        echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
         pushd library
         bash "$GITHUB_WORKSPACE/PyAutoHands/autohands/bump_colab_urls.sh" "$VERSION"
         if git diff --quiet; then
           echo "No Colab URLs to bump in ${{ matrix.library }}."
+          echo "pushed=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
-        # Idempotent re-run: the branch already carries this release's bump.
+        # Idempotent re-run: the branch already carries this release's bump
+        # (the PR step below still runs, so a PR lost on the first try is made).
         if git ls-remote --exit-code origin "refs/heads/$BRANCH" >/dev/null; then
-          echo "$BRANCH already on origin — re-run, skipping."
+          echo "$BRANCH already on origin — re-run, skipping the push."
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
           exit 0
         fi
         # Tracked modifications only — the bumper rewrites existing files in
@@ -1302,11 +1325,46 @@ jobs:
         git commit -m "Release $VERSION: bump Colab URL tag refs"
         # The only ref this job writes. Never `main`.
         git push origin "HEAD:refs/heads/$BRANCH"
+        echo "pushed=true" >> "$GITHUB_OUTPUT"
         {
           echo "### ${{ matrix.library }} Colab bump"
           echo "On \`$BRANCH\` (tag \`$VERSION\` stays the rehearsed commit; \`main\` untouched)."
-          echo "Merge to main by PR: https://github.com/PyAutoLabs/${{ matrix.library }}/compare/main...$BRANCH"
         } >> "$GITHUB_STEP_SUMMARY"
+    - name: Open or update the Colab-bump PR into main
+      # The bump reaches `main` only through this PR (normal review and merge
+      # gates), never by a push from the release. One PR per library per
+      # release: an open PR from the branch is updated, otherwise one is
+      # opened. Best-effort: the release has already published, so a failure
+      # here is a warning and the branch stays for a human to PR by hand.
+      if: "${{ steps.bump.outputs.pushed == 'true' }}"
+      env:
+        GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        REPO: PyAutoLabs/${{ matrix.library }}
+        BRANCH: ${{ steps.bump.outputs.branch }}
+        VERSION: ${{ needs.version_number.outputs.version_number }}
+      run: |
+        set -uo pipefail
+        TITLE="release $VERSION: Colab URL bump"
+        BODY="Merges \`$BRANCH\` into \`main\`: the Colab URL bump for release $VERSION.
+
+        The release tag \`$VERSION\` is the rehearsed commit and does not include this bump; the release no longer pushes to \`main\` (PyAutoHands#337). Docs-only: Colab links now point at the $VERSION workspace tags."
+        warn() {
+          echo "::warning::Colab-bump PR for $REPO not opened/updated ($1) — open it by hand: https://github.com/$REPO/compare/main...$BRANCH"
+          exit 0
+        }
+        EXISTING="$(gh pr list --repo "$REPO" --head "$BRANCH" --base main --state open \
+                      --json number --jq '.[0].number // empty')" || warn "gh pr list failed"
+        if [ -n "$EXISTING" ]; then
+          gh pr edit "$EXISTING" --repo "$REPO" --title "$TITLE" --body "$BODY" \
+            || warn "gh pr edit #$EXISTING failed"
+          URL="https://github.com/$REPO/pull/$EXISTING"
+          echo "Updated $URL"
+        else
+          URL="$(gh pr create --repo "$REPO" --base main --head "$BRANCH" \
+                   --title "$TITLE" --body "$BODY")" || warn "gh pr create failed"
+          echo "Opened $URL"
+        fi
+        echo "Merge to main by PR: $URL" >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
   # Wait for the released stack to be installable from production PyPI.

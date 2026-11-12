@@ -369,7 +369,52 @@ The workflow (`release.yml`) is manually dispatched with inputs:
     commit and pushed as `release/<version>` — never to `main` — so the tag stays the rehearsed
     commit and the release never moves a library `main`. `main` takes it by PR. Workspace
     notebooks and Colab bumps (`release_workspaces`) are unchanged.
+  - Every leg, rehearsal and live, also refuses a commit that is not on `main`
+    (`git merge-base --is-ancestor HEAD origin/main`), so a `commit_shas` input naming a PR
+    head or side-branch commit never becomes a rehearsal record and is never released.
   - Logic and tests: `autohands/rehearsed_commits.py`, `tests/test_rehearsed_commits.py`.
+
+#### Caller contract (Brain nightly driver and release door)
+
+Any caller that dispatches a **live** `release.yml` (`rehearsal=false`) must follow this; a live
+dispatch without it refuses in `resolve_commits` before anything is built.
+
+1. **Rehearse first.** Dispatch `release.yml` with `rehearsal=true` (optionally
+   `commit_shas=<json>` to build specific on-main commits). Keep the run's id.
+2. **Read the record.** On success the run uploads the artifact **`testpypi-rehearsal-version`**
+   (`gh run download <run id> -R <owner>/PyAutoHands -n testpypi-rehearsal-version -D <dir>`).
+   It contains, at the artifact root, `testpypi_version.txt` and **`rehearsal.json`**:
+
+   ```json
+   {
+     "mode": "rehearsal",
+     "index": "testpypi",
+     "version": "2026.11.12.1.dev123401",
+     "packages": ["autonerves", "autoarray", "autofit", "autogalaxy", "autolens", "autocti"],
+     "run_id": "12345678901",
+     "run_attempt": "1",
+     "build_sha": "<PyAutoHands commit that ran the rehearsal>",
+     "commit_shas": {"<library repo>": "<full 40-hex sha>", "...": "..."}
+   }
+   ```
+
+   `commit_shas` has one entry per library in `autohands/config/workspaces.yaml` `libraries`
+   (bare repo names, the same keys as `commit_shas.json` and Heart's report). These are the
+   commits every leg of that run built; they are the authority, not `main` HEADs read later.
+3. **Feed Heart the same commits.** Write `rehearsal.json`'s `commit_shas` object to the file
+   passed to `pyauto-heart validate --ingest <dir> --commit-shas <file>` (instead of re-reading
+   `main` after the rehearsal).
+4. **Dispatch the live release** with:
+   - `rehearsal_run_id` = the rehearsal run id (string of digits). **Required** in practice.
+   - `commit_shas` = the compact JSON of `rehearsal.json`'s `commit_shas` (optional cross-check;
+     if given it must equal the record exactly, or the run refuses).
+   - `minor_version` and `rehearsal=false` as before.
+
+   From the shell door: `autohands pre_build <minor_version> <rehearsal_run_id>`, with optional
+   `COMMIT_SHAS_FILE=<file>`; it refuses before touching any workspace without the run id.
+
+A rehearsal record exists only for a run that concluded `success`; a failed, cancelled, live or
+pre-#337 run (no `commit_shas` key), or an expired artifact, is refused as "no rehearsal record".
 
 (The legacy `skip_scripts` / `skip_notebooks` / `skip_release` force-through knobs and the
 `update_notebook_visualisations` path were removed with the Heart/Build split — Build is a pure

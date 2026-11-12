@@ -211,27 +211,65 @@ def moved_library(tmp_path):
     for i in (2, 3):
         (origin / "a.py").write_text(f"x = {i}\n")
         git(origin, "commit", "-q", "-am", f"merged after rehearsal {i}")
+    # An unmerged PR head off the rehearsed commit, published the way GitHub
+    # exposes one (refs/pull/<n>/head) — fetchable, but never on main.
+    git(origin, "checkout", "-q", "-b", "feature", rehearsed)
+    (origin / "b.py").write_text("y = 1\n")
+    git(origin, "add", "b.py")
+    git(origin, "commit", "-q", "-m", "unmerged PR")
+    git(origin, "update-ref", "refs/pull/7/head", "HEAD")
+    git(origin, "checkout", "-q", "main")
     clone = tmp_path / "clone"
     subprocess.run(["git", "clone", "-q", str(origin), str(clone)], check=True)
     git(clone, "checkout", "-q", rehearsed)
     return clone, rehearsed, git(origin, "rev-parse", "main")
 
 
+def pr_head(clone):
+    git(clone, "fetch", "-q", "origin", "refs/pull/7/head")
+    return git(clone, "rev-parse", "FETCH_HEAD")
+
+
 def test_verify_accepts_the_rehearsed_commit_and_reports_main_moved(moved_library):
     clone, rehearsed, main = moved_library
     lines = rc.verify_checkout(clone, rehearsed)
     text = "\n".join(lines)
-    assert f"rehearsed commit: {rehearsed}" in text
-    assert "(identical)" in text
+    assert f"pinned commit:    {rehearsed}" in text
+    assert "(identical, on main)" in text
     assert main in text
-    assert "main moved since rehearsal: 2 commit(s) ahead" in text
+    # Honest: the commit is an ancestor of main, so HEAD..main is exactly the
+    # merges since — two here.
+    assert "main has 2 commit(s) merged after this one" in text
 
 
 def test_verify_refuses_a_checkout_of_main(moved_library):
     clone, rehearsed, main = moved_library
     git(clone, "checkout", "-q", main)
-    with pytest.raises(rc.Refused, match="rehearsed commit is"):
+    with pytest.raises(rc.Refused, match="pinned commit is"):
         rc.verify_checkout(clone, rehearsed)
+
+
+def test_verify_refuses_a_pr_head_that_is_not_on_main(moved_library):
+    """Review finding 1: a commit_shas input can name any fetchable commit."""
+    clone, _, _ = moved_library
+    head = pr_head(clone)
+    git(clone, "checkout", "-q", head)
+    with pytest.raises(rc.Refused, match="is not on main"):
+        rc.verify_checkout(clone, head)
+
+
+def test_verify_refuses_when_main_is_absent_from_the_clone(moved_library):
+    clone, rehearsed, _ = moved_library
+    git(clone, "update-ref", "-d", "refs/remotes/origin/main")
+    with pytest.raises(rc.Refused, match="cannot be shown to be on main"):
+        rc.verify_checkout(clone, rehearsed)
+
+
+def test_verify_accepts_main_itself(moved_library):
+    clone, _, main = moved_library
+    git(clone, "checkout", "-q", main)
+    text = "\n".join(rc.verify_checkout(clone, main))
+    assert "main has not moved past it" in text
 
 
 def test_cli_release_then_verify_end_to_end(moved_library, tmp_path):
@@ -260,7 +298,16 @@ def test_cli_release_then_verify_end_to_end(moved_library, tmp_path):
         capture_output=True, text=True, env=env,
     )
     assert v.returncode == 0, v.stderr
-    assert "main moved since rehearsal" in v.stdout
+    assert "merged after this one" in v.stdout
+
+    head = pr_head(clone)
+    git(clone, "checkout", "-q", head)
+    off_main = subprocess.run(
+        [sys.executable, str(HELPER), "verify", "--repo-dir", str(clone), "--expected", head],
+        capture_output=True, text=True, env=env,
+    )
+    assert off_main.returncode == 1
+    assert "REFUSED" in off_main.stderr and "is not on main" in off_main.stderr
 
     refused = subprocess.run(
         [sys.executable, str(HELPER), "release", "--records-dir", str(tmp_path / "none")],
@@ -373,3 +420,33 @@ def test_library_colab_bump_never_pushes_main():
     assert "git push origin main" not in run
     assert 'git push origin "HEAD:refs/heads/$BRANCH"' in run
     assert 'BRANCH="release/$VERSION"' in run
+
+
+def test_every_rehearsal_and_release_leg_proves_its_commit_is_on_main():
+    tp = jobs()["release_test_pypi"]
+    checkout = library_checkout(tp)
+    assert checkout["with"]["fetch-depth"] == 0
+    (step,) = [s for s in tp["steps"] if s.get("name") == "Confirm the pinned commit is on main"]
+    assert "rehearsed_commits.py verify" in step["run"]
+    assert "if" not in step  # both modes
+    names = [s.get("name", "") for s in tp["steps"]]
+    assert names.index("Confirm the pinned commit is on main") < names.index("Build")
+
+    rel = jobs()["release"]
+    assert library_checkout(rel)["with"]["fetch-depth"] == 0
+
+
+def test_colab_bump_opens_or_updates_one_pr_into_main_without_failing_the_release():
+    job = jobs()["bump_library_colab_urls"]
+    (mint,) = [s for s in job["steps"] if s.get("id") == "app_token"]
+    assert mint["with"]["permission-pull-requests"] == "write"
+    (pr,) = [s for s in job["steps"] if s.get("name", "").startswith("Open or update the Colab-bump PR")]
+    assert pr["env"]["GH_TOKEN"] == "${{ steps.app_token.outputs.token }}"
+    assert "steps.bump.outputs.pushed == 'true'" in pr["if"]
+    run = pr["run"]
+    assert 'TITLE="release $VERSION: Colab URL bump"' in run
+    assert "gh pr list" in run and "--head \"$BRANCH\"" in run
+    assert "gh pr edit" in run
+    assert "gh pr create" in run and "--base main" in run
+    assert "::warning::" in run
+    assert "set -e" not in run.replace("set -uo pipefail", "")

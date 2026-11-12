@@ -258,28 +258,49 @@ def _git(repo_dir: Path, *args: str) -> str:
 
 
 def verify_checkout(repo_dir: Path, expected: str, main_ref: str = "origin/main") -> list[str]:
-    """Assert HEAD is the rehearsed commit; return the log lines to print.
+    """Assert HEAD is the pinned commit AND is on ``main``; return log lines.
 
-    ``main`` having moved is reported, not refused: the ruling is to release
-    the rehearsed commit regardless; later merges wait for the next night.
+    Runs in both modes: in each rehearsal leg (so a ``commit_shas`` input naming
+    a PR head, a side branch or any other fetchable commit never becomes a
+    rehearsal record) and in each live release leg (so it is never published).
+    "On main" means ``git merge-base --is-ancestor HEAD <main_ref>``; a clone
+    without ``<main_ref>`` cannot prove it and is refused.
+
+    ``main`` having moved past the commit is reported, not refused: the ruling
+    is to release the rehearsed commit; later merges wait for the next release.
+    Because the commit is an ancestor of ``main``, ``HEAD..main`` counts exactly
+    the commits merged since, so the number reported is the real lag.
     """
     expected = expected.strip().lower()
     head = _git(repo_dir, "rev-parse", "HEAD").lower()
     if head != expected:
-        raise Refused(f"checked out {head} but the rehearsed commit is {expected}")
-    lines = [f"rehearsed commit: {expected}", f"checked out:      {head}  (identical)"]
+        raise Refused(f"checked out {head} but the pinned commit is {expected}")
     try:
-        main = _git(repo_dir, "rev-parse", main_ref).lower()
-    except subprocess.CalledProcessError:
-        lines.append(f"{main_ref}: not available in this clone (cannot report drift)")
-        return lines
+        main = _git(repo_dir, "rev-parse", "--verify", f"{main_ref}^{{commit}}").lower()
+    except subprocess.CalledProcessError as exc:
+        raise Refused(
+            f"{main_ref} is not in this clone, so {head} cannot be shown to be on main "
+            "(check out with full history)"
+        ) from exc
+    on_main = subprocess.run(
+        ["git", "-C", str(repo_dir), "merge-base", "--is-ancestor", head, main],
+        capture_output=True, text=True,
+    )
+    if on_main.returncode == 1:
+        raise Refused(
+            f"{head} is not on main ({main_ref} = {main}): only commits merged to main "
+            "are rehearsed or released (a PR head or side-branch commit is refused)"
+        )
+    if on_main.returncode != 0:
+        raise Refused(f"could not check whether {head} is on main: {on_main.stderr.strip()}")
+    lines = [f"pinned commit:    {expected}", f"checked out:      {head}  (identical, on main)"]
     if main == head:
-        lines.append(f"{main_ref}: {main}  (main has not moved since rehearsal)")
+        lines.append(f"{main_ref}: {main}  (main has not moved past it)")
     else:
         ahead = _git(repo_dir, "rev-list", "--count", f"{head}..{main}")
         lines.append(
-            f"{main_ref}: {main}  (main moved since rehearsal: {ahead} commit(s) ahead — "
-            "releasing the rehearsed commit; they wait for the next release)"
+            f"{main_ref}: {main}  (main has {ahead} commit(s) merged after this one; "
+            "they are not in this build and wait for the next release)"
         )
     return lines
 
