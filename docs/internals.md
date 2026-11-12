@@ -379,6 +379,20 @@ The workflow (`release.yml`) is manually dispatched with inputs:
 Any caller that dispatches a **live** `release.yml` (`rehearsal=false`) must follow this; a live
 dispatch without it refuses in `resolve_commits` before anything is built.
 
+The PyAutoBrain files that implement it (changed in the Brain PR that merges with this one):
+
+- `agents/conductors/release/rehearse.sh` (around line 126): the `capture-heads` step of the
+  Stage 2 plan, which today reads each library's `main` HEAD after the rehearsal. It must
+  emit a step that takes `commit_shas` from the downloaded `rehearsal.json` instead.
+- `agents/conductors/release/nightly.sh` (around lines 395-423): the consumer of that step. It
+  writes `$ART_DIR/commit_shas.json` (now from `rehearsal.json`, not `gh api .../commits/main`),
+  passes that file to `pyauto-heart validate --commit-shas`, and must add `rehearsal_run_id`
+  (and `commit_shas`) to the step-6 live dispatch inputs.
+- The manual door: `agents/conductors/release/release.sh`, the release
+  `agents/conductors/release/AGENTS.md`, and `agents/conductors/build/build.sh --mode release`,
+  which runs `autohands pre_build`. The door must take the rehearsal run id and forward it as
+  `pre_build`'s second argument (or `REHEARSAL_RUN_ID`).
+
 1. **Rehearse first.** Dispatch `release.yml` with `rehearsal=true` (optionally
    `commit_shas=<json>` to build specific on-main commits). Keep the run's id.
 2. **Read the record.** On success the run uploads the artifact **`testpypi-rehearsal-version`**
@@ -404,6 +418,15 @@ dispatch without it refuses in `resolve_commits` before anything is built.
 3. **Feed Heart the same commits.** Write `rehearsal.json`'s `commit_shas` object to the file
    passed to `pyauto-heart validate --ingest <dir> --commit-shas <file>` (instead of re-reading
    `main` after the rehearsal).
+
+   **Heart must change in the same merge.** Today `PyAutoHeart/heart/readiness.py` (about lines
+   596-617) compares the report's `commit_shas` with the current `main` HEADs and marks the
+   validation STALE ("source moved since rehearsal") whenever they differ. With rehearsed
+   commits as the record, `main` moving on after a rehearsal is normal, so that rule would
+   make most nights STALE. The Heart change, on the Heart#340 branch, makes the check
+   "each rehearsed SHA is an ancestor of the current `main` HEAD": fresh when that holds,
+   STALE only when a rehearsed commit is not on `main`. Merge Hands#337, the Brain change and
+   Heart#340 together; any one of them alone breaks the nightly.
 4. **Dispatch the live release** with:
    - `rehearsal_run_id` = the rehearsal run id (string of digits). **Required** in practice.
    - `commit_shas` = the compact JSON of `rehearsal.json`'s `commit_shas` (optional cross-check;
