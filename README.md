@@ -64,3 +64,5 @@ Boundary and agent guidance: [AGENTS.md](AGENTS.md); the pipeline internals:
 of is described once in
 [PyAutoBrain/ORGANISM.md](https://github.com/PyAutoLabs/PyAutoBrain/blob/main/ORGANISM.md)
 and documented in full at <https://pyautoscientist.readthedocs.io>.
+
+<sub><i><a href="https://fredagain.lnk.to/Billie">put your loving arms around me</a></i></sub>
