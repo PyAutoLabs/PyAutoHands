@@ -3,8 +3,12 @@
 # notebooks + git commit & push for all workspace repos before triggering the
 # GitHub Actions release workflow.
 #
-# Usage: bash pre_build.sh [minor_version]
-#   minor_version  Minor version suffix (default: 1)
+# Usage: bash pre_build.sh [minor_version] [rehearsal_run_id]
+#   minor_version     Minor version suffix (default: 1)
+#   rehearsal_run_id  The successful rehearsal run of release.yml whose recorded
+#                     library commits this release publishes (or $REHEARSAL_RUN_ID).
+#   $COMMIT_SHAS_FILE Optional {library: sha} manifest; release.yml refuses
+#                     unless it equals that rehearsal's record.
 #
 # pre_build always dispatches a full real release. To build + publish to
 # TestPyPI without releasing (e.g. the Heart/Brain validation gate), dispatch
@@ -13,6 +17,21 @@
 set -e
 
 MINOR_VERSION="${1:-1}"
+REHEARSAL_RUN_ID="${2:-${REHEARSAL_RUN_ID:-}}"
+
+# A live release publishes exactly the commits a rehearsal built (M2.4,
+# PyAutoHands#337); release.yml refuses without a rehearsal record. Refuse here
+# too, before any workspace is formatted, committed or pushed.
+if ! [[ "$REHEARSAL_RUN_ID" =~ ^[0-9]+$ ]]; then
+    echo "ABORT: pre_build needs the rehearsal run id (second argument or \$REHEARSAL_RUN_ID)." >&2
+    echo "  A release publishes exactly the library commits that rehearsal built;" >&2
+    echo "  rehearse first (release.yml rehearsal=true), then pass its run id." >&2
+    exit 1
+fi
+COMMIT_SHAS_JSON=""
+if [ -n "${COMMIT_SHAS_FILE:-}" ]; then
+    COMMIT_SHAS_JSON="$(cat "$COMMIT_SHAS_FILE")"
+fi
 
 # Resolve PYAUTOBASE — the workspace root holding PyAutoHands and every
 # workspace repo — through the one shared resolver when a PyAutoBrain checkout
@@ -243,10 +262,14 @@ done
 
 # Trigger the GitHub Actions release workflow
 echo ""
-echo "=== Triggering release workflow (minor_version=$MINOR_VERSION) ==="
+echo "=== Triggering release workflow (minor_version=$MINOR_VERSION, rehearsal_run_id=$REHEARSAL_RUN_ID) ==="
+DISPATCH_FIELDS=(--field minor_version="$MINOR_VERSION" --field rehearsal_run_id="$REHEARSAL_RUN_ID")
+if [ -n "$COMMIT_SHAS_JSON" ]; then
+    DISPATCH_FIELDS+=(--field commit_shas="$COMMIT_SHAS_JSON")
+fi
 gh workflow run release.yml \
     --repo PyAutoLabs/PyAutoHands \
-    --field minor_version="$MINOR_VERSION"
+    "${DISPATCH_FIELDS[@]}"
 
 echo ""
 echo "Pre-build complete. Workflow dispatched."

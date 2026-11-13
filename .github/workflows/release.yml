@@ -24,6 +24,24 @@ on:
         description: 'Rehearsal mode: build + publish to TestPyPI only, then STOP (no PyPI, no git tag, no notebook commits, no Colab bumps). Used by the Heart/Brain release-validation gate.'
         required: false
         default: 'false'
+      # The commits a run builds (M2.4, PyAutoHands#337). Human ruling
+      # 2026-11-12: a release publishes exactly the commits that passed
+      # rehearsal, even if `main` has moved since — on 2026-11-09 the release
+      # leg re-checked-out `main` and published PyAutoArray four commits past
+      # what the rehearsal built. A live run therefore REFUSES unless it can
+      # name a rehearsal record: the `testpypi-rehearsal-version` artifact of a
+      # successful rehearsal run, which now records the commit of every library
+      # it built. See the resolve_commits job. The exact caller contract (input
+      # names, where rehearsal.json lives in the artifact, its schema, and what
+      # to feed Heart) is docs/internals.md "Caller contract".
+      rehearsal_run_id:
+        description: 'Live release: the run id of the successful rehearsal (rehearsal=true run of this workflow) whose recorded commits to release. Ignored in rehearsal mode.'
+        required: false
+        default: ''
+      commit_shas:
+        description: 'JSON {"PyAutoNerves": "<sha>", ...} for all six libraries. Rehearsal: build exactly these (default: main HEADs, pinned once at run start). Live: must equal the rehearsal record (with rehearsal_run_id), or must match some recent rehearsal record (without it).'
+        required: false
+        default: ''
 
 jobs:
   # Single source of truth for rehearsal-vs-live: the `rehearsal` dispatch
@@ -43,6 +61,98 @@ jobs:
           REHEARSAL="${{ github.event.inputs.rehearsal || 'false' }}"
           echo "rehearsal=${REHEARSAL}" >> "$GITHUB_OUTPUT"
           echo "event=\`${{ github.event_name }}\` → rehearsal=\`${REHEARSAL}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # Single source of truth for WHICH library commits this run builds (M2.4,
+  # PyAutoHands#337). Every library checkout below reads its commit from this
+  # job's `commit_shas` output (`{bare repo name: full sha}`), never `ref: main`.
+  #
+  # - Rehearsal: pins each library's `main` HEAD once, here, before any leg
+  #   starts (or takes the `commit_shas` input verbatim), so all legs build the
+  #   same set and `rehearsal_version` records exactly what was built.
+  # - Live: reads the rehearsal record(s) and resolves through
+  #   autohands/rehearsed_commits.py, which REFUSES — before anything is built,
+  #   tagged or published — when no rehearsal is named, the named run has no
+  #   record (failed, not a rehearsal, artifact expired, or a rehearsal from
+  #   before this job existed), or the record disagrees with `commit_shas`.
+  #   `main` having moved since the rehearsal is NOT a refusal: the rehearsed
+  #   commits are released and later merges wait for the next release.
+  resolve_commits:
+    runs-on: ubuntu-latest
+    needs: resolve_mode
+    permissions:
+      actions: read     # read the rehearsal run + download its artifact
+      contents: read
+    outputs:
+      commit_shas: ${{ steps.resolve.outputs.commit_shas }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REHEARSAL: ${{ needs.resolve_mode.outputs.rehearsal }}
+      REHEARSAL_RUN_ID: ${{ github.event.inputs.rehearsal_run_id }}
+      COMMIT_SHAS: ${{ github.event.inputs.commit_shas }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: PyAutoHands
+      # The helper reads the library set from autohands/config/workspaces.yaml.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PyYAML
+        run: python3 -m pip install pyyaml
+      - name: Fetch rehearsal records (live release only)
+        if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
+        run: |
+          set -euo pipefail
+          mkdir -p records
+          # A record is the testpypi-rehearsal-version artifact of a SUCCESSFUL
+          # run of this workflow; it is saved under records/<run id>/, and the
+          # directory name is the record's identity.
+          fetch() {
+            local id="$1" path conclusion
+            path="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id" --jq '.path' 2>/dev/null || true)"
+            conclusion="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id" --jq '.conclusion' 2>/dev/null || true)"
+            if [ "$path" != ".github/workflows/release.yml" ] || [ "$conclusion" != "success" ]; then
+              echo "run $id is not a successful run of release.yml (path=${path:-?} conclusion=${conclusion:-?}) — not a rehearsal record"
+              return 0
+            fi
+            gh run download "$id" -R "$GITHUB_REPOSITORY" -n testpypi-rehearsal-version \
+              -D "records/$id" >/dev/null 2>&1 \
+              && echo "run $id: rehearsal record found" \
+              || echo "run $id: no testpypi-rehearsal-version artifact (a live run, or expired)"
+          }
+          if [ -n "$REHEARSAL_RUN_ID" ]; then
+            if ! [[ "$REHEARSAL_RUN_ID" =~ ^[0-9]+$ ]]; then
+              echo "::error::REFUSED — rehearsal_run_id must be a numeric run id, got '$REHEARSAL_RUN_ID'"
+              exit 1
+            fi
+            fetch "$REHEARSAL_RUN_ID"
+          elif [ -n "$COMMIT_SHAS" ]; then
+            # No run named: look for a recent rehearsal that built these commits.
+            for id in $(gh run list -R "$GITHUB_REPOSITORY" --workflow release.yml \
+                          --status success -L 30 --json databaseId --jq '.[].databaseId'); do
+              fetch "$id"
+            done
+          fi
+      - name: Resolve the commits this run builds
+        id: resolve
+        run: |
+          set -euo pipefail
+          if [ "$REHEARSAL" = "true" ]; then
+            python3 PyAutoHands/autohands/rehearsed_commits.py rehearsal \
+              --commit-shas "$COMMIT_SHAS" --out commit_shas.json
+          else
+            python3 PyAutoHands/autohands/rehearsed_commits.py release \
+              --records-dir records \
+              --rehearsal-run-id "$REHEARSAL_RUN_ID" \
+              --commit-shas "$COMMIT_SHAS" \
+              --out commit_shas.json
+          fi
+          {
+            echo "### Library commits this run builds"
+            echo '```json'
+            cat commit_shas.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   version_number:
     runs-on: ubuntu-latest
@@ -83,7 +193,11 @@ jobs:
 
   release_test_pypi:
         runs-on: ubuntu-latest
-        needs: version_number
+        # resolve_commits pins the commit each library leg builds — in a
+        # rehearsal the commits it records, in a live run the rehearsed ones.
+        needs:
+          - version_number
+          - resolve_commits
         env:
           TWINE_REPOSITORY: testpypi
           TWINE_USERNAME: __token__
@@ -93,33 +207,40 @@ jobs:
             python-version: [3.12]
             project:
               - repository: PyAutoLabs/PyAutoNerves
-                ref: main
                 path: PyAutoNerves
               - repository: PyAutoLabs/PyAutoFit
-                ref: main
                 path: PyAutoFit
               - repository: PyAutoLabs/PyAutoArray
-                ref: main
                 path: PyAutoArray
               - repository: PyAutoLabs/PyAutoGalaxy
-                ref: main
                 path: PyAutoGalaxy
               - repository: PyAutoLabs/PyAutoLens
-                ref: main
                 path: PyAutoLens
               - repository: PyAutoLabs/PyAutoCTI
-                ref: main
                 path: PyAutoCTI
         steps:
         - uses: actions/checkout@v4
           with:
               path: PyAutoHands
-        - name: Checkout
+        - name: Checkout (the commit resolve_commits pinned, never `main`)
           uses: actions/checkout@v4
           with:
             repository: "${{ matrix.project.repository }}"
-            ref: "${{ matrix.project.ref }}"
+            ref: "${{ fromJSON(needs.resolve_commits.outputs.commit_shas)[matrix.project.path] }}"
             path: "${{ matrix.project.path }}"
+            # Full history: the next step proves the commit is on origin/main.
+            fetch-depth: 0
+            persist-credentials: false
+        - name: Confirm the pinned commit is on main
+          # Both modes. A `commit_shas` input can name any fetchable commit (a
+          # PR head, a side branch); refusing here means such a commit never
+          # becomes a rehearsal record, so it can never be released either.
+          env:
+            PINNED_SHA: "${{ fromJSON(needs.resolve_commits.outputs.commit_shas)[matrix.project.path] }}"
+          run: |
+            set -euo pipefail
+            python3 PyAutoHands/autohands/rehearsed_commits.py verify \
+              --repo-dir "${{ matrix.project.path }}" --expected "$PINNED_SHA"
         - name: Set up Python ${{ matrix.python-version }}
           uses: actions/setup-python@v5
           with:
@@ -454,51 +575,65 @@ jobs:
       TWINE_REPOSITORY: pypi
       TWINE_USERNAME: __token__
       TWINE_PASSWORD: ${{ secrets.PYPI }}
+      # The rehearsed commit of this row's library (M2.4): checked out, verified,
+      # tagged and built — `main` is never read for what to publish.
+      REHEARSED_SHA: ${{ fromJSON(needs.resolve_commits.outputs.commit_shas)[matrix.project.path] }}
     needs:
       # Workspace-integration validation moved to PyAutoHeart
       # (workspace-validation.yml). Build is a pure executor: it gates only on
       # the TestPyPI build + version. Release readiness is enforced upstream by
       # the release agent via `pyauto-heart readiness`.
       - resolve_mode
+      - resolve_commits
       - release_test_pypi
       - version_number
     strategy:
       matrix:
         project:
         - repository: PyAutoLabs/PyAutoNerves
-          ref: main
           path: PyAutoNerves
         - repository: PyAutoLabs/PyAutoFit
-          ref: main
           path: PyAutoFit
         - repository: PyAutoLabs/PyAutoArray
-          ref: main
           path: PyAutoArray
         - repository: PyAutoLabs/PyAutoGalaxy
-          ref: main
           path: PyAutoGalaxy
         - repository: PyAutoLabs/PyAutoLens
-          ref: main
           path: PyAutoLens
         - repository: PyAutoLabs/PyAutoCTI
-          ref: main
           path: PyAutoCTI
     steps:
     - uses: actions/checkout@v4
       with:
           path: PyAutoHands
-    - name: Checkout
+    - name: Checkout (the rehearsed commit)
       # The libraries are public, so the read needs no App token. Full history
-      # (tags included) like the former `git clone`. persist-credentials: false
+      # (tags and origin/main included) like the former `git clone`, so the next
+      # step can report how far `main` has moved. persist-credentials: false
       # keeps checkout's GITHUB_TOKEN extraheader out of the clone's config,
       # where it would shadow the App credential the Tag step pushes with.
       uses: actions/checkout@v4
       with:
         repository: ${{ matrix.project.repository }}
-        ref: ${{ matrix.project.ref }}
+        ref: ${{ env.REHEARSED_SHA }}
         path: ${{ matrix.project.path }}
         fetch-depth: 0
         persist-credentials: false
+    - name: Confirm the checkout is the rehearsed commit
+      # Refuses if HEAD is not the rehearsed commit or is not on origin/main
+      # (merge-base --is-ancestor); reports (does not refuse) `main` having
+      # moved since — the ruling is to release what was rehearsed.
+      run: |
+        set -euo pipefail
+        python3 PyAutoHands/autohands/rehearsed_commits.py verify \
+          --repo-dir "${{ matrix.project.path }}" --expected "$REHEARSED_SHA" \
+          | tee verify.txt
+        {
+          echo "### ${{ matrix.project.path }}"
+          echo '```'
+          cat verify.txt
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
@@ -581,6 +716,11 @@ jobs:
         VERSION="${{ needs.version_number.outputs.version_number }}"
         gh auth setup-git
         HEAD_SHA="$(git rev-parse HEAD)"
+        # Never tag anything but the rehearsed commit (M2.4).
+        if [ "$HEAD_SHA" != "$REHEARSED_SHA" ]; then
+          echo "::error::REFUSED — HEAD $HEAD_SHA is not the rehearsed commit $REHEARSED_SHA; not tagging."
+          exit 1
+        fi
         # For an annotated tag `refs/tags/<v>` is the tag object and
         # `refs/tags/<v>^{}` the commit it peels to; a lightweight tag has no
         # peeled line, so fall back to the ref's own object id.
@@ -602,6 +742,15 @@ jobs:
           echo "never silently re-point a published tag."
           exit 1
         fi
+        # The safeguard line (decision sheet M2.4): the published tag peels to
+        # the rehearsed commit, read back from the remote, or the job fails.
+        REMOTE_REFS="$(git ls-remote origin "refs/tags/$VERSION" "refs/tags/$VERSION^{}")"
+        PUBLISHED="$(printf '%s\n' "$REMOTE_REFS" | awk -v r="refs/tags/$VERSION^{}" '$2 == r {print $1}')"
+        if [ "$PUBLISHED" != "$REHEARSED_SHA" ]; then
+          echo "::error::tag $VERSION on origin peels to ${PUBLISHED:-nothing}, not the rehearsed commit $REHEARSED_SHA."
+          exit 1
+        fi
+        echo "rehearsed $REHEARSED_SHA  released $VERSION -> $PUBLISHED  identical"
     - name: Build
       run: |
         pushd "${{ matrix.project.path }}"
@@ -1084,10 +1233,27 @@ jobs:
         fi
 
 
+  # Library Colab URL bump — on a release branch, never on `main` (M2.4,
+  # PyAutoHands#337). This job used to commit and push the bump straight to
+  # each library's `main` the moment the release published: a bot commit that
+  # moved `main` past the rehearsed commit during every release, so the next
+  # readiness check saw "source moved since rehearsal".
+  #
+  # Mechanism: check out the RELEASED commit (the rehearsed one, which the tag
+  # peels to), apply the bump there, and push it as `release/<version>`. The
+  # tag stays exactly the rehearsed commit (`compare/<rehearsed>...<tag>` is
+  # `identical`), and `main` takes the bump only through a normal reviewed PR
+  # from that branch. The bumped links point at the WORKSPACE tags
+  # (`.../<workspace>/blob/<version>/...`), which release_workspaces creates;
+  # until the branch merges, a library README on `main` still links the
+  # previous workspace tag, which keeps resolving — nothing breaks, it just
+  # lags one release. Workspace bumps (release_workspaces) are unchanged: their
+  # tag must carry their own notebooks, so they still commit and tag there.
   bump_library_colab_urls:
     runs-on: ubuntu-latest
     needs:
       - resolve_mode
+      - resolve_commits
       - release
       - version_number
     if: "${{ needs.resolve_mode.outputs.rehearsal != 'true' }}"
@@ -1104,9 +1270,9 @@ jobs:
     - uses: actions/checkout@v4
       with:
         path: PyAutoHands
-    - name: Mint App token (push library main)
+    - name: Mint App token (push the library release branch)
       # Short job: minted at the top. checkout's `token:` persists it for the
-      # final `git push origin main`.
+      # final `git push` of the release branch.
       id: app_token
       uses: actions/create-github-app-token@v3
       with:
@@ -1115,11 +1281,13 @@ jobs:
         owner: PyAutoLabs
         repositories: ${{ matrix.library }}
         permission-contents: write
-    - name: Checkout library
+        # Open/update the PR that merges release/<version> back into main.
+        permission-pull-requests: write
+    - name: Checkout library (the released commit, not main)
       uses: actions/checkout@v4
       with:
         repository: PyAutoLabs/${{ matrix.library }}
-        ref: main
+        ref: ${{ fromJSON(needs.resolve_commits.outputs.commit_shas)[matrix.library] }}
         path: library
         token: ${{ steps.app_token.outputs.token }}
     - name: Configure Git
@@ -1130,18 +1298,73 @@ jobs:
         # is what GitHub attributes on; it differs from the App id.
         git config --global user.email "346909844+pyautolabs-bot[bot]@users.noreply.github.com"
         git config --global user.name "pyautolabs-bot[bot]"
-    - name: Bump Colab URL tag refs
+    - name: Bump Colab URL tag refs onto release/<version>
+      id: bump
       run: |
+        set -euo pipefail
         VERSION="${{ needs.version_number.outputs.version_number }}"
+        BRANCH="release/$VERSION"
+        echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
         pushd library
         bash "$GITHUB_WORKSPACE/PyAutoHands/autohands/bump_colab_urls.sh" "$VERSION"
-        if ! git diff --quiet; then
-          # Tracked modifications only — the bumper rewrites existing files in
-          # place; `git add -A` would sweep any unrelated leftovers (#156 step 2).
-          git add -u
-          git commit -m "Release $VERSION: bump Colab URL tag refs"
-          git push origin main
+        if git diff --quiet; then
+          echo "No Colab URLs to bump in ${{ matrix.library }}."
+          echo "pushed=false" >> "$GITHUB_OUTPUT"
+          exit 0
         fi
+        # Idempotent re-run: the branch already carries this release's bump
+        # (the PR step below still runs, so a PR lost on the first try is made).
+        if git ls-remote --exit-code origin "refs/heads/$BRANCH" >/dev/null; then
+          echo "$BRANCH already on origin — re-run, skipping the push."
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        # Tracked modifications only — the bumper rewrites existing files in
+        # place; `git add -A` would sweep any unrelated leftovers (#156 step 2).
+        git add -u
+        git commit -m "Release $VERSION: bump Colab URL tag refs"
+        # The only ref this job writes. Never `main`.
+        git push origin "HEAD:refs/heads/$BRANCH"
+        echo "pushed=true" >> "$GITHUB_OUTPUT"
+        {
+          echo "### ${{ matrix.library }} Colab bump"
+          echo "On \`$BRANCH\` (tag \`$VERSION\` stays the rehearsed commit; \`main\` untouched)."
+        } >> "$GITHUB_STEP_SUMMARY"
+    - name: Open or update the Colab-bump PR into main
+      # The bump reaches `main` only through this PR (normal review and merge
+      # gates), never by a push from the release. One PR per library per
+      # release: an open PR from the branch is updated, otherwise one is
+      # opened. Best-effort: the release has already published, so a failure
+      # here is a warning and the branch stays for a human to PR by hand.
+      if: "${{ steps.bump.outputs.pushed == 'true' }}"
+      env:
+        GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        REPO: PyAutoLabs/${{ matrix.library }}
+        BRANCH: ${{ steps.bump.outputs.branch }}
+        VERSION: ${{ needs.version_number.outputs.version_number }}
+      run: |
+        set -uo pipefail
+        TITLE="release $VERSION: Colab URL bump"
+        BODY="Merges \`$BRANCH\` into \`main\`: the Colab URL bump for release $VERSION.
+
+        The release tag \`$VERSION\` is the rehearsed commit and does not include this bump; the release no longer pushes to \`main\` (PyAutoHands#337). Docs-only: Colab links now point at the $VERSION workspace tags."
+        warn() {
+          echo "::warning::Colab-bump PR for $REPO not opened/updated ($1) — open it by hand: https://github.com/$REPO/compare/main...$BRANCH"
+          exit 0
+        }
+        EXISTING="$(gh pr list --repo "$REPO" --head "$BRANCH" --base main --state open \
+                      --json number --jq '.[0].number // empty')" || warn "gh pr list failed"
+        if [ -n "$EXISTING" ]; then
+          gh pr edit "$EXISTING" --repo "$REPO" --title "$TITLE" --body "$BODY" \
+            || warn "gh pr edit #$EXISTING failed"
+          URL="https://github.com/$REPO/pull/$EXISTING"
+          echo "Updated $URL"
+        else
+          URL="$(gh pr create --repo "$REPO" --base main --head "$BRANCH" \
+                   --title "$TITLE" --body "$BODY")" || warn "gh pr create failed"
+          echo "Opened $URL"
+        fi
+        echo "Merge to main by PR: $URL" >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
   # Wait for the released stack to be installable from production PyPI.
@@ -1469,12 +1692,19 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - resolve_mode
+      - resolve_commits
       - version_number
       - release_test_pypi
     if: "${{ needs.resolve_mode.outputs.rehearsal == 'true' }}"
     steps:
-      - name: Record resolved TestPyPI version
+      - name: Record resolved TestPyPI version and the commits built
+        # `commit_shas` is the rehearsal record a live release resolves through
+        # (M2.4): the exact library commits every leg of THIS run built, pinned
+        # once by resolve_commits. A live run releases these and nothing else.
+        env:
+          COMMIT_SHAS: ${{ needs.resolve_commits.outputs.commit_shas }}
         run: |
+          set -euo pipefail
           VERSION="${{ needs.version_number.outputs.version_number }}"
           echo "Rehearsal published to TestPyPI at version: $VERSION"
           mkdir -p rehearsal
@@ -1487,10 +1717,12 @@ jobs:
             "packages": ["autonerves", "autoarray", "autofit", "autogalaxy", "autolens", "autocti"],
             "run_id": "${{ github.run_id }}",
             "run_attempt": "${{ github.run_attempt }}",
-            "build_sha": "${{ github.sha }}"
+            "build_sha": "${{ github.sha }}",
+            "commit_shas": $COMMIT_SHAS
           }
           JSON
-          cat rehearsal/rehearsal.json
+          # Fail here, not in the release that later reads it.
+          python3 -m json.tool rehearsal/rehearsal.json
       - name: Write rehearsal summary
         run: |
           VERSION="${{ needs.version_number.outputs.version_number }}"
