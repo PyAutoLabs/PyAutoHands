@@ -35,6 +35,25 @@ parser.add_argument(
     ),
 )
 
+parser.add_argument(
+    "--retry-failed",
+    action="store_true",
+    help=(
+        "Stage 3 only (PyAutoHeart#344): re-run a FAILED script once; a pass on "
+        "the retry is recorded as flaky. Needs --report-dir."
+    ),
+)
+parser.add_argument(
+    "--quarantine",
+    type=str,
+    default=None,
+    help=(
+        "Stage 3 only: a JSON file of the ACTIVE quarantine entries Heart "
+        "resolved for this workspace (`python -m heart.quarantine skip-list`). "
+        "A matching script is skipped and recorded as quarantined."
+    ),
+)
+
 args = parser.parse_args()
 
 project = args.project
@@ -113,6 +132,17 @@ if __name__ == "__main__":
             print(f"ERROR: {e}", file=sys.stderr)
             sys.exit(1)
 
+    quarantine = None
+    if args.quarantine:
+        import json
+        # A named file that is missing or unreadable is a configuration error:
+        # running the quarantined script instead would be safe, but silently
+        # ignoring the flag would hide that the policy never arrived.
+        with open(args.quarantine) as fh:
+            q_doc = json.load(fh)
+        quarantine = [{**e, "workspace": e.get("workspace") or q_doc.get("workspace")}
+                      for e in q_doc.get("entries", []) if isinstance(e, dict)]
+
     build_util.execute_scripts_in_folder(
         no_run_list=no_run_list,
         directory=directory,
@@ -120,6 +150,8 @@ if __name__ == "__main__":
         skip_reasons=skip_reasons,
         env_config=env_config,
         files=files,
+        retry_failed=args.retry_failed and report is not None,
+        quarantine=quarantine,
     )
 
     if report is not None:

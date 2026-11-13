@@ -1,0 +1,189 @@
+"""
+Stage 3's one script retry and the quarantine skip (PyAutoHeart#344).
+
+Human ruling, 2026-11-12: a Stage 3 script that fails is re-run once; a pass
+on the retry is recorded as flaky, not hidden; a second failure stays red. A
+quarantined script (an ACTIVE entry Heart resolved: bug ref, expiry) is
+skipped and recorded, never run. Heart owns the expiry / bug-ref / 3-entry
+rules and the YELLOW; these tests pin the runner's half.
+"""
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+PROJECT_ROOT = Path(__file__).parent.parent
+AUTOHANDS_DIR = PROJECT_ROOT / "autohands"
+sys.path.insert(0, str(AUTOHANDS_DIR))
+
+import aggregate_results  # noqa: E402
+from build_util import execute_scripts_in_folder  # noqa: E402
+from result_collector import RunReport, Status  # noqa: E402
+
+# Fails on its first run, passes on every later one (a marker file records
+# that it ran) — a flake.
+FLAKY = """
+from pathlib import Path
+marker = Path(__file__).with_suffix(".ran")
+if not marker.exists():
+    marker.write_text("1")
+    raise SystemExit("first attempt: transient failure")
+"""
+BROKEN = 'raise RuntimeError("really broken")\n'
+
+
+@pytest.fixture
+def workspace(tmp_path, monkeypatch):
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "flaky.py").write_text(FLAKY)
+    (scripts / "broken.py").write_text(BROKEN)
+    (scripts / "fine.py").write_text("")
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+def _run(**kw):
+    report = RunReport(project="demo", directory="scripts", run_type="script")
+    execute_scripts_in_folder(directory="scripts", report=report, **kw)
+    return {Path(r.file).name: r for r in report.results}, report
+
+
+def test_witness_344_retry_pass_is_recorded_as_flaky(workspace):
+    results, report = _run(retry_failed=True)
+    r = results["flaky.py"]
+    assert r.status == Status.PASSED
+    assert r.flaky is True and r.attempts == 2
+    assert "transient failure" in r.first_error
+    d = r.to_dict()
+    assert d["flaky"] is True and d["attempts"] == 2 and "first_error" in d
+    assert "## Flaky" in report.to_markdown()
+    # One entry per script: the first attempt is replaced, not double-counted.
+    assert len(report.results) == 3
+
+
+def test_witness_344_retry_fail_is_recorded_red(workspace):
+    results, report = _run(retry_failed=True)
+    r = results["broken.py"]
+    assert r.status == Status.FAILED and r.attempts == 2 and r.flaky is False
+    assert report.has_failures
+
+
+def test_without_the_flag_nothing_is_retried(workspace):
+    results, _ = _run()
+    assert results["flaky.py"].status == Status.FAILED
+    assert results["flaky.py"].attempts == 1
+    # A passing entry carries none of the new keys: the per-run JSON is unchanged.
+    assert set(results["fine.py"].to_dict()) == {"file", "status", "duration_seconds"}
+
+
+def test_a_quarantined_script_is_skipped_and_recorded_not_run(workspace):
+    q = [{"script": "scripts/broken.py", "bug": "PyAutoDemo#7", "expires": "2026-11-19"}]
+    results, report = _run(retry_failed=True, quarantine=q)
+    r = results["broken.py"]
+    assert r.status == Status.SKIPPED and r.quarantined == "PyAutoDemo#7"
+    assert "quarantined: PyAutoDemo#7" in r.skip_reason
+    assert not report.has_failures
+
+
+def test_aggregate_carries_flaky_and_quarantined(workspace, tmp_path, monkeypatch):
+    monkeypatch.setattr(aggregate_results, "fetch_merged_prs", lambda: [])  # no network
+    q = [{"script": "scripts/broken.py", "bug": "PyAutoDemo#7", "expires": "2026-11-19"}]
+    _, report = _run(retry_failed=True, quarantine=q)
+    out = tmp_path / "results"
+    report.write(out)
+    agg = aggregate_results.aggregate(out)
+    assert agg["ready"] is True
+    assert [Path(e["file"]).name for e in agg["flaky"]] == ["flaky.py"]
+    assert [e["quarantined"] for e in agg["quarantined"]] == ["PyAutoDemo#7"]
+    md = aggregate_results.generate_markdown(agg)
+    assert "Flaky" in md and "Quarantined" in md
+
+
+# --- review fixes -------------------------------------------------------------
+
+# Writes a "finished search" into output/ and then fails; on a later run it
+# would RESUME from that output and pass without searching again.
+RESUMES = """
+from pathlib import Path
+done = Path("output/build/demo/search_finished")
+if done.exists():
+    raise SystemExit(0)          # resumed from the finished output: a false pass
+done.parent.mkdir(parents=True, exist_ok=True)
+done.write_text("samples")
+raise RuntimeError("failed after the search completed")
+"""
+
+
+def test_retry_cleans_the_failed_attempts_output_so_it_cannot_resume(workspace):
+    (workspace / "scripts" / "resumes.py").write_text(RESUMES)
+    keep = workspace / "output" / "build" / "earlier" / "result.json"
+    keep.parent.mkdir(parents=True)
+    keep.write_text("from an earlier script")
+    import os
+    os.utime(keep, (1, 1))                 # written long before this run
+    results, _ = _run(retry_failed=True)
+    r = results["resumes.py"]
+    assert r.status == Status.FAILED and r.attempts == 2 and r.flaky is False
+    assert keep.exists()                   # other scripts' output is untouched
+
+
+def test_quarantine_matches_the_exact_workspace_relative_path(workspace):
+    sub = workspace / "scripts" / "multi_imaging"
+    sub.mkdir()
+    (sub / "broken.py").write_text(BROKEN)
+    (workspace / "scripts" / "imaging").mkdir()
+    (workspace / "scripts" / "imaging" / "broken.py").write_text(BROKEN)
+    q = [{"script": "scripts/imaging/broken.py", "bug": "PyAutoDemo#7",
+          "expires": "2026-11-19", "workspace": "demo_workspace"}]
+    report = RunReport(project="demo", directory="scripts", run_type="script")
+    execute_scripts_in_folder(directory="scripts", report=report, quarantine=q)
+    by_rel = {str(Path(r.file).relative_to(workspace)): r for r in report.results}
+    skipped = by_rel["scripts/imaging/broken.py"]
+    assert skipped.status == Status.SKIPPED
+    assert skipped.to_dict()["quarantine_entry"] == {
+        "workspace": "demo_workspace", "script": "scripts/imaging/broken.py",
+        "bug": "PyAutoDemo#7", "expires": "2026-11-19"}
+    # Neither the substring-sharing sibling nor the same-named top-level script.
+    assert by_rel["scripts/multi_imaging/broken.py"].status == Status.FAILED
+    assert by_rel["scripts/broken.py"].status == Status.FAILED
+
+
+# Resumes an EARLIER script's search (its zip pre-exists): restores it (fresh
+# mtimes on the unzipped files), rewrites the zip, writes its own new search
+# output, then fails.
+RESUMES_EARLIER = """
+import zipfile
+from pathlib import Path
+z = Path("output/build/earlier/search.zip")
+with zipfile.ZipFile(z) as zf:
+    zf.extractall(z.with_suffix(""))
+with zipfile.ZipFile(z, "w") as zf:
+    zf.writestr("samples.csv", "rewritten")
+own = Path("output/build/failing/search/samples.csv")
+own.parent.mkdir(parents=True, exist_ok=True)
+own.write_text("own new search")
+raise RuntimeError("failed after its own search")
+"""
+
+
+def test_retry_clean_keeps_an_earlier_scripts_rewritten_zip(workspace):
+    import os
+    import zipfile
+    from build_util import clean_output_new_since, output_snapshot
+    z = workspace / "output" / "build" / "earlier" / "search.zip"
+    z.parent.mkdir(parents=True)
+    with zipfile.ZipFile(z, "w") as zf:
+        zf.writestr("samples.csv", "earlier search")
+    os.utime(z, (1, 1))
+    before = output_snapshot()
+    (workspace / "scripts" / "resumes_earlier.py").write_text(RESUMES_EARLIER)
+    import subprocess
+    subprocess.run([sys.executable, "scripts/resumes_earlier.py"], cwd=workspace)
+    assert z.stat().st_mtime > 1                       # rewritten by the attempt
+    assert clean_output_new_since(before) >= 2
+    assert z.exists()                                  # the earlier output survives
+    assert not (workspace / "output" / "build" / "earlier" / "search").exists()
+    assert not (workspace / "output" / "build" / "failing").exists()

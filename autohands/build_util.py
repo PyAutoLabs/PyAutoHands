@@ -1497,7 +1497,9 @@ def files_from_list(directory: str, list_path) -> List[Path]:
     return files
 
 
-def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_reasons=None, env_config=None, files=None):
+def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_reasons=None,
+                              env_config=None, files=None, retry_failed=False,
+                              quarantine=None):
     """
     Run the scripts under ``directory``, honouring ``no_run_list``.
 
@@ -1516,8 +1518,22 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
     Measured before this was settled: honouring ``no_run`` over the workspaces'
     allowlists would have dropped 13 scripts across four repos, every one of
     which runs today.
+
+    ``retry_failed`` and ``quarantine`` are Stage 3's (release validation,
+    PyAutoHeart#344; the human ruling of 2026-11-12) and need a ``report``:
+
+    * ``retry_failed`` re-runs a FAILED script once. A pass on the retry is
+      recorded PASSED with ``flaky`` set and the first error kept — recorded,
+      not hidden; a second failure stays FAILED (``attempts`` 2). A TIMEOUT is
+      not retried: it already spent its whole cap, and slowness is not flake.
+    * ``quarantine`` is the list of ACTIVE entries Heart resolved for this
+      workspace (``{"script", "bug", "expires"}``; Heart owns the expiry, the
+      bug-ref and the 3-entry rules). A matching script is SKIPPED with the
+      entry's bug ref, never run — the gate it would have failed is reported by
+      Heart as YELLOW, never GREEN.
     """
     no_run_list = no_run_list or []
+    quarantine = [q for q in (quarantine or []) if isinstance(q, dict) and q.get("script")]
     # Infrastructure files — always skip, never report
     infra_skip = ["__init__", "README"]
     no_run_list.extend(infra_skip)
@@ -1531,6 +1547,20 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
 
     for file in files:
         if file.stem in infra_skip:
+            continue
+        q = _quarantine_match(file, quarantine)
+        if q is not None:
+            print(f"  {file} ...  QUARANTINED ({q.get('bug')}, until {q.get('expires')})")
+            if report is not None:
+                from result_collector import ScriptResult, Status
+                report.results.append(ScriptResult(
+                    file=str(file),
+                    status=Status.SKIPPED,
+                    skip_reason=f"quarantined: {q.get('bug')} (expires {q.get('expires')})",
+                    quarantined=str(q.get("bug")),
+                    quarantine_entry={k: q.get(k) for k in
+                                      ("workspace", "script", "bug", "expires")},
+                ))
             continue
         # The allowlist is the policy when there is one: no_run.yaml governs
         # OTHER runs (the release mega-run, notebook generation), not this one.
@@ -1565,4 +1595,85 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
             from env_config import build_env_for_script, args_for_script
             env = build_env_for_script(file, env_config)
             extra_args = args_for_script(file, env_config)
+            before = output_snapshot() if retry_failed and report is not None else None
             execute_script(str(file), report=report, env=env, extra_args=extra_args)
+            if before is not None:
+                _retry_once(file, report, env, extra_args, before)
+
+
+def _quarantine_match(file, quarantine):
+    """The quarantine entry naming exactly this script, or None.
+
+    Matched on the EXACT workspace-relative path (the runner's cwd is the
+    workspace root), never as a substring: an entry for ``scripts/imaging/fit.py``
+    must not also skip ``scripts/multi_imaging/fit.py``."""
+    from pathlib import PurePosixPath
+    from result_collector import workspace_relative
+    rel = PurePosixPath(Path(workspace_relative(str(file))).as_posix())
+    for q in quarantine:
+        if PurePosixPath(str(q["script"])) == rel:
+            return q
+    return None
+
+
+#: Where workspace scripts write (autonerves' default ``output_path`` is
+#: ``<cwd>/output``; the runner's cwd is the workspace root).
+OUTPUT_DIRNAME = "output"
+
+
+def output_snapshot(root=None) -> frozenset:
+    """Every path under ``<root>/output`` that exists now — taken before an
+    attempt, so the retry's clean can tell the attempt's own output apart."""
+    out = Path(root or Path.cwd()) / OUTPUT_DIRNAME
+    return frozenset(out.rglob("*")) if out.is_dir() else frozenset()
+
+
+def clean_output_new_since(before, root=None) -> int:
+    """Delete every path under ``<root>/output`` that was NOT in ``before`` (the
+    snapshot taken before the failed attempt). Returns the number of files
+    removed.
+
+    New paths are exactly the failed attempt's own output: a model-fit search
+    that completed before the script failed leaves its finished samples there,
+    and a retry would RESUME from them and pass without re-running the search.
+    A path that already existed is kept even if the attempt rewrote it — a
+    script resuming an earlier script's search restores that search's zip
+    with fresh mtimes and rewrites the zip, and deleting it would make later
+    scripts re-run or fail: a false red. (What the attempt unzipped from it is
+    new, so it goes; the zip it came from stays.)"""
+    out = Path(root or Path.cwd()) / OUTPUT_DIRNAME
+    if not out.is_dir():
+        return 0
+    removed = 0
+    for f in sorted(out.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+        if f in before:
+            continue
+        try:
+            if f.is_symlink() or f.is_file():
+                f.unlink()
+                removed += 1
+            elif f.is_dir() and not any(f.iterdir()):
+                f.rmdir()
+        except OSError:
+            pass
+    return removed
+
+
+def _retry_once(file, report, env, extra_args, before: frozenset = frozenset()) -> None:
+    """Stage 3's one retry of a FAILED script (see execute_scripts_in_folder).
+    The failed attempt's output is removed first, so the retry runs from
+    scratch and cannot resume a search the first attempt finished."""
+    from result_collector import Status
+    first = report.results[-1] if report.results else None
+    if first is None or first.file != str(file) or first.status != Status.FAILED:
+        return
+    removed = clean_output_new_since(before)
+    print(f"  failed; removed {removed} new output file(s) it wrote; retrying once (Stage 3)...")
+    report.results.pop()
+    execute_script(str(file), report=report, env=env, extra_args=extra_args)
+    second = report.results[-1]
+    second.attempts = 2
+    if second.status == Status.PASSED:
+        second.flaky = True
+        tail = (first.traceback or "").strip().splitlines()[-1:] or [first.error_message or ""]
+        second.first_error = tail[0]
