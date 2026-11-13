@@ -74,6 +74,10 @@ class ScriptResult:
     # Set when the entry was skipped by Heart's expiring Stage 3 quarantine:
     # the bug-task ref the quarantine entry names.
     quarantined: Optional[str] = None
+    # The quarantine entry that skipped it ({"workspace", "script", "bug",
+    # "expires"}), so Heart can tell whether that entry is still active when
+    # it reads a rehearsal that never ran the script.
+    quarantine_entry: Optional[dict] = None
 
     @property
     def was_timed(self) -> bool:
@@ -135,6 +139,8 @@ class ScriptResult:
             d["first_error"] = self.first_error
         if self.quarantined is not None:
             d["quarantined"] = self.quarantined
+        if self.quarantine_entry is not None:
+            d["quarantine_entry"] = dict(self.quarantine_entry)
         return d
 
 

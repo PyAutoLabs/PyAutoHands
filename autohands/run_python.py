@@ -139,7 +139,9 @@ if __name__ == "__main__":
         # running the quarantined script instead would be safe, but silently
         # ignoring the flag would hide that the policy never arrived.
         with open(args.quarantine) as fh:
-            quarantine = json.load(fh).get("entries", [])
+            q_doc = json.load(fh)
+        quarantine = [{**e, "workspace": e.get("workspace") or q_doc.get("workspace")}
+                      for e in q_doc.get("entries", []) if isinstance(e, dict)]
 
     build_util.execute_scripts_in_folder(
         no_run_list=no_run_list,

@@ -100,3 +100,52 @@ def test_aggregate_carries_flaky_and_quarantined(workspace, tmp_path, monkeypatc
     assert [e["quarantined"] for e in agg["quarantined"]] == ["PyAutoDemo#7"]
     md = aggregate_results.generate_markdown(agg)
     assert "Flaky" in md and "Quarantined" in md
+
+
+# --- review fixes -------------------------------------------------------------
+
+# Writes a "finished search" into output/ and then fails; on a later run it
+# would RESUME from that output and pass without searching again.
+RESUMES = """
+from pathlib import Path
+done = Path("output/build/demo/search_finished")
+if done.exists():
+    raise SystemExit(0)          # resumed from the finished output: a false pass
+done.parent.mkdir(parents=True, exist_ok=True)
+done.write_text("samples")
+raise RuntimeError("failed after the search completed")
+"""
+
+
+def test_retry_cleans_the_failed_attempts_output_so_it_cannot_resume(workspace):
+    (workspace / "scripts" / "resumes.py").write_text(RESUMES)
+    keep = workspace / "output" / "build" / "earlier" / "result.json"
+    keep.parent.mkdir(parents=True)
+    keep.write_text("from an earlier script")
+    import os
+    os.utime(keep, (1, 1))                 # written long before this run
+    results, _ = _run(retry_failed=True)
+    r = results["resumes.py"]
+    assert r.status == Status.FAILED and r.attempts == 2 and r.flaky is False
+    assert keep.exists()                   # other scripts' output is untouched
+
+
+def test_quarantine_matches_the_exact_workspace_relative_path(workspace):
+    sub = workspace / "scripts" / "multi_imaging"
+    sub.mkdir()
+    (sub / "broken.py").write_text(BROKEN)
+    (workspace / "scripts" / "imaging").mkdir()
+    (workspace / "scripts" / "imaging" / "broken.py").write_text(BROKEN)
+    q = [{"script": "scripts/imaging/broken.py", "bug": "PyAutoDemo#7",
+          "expires": "2026-11-19", "workspace": "demo_workspace"}]
+    report = RunReport(project="demo", directory="scripts", run_type="script")
+    execute_scripts_in_folder(directory="scripts", report=report, quarantine=q)
+    by_rel = {str(Path(r.file).relative_to(workspace)): r for r in report.results}
+    skipped = by_rel["scripts/imaging/broken.py"]
+    assert skipped.status == Status.SKIPPED
+    assert skipped.to_dict()["quarantine_entry"] == {
+        "workspace": "demo_workspace", "script": "scripts/imaging/broken.py",
+        "bug": "PyAutoDemo#7", "expires": "2026-11-19"}
+    # Neither the substring-sharing sibling nor the same-named top-level script.
+    assert by_rel["scripts/multi_imaging/broken.py"].status == Status.FAILED
+    assert by_rel["scripts/broken.py"].status == Status.FAILED
