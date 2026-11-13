@@ -189,6 +189,10 @@ def aggregate(results_dir: Path) -> dict:
         f["classification"] = classify_failure(f)
 
     skipped = [r for r in all_results if r.get("status") == "skipped"]
+    # Stage 3 (PyAutoHeart#344): passed on the one retry, and skipped by the
+    # expiring quarantine — both carried through so Heart records them.
+    flaky = [r for r in all_results if r.get("flaky")]
+    quarantined = [r for r in all_results if r.get("quarantined")]
 
     # Top-N slowest scripts across the whole run, regardless of status —
     # useful for spotting timing regressions before they cross the timeout.
@@ -238,6 +242,8 @@ def aggregate(results_dir: Path) -> dict:
         "failures": [_clean_result(f) for f in failures],
         "failure_pr_correlations": pr_correlations,
         "skipped": [_clean_result(s) for s in skipped],
+        "flaky": [_clean_result(r) for r in flaky],
+        "quarantined": [_clean_result(r) for r in quarantined],
         "pr_changes": pr_changes,
         "runs": [{k: v for k, v in run.items() if k != "results"} for run in runs],
     }
@@ -282,6 +288,19 @@ def generate_markdown(report: dict) -> str:
     if meta_parts:
         lines.append("  •  ".join(meta_parts))
         lines.append("")
+
+    # Stage 3's retry and quarantine (PyAutoHeart#344) — at the top: a flaky
+    # pass and a quarantined skip are both things a reader must see.
+    for key, title in (("flaky", "## Flaky — failed, then passed on the one retry"),
+                       ("quarantined", "## Quarantined — skipped, not run")):
+        entries = report.get(key) or []
+        if entries:
+            lines.append(title)
+            lines.append("")
+            for e in entries:
+                note = (e.get("first_error") or "") if key == "flaky" else (e.get("skip_reason") or "")
+                lines.append(f"- `{e.get('project', '')}` `{e.get('file', '')}` {note}".rstrip())
+            lines.append("")
 
     # Slow-skipped and needs-fix scripts — surface at the top so they
     # can't be missed

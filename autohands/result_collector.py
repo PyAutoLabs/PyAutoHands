@@ -65,6 +65,15 @@ class ScriptResult:
     # killed, so there is no exit code the script chose) and for entries that
     # never ran.
     exit_code: Optional[int] = None
+    # Stage 3's one retry (PyAutoHeart#344): how many times the entry ran, and
+    # whether it failed first and passed on the retry — FLAKY, recorded, never
+    # hidden. ``first_error`` keeps the first attempt's failure.
+    attempts: int = 1
+    flaky: bool = False
+    first_error: Optional[str] = None
+    # Set when the entry was skipped by Heart's expiring Stage 3 quarantine:
+    # the bug-task ref the quarantine entry names.
+    quarantined: Optional[str] = None
 
     @property
     def was_timed(self) -> bool:
@@ -116,6 +125,16 @@ class ScriptResult:
             d["traceback"] = "\n".join(lines[-100:])
         if self.skip_reason is not None:
             d["skip_reason"] = self.skip_reason
+        # Emitted only when set, so a run without retries or quarantine keeps
+        # the per-run JSON byte-compatible.
+        if self.attempts > 1:
+            d["attempts"] = self.attempts
+        if self.flaky:
+            d["flaky"] = True
+        if self.first_error is not None:
+            d["first_error"] = self.first_error
+        if self.quarantined is not None:
+            d["quarantined"] = self.quarantined
         return d
 
 
@@ -200,6 +219,14 @@ class RunReport:
                     lines.extend(tb_lines)
                     lines.append("```")
                     lines.append("")
+
+        flaky = [r for r in self.results if r.flaky]
+        if flaky:
+            lines.append("## Flaky (failed, then passed on the one retry)")
+            lines.append("")
+            for r in flaky:
+                lines.append(f"- `{r.file}` — first attempt: {r.first_error or 'failed'}")
+            lines.append("")
 
         skipped = [r for r in self.results if r.status == Status.SKIPPED]
         if skipped:
