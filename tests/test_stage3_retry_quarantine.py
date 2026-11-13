@@ -149,3 +149,41 @@ def test_quarantine_matches_the_exact_workspace_relative_path(workspace):
     # Neither the substring-sharing sibling nor the same-named top-level script.
     assert by_rel["scripts/multi_imaging/broken.py"].status == Status.FAILED
     assert by_rel["scripts/broken.py"].status == Status.FAILED
+
+
+# Resumes an EARLIER script's search (its zip pre-exists): restores it (fresh
+# mtimes on the unzipped files), rewrites the zip, writes its own new search
+# output, then fails.
+RESUMES_EARLIER = """
+import zipfile
+from pathlib import Path
+z = Path("output/build/earlier/search.zip")
+with zipfile.ZipFile(z) as zf:
+    zf.extractall(z.with_suffix(""))
+with zipfile.ZipFile(z, "w") as zf:
+    zf.writestr("samples.csv", "rewritten")
+own = Path("output/build/failing/search/samples.csv")
+own.parent.mkdir(parents=True, exist_ok=True)
+own.write_text("own new search")
+raise RuntimeError("failed after its own search")
+"""
+
+
+def test_retry_clean_keeps_an_earlier_scripts_rewritten_zip(workspace):
+    import os
+    import zipfile
+    from build_util import clean_output_new_since, output_snapshot
+    z = workspace / "output" / "build" / "earlier" / "search.zip"
+    z.parent.mkdir(parents=True)
+    with zipfile.ZipFile(z, "w") as zf:
+        zf.writestr("samples.csv", "earlier search")
+    os.utime(z, (1, 1))
+    before = output_snapshot()
+    (workspace / "scripts" / "resumes_earlier.py").write_text(RESUMES_EARLIER)
+    import subprocess
+    subprocess.run([sys.executable, "scripts/resumes_earlier.py"], cwd=workspace)
+    assert z.stat().st_mtime > 1                       # rewritten by the attempt
+    assert clean_output_new_since(before) >= 2
+    assert z.exists()                                  # the earlier output survives
+    assert not (workspace / "output" / "build" / "earlier" / "search").exists()
+    assert not (workspace / "output" / "build" / "failing").exists()

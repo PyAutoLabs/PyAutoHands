@@ -1595,10 +1595,10 @@ def execute_scripts_in_folder(directory, no_run_list=None, report=None, skip_rea
             from env_config import build_env_for_script, args_for_script
             env = build_env_for_script(file, env_config)
             extra_args = args_for_script(file, env_config)
-            started = time.time()
+            before = output_snapshot() if retry_failed and report is not None else None
             execute_script(str(file), report=report, env=env, extra_args=extra_args)
-            if retry_failed and report is not None:
-                _retry_once(file, report, env, extra_args, started)
+            if before is not None:
+                _retry_once(file, report, env, extra_args, before)
 
 
 def _quarantine_match(file, quarantine):
@@ -1621,25 +1621,37 @@ def _quarantine_match(file, quarantine):
 OUTPUT_DIRNAME = "output"
 
 
-def clean_output_written_since(started: float, root=None) -> int:
-    """Delete every file under ``<root>/output`` written or modified at or after
-    ``started`` (the failed attempt's start), and the directories it leaves
-    empty. Returns the number of files removed.
+def output_snapshot(root=None) -> frozenset:
+    """Every path under ``<root>/output`` that exists now — taken before an
+    attempt, so the retry's clean can tell the attempt's own output apart."""
+    out = Path(root or Path.cwd()) / OUTPUT_DIRNAME
+    return frozenset(out.rglob("*")) if out.is_dir() else frozenset()
 
-    That is exactly what the failed attempt produced: a model-fit search that
-    completed before the script failed leaves its finished samples there, and
-    a retry would RESUME from them and pass without re-running the search.
-    Output written by earlier scripts (older mtimes) is left alone."""
+
+def clean_output_new_since(before, root=None) -> int:
+    """Delete every path under ``<root>/output`` that was NOT in ``before`` (the
+    snapshot taken before the failed attempt). Returns the number of files
+    removed.
+
+    New paths are exactly the failed attempt's own output: a model-fit search
+    that completed before the script failed leaves its finished samples there,
+    and a retry would RESUME from them and pass without re-running the search.
+    A path that already existed is kept even if the attempt rewrote it — a
+    script resuming an earlier script's search restores that search's zip
+    with fresh mtimes and rewrites the zip, and deleting it would make later
+    scripts re-run or fail: a false red. (What the attempt unzipped from it is
+    new, so it goes; the zip it came from stays.)"""
     out = Path(root or Path.cwd()) / OUTPUT_DIRNAME
     if not out.is_dir():
         return 0
     removed = 0
     for f in sorted(out.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+        if f in before:
+            continue
         try:
-            if f.is_file() or f.is_symlink():
-                if f.lstat().st_mtime >= started:
-                    f.unlink()
-                    removed += 1
+            if f.is_symlink() or f.is_file():
+                f.unlink()
+                removed += 1
             elif f.is_dir() and not any(f.iterdir()):
                 f.rmdir()
         except OSError:
@@ -1647,7 +1659,7 @@ def clean_output_written_since(started: float, root=None) -> int:
     return removed
 
 
-def _retry_once(file, report, env, extra_args, started: float = 0.0) -> None:
+def _retry_once(file, report, env, extra_args, before: frozenset = frozenset()) -> None:
     """Stage 3's one retry of a FAILED script (see execute_scripts_in_folder).
     The failed attempt's output is removed first, so the retry runs from
     scratch and cannot resume a search the first attempt finished."""
@@ -1655,8 +1667,8 @@ def _retry_once(file, report, env, extra_args, started: float = 0.0) -> None:
     first = report.results[-1] if report.results else None
     if first is None or first.file != str(file) or first.status != Status.FAILED:
         return
-    removed = clean_output_written_since(started)
-    print(f"  failed; removed {removed} output file(s) it wrote; retrying once (Stage 3)...")
+    removed = clean_output_new_since(before)
+    print(f"  failed; removed {removed} new output file(s) it wrote; retrying once (Stage 3)...")
     report.results.pop()
     execute_script(str(file), report=report, env=env, extra_args=extra_args)
     second = report.results[-1]
