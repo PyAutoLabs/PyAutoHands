@@ -23,9 +23,14 @@ on:
     - cron: "30 5 * * *"
   workflow_dispatch:
 
-# contents: write → the README strip self-commit; pages/id-token → publish.
+# contents: read → the checkout and the snapshot; pages/id-token → publish.
+# The README strip self-commit pushes as the pyautolabs-bot App (token minted
+# right before that step), never as GITHUB_TOKEN: `main` is under the M2.2
+# ruleset, whose bypass names the App, and a ruleset cannot name GitHub
+# Actions (PyAutoHands#341). The Pages deploy (environment github-pages) is
+# unaffected.
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -42,6 +47,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # No GITHUB_TOKEN extraheader in .git/config: it would shadow the
+          # App credential the README strip commit pushes with.
+          persist-credentials: false
 
       # The family look (hero, palette, stylesheet) is defined once in the
       # Brain and imported by the renderer — never copied in here.
@@ -90,8 +99,22 @@ jobs:
             cat board.md
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Mint App token (push to PyAutoHands main)
+        # Scoped to this repo, contents write only. No fallback.
+        if: github.ref == 'refs/heads/main'
+        id: push_token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: PyAutoLabs
+          repositories: PyAutoHands
+          permission-contents: write
+
       - name: Update the README strip (own repo only, main only)
         if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ steps.push_token.outputs.token }}
         run: |
           python - <<'PY'
           import pathlib, re
@@ -106,8 +129,10 @@ jobs:
               readme.write_text(text)
           PY
           if ! git diff --quiet README.md; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name  "pyautolabs-bot[bot]"
+            git config user.email "346909844+pyautolabs-bot[bot]@users.noreply.github.com"
+            # gh as git's credential helper, reading GH_TOKEN (the App token).
+            gh auth setup-git
             git add README.md
             git commit -m "docs(hands): auto-update release-board strip [skip ci]"
             # Rebuild on the tip if a concurrent push landed; the strip is
